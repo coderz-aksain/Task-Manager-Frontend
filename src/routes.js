@@ -361,12 +361,12 @@
 import React, { useEffect, useState } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import Login from "./pages/employee/Login.js";
-import Dashboard from "./pages/employee/Dashboard.js";
-import AttendancePage from "./pages/employee/AttendancePage.js";
-import LeavePage from "./pages/employee/LeavePage.js";
-import PerformancePage from "./pages/employee/PerformancePage.js";
+// import Dashboard from "./pages/employee/Dashboard.js";
+// import AttendancePage from "./pages/employee/AttendancePage.js";
+// import LeavePage from "./pages/employee/LeavePage.js";
+// import PerformancePage from "./pages/employee/PerformancePage.js";
 import TaskPage from "./pages/employee/TaskPage.js";
-import ChatPage from "./pages/employee/ChatPage.js";
+// import ChatPage from "./pages/employee/ChatPage.js";
 import ProfilePage from "./pages/employee/ProfilePage.js";
 import AdmintaskPage from "./pages/admin/AdmintaskPage.js";
 import EmployeeListPage from "./pages/admin/EmployeeListPage.js";
@@ -419,14 +419,14 @@ const AppRoutes = ({ isVerified }) => {
       />
 
       {/* Employee Pages Routes */}
-      <Route
+      {/* <Route
         path="/employee/dashboard"
         element={
           <ProtectedRoute allowedRoles={["employee"]}>
             <Dashboard />
           </ProtectedRoute>
         }
-      />
+      /> */}
       <Route
         path="/employee/createtasks"
         element={
@@ -435,38 +435,38 @@ const AppRoutes = ({ isVerified }) => {
           </ProtectedRoute>
         }
       />
-      <Route
+      {/* <Route
         path="/employee/attendance"
         element={
           <ProtectedRoute allowedRoles={["employee"]}>
             <AttendancePage />
           </ProtectedRoute>
         }
-      />
-      <Route
+      /> */}
+      {/* <Route
         path="/employee/chat"
         element={
           <ProtectedRoute allowedRoles={["employee"]}>
             <ChatPage />
           </ProtectedRoute>
         }
-      />
-      <Route
+      /> */}
+      {/* <Route
         path="/employee/leave"
         element={
           <ProtectedRoute allowedRoles={["employee"]}>
             <LeavePage />
           </ProtectedRoute>
         }
-      />
-      <Route
+      /> */}
+      {/* <Route
         path="/employee/profile"
         element={
           <ProtectedRoute allowedRoles={["employee"]}>
             <ProfilePage />
           </ProtectedRoute>
         }
-      />
+      /> */}
       <Route
         path="/employee/tasks"
         element={
@@ -475,14 +475,14 @@ const AppRoutes = ({ isVerified }) => {
           </ProtectedRoute>
         }
       />
-      <Route
+      {/* <Route
         path="/employee/performance"
         element={
           <ProtectedRoute allowedRoles={["employee"]}>
             <PerformancePage />
           </ProtectedRoute>
         }
-      />
+      /> */}
 
       {/* Admin Pages Routes */}
       <Route

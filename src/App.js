@@ -94,7 +94,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { BrowserRouter } from 'react-router-dom';
-import AppRoutes from './routes.js';
+import AppRoutes from './routes';
 
 function App() {
   const [isVerified, setIsVerified] = useState(false);

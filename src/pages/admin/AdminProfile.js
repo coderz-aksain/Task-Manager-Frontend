@@ -10,9 +10,9 @@ import {
   FaBuilding,
   FaUser,
 } from 'react-icons/fa';
-import Header from '../../components/common/Header';
-import Sidebar from '../../components/common/Sidebar';
-import AdminSidebar from '../../components/common/AdminSidebar';
+import Header from '../../components/common/Header.js';
+// import Sidebar from '../../components/common/Sideba.jsr';
+import AdminSidebar from '../../components/common/AdminSidebar.js';
 
 // Helper function to handle object rendering
 const renderObject = (obj) => {

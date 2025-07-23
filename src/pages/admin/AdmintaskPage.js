@@ -1,3 +1,6 @@
+
+
+
 import React, { useState, useEffect } from "react";
 import {
   Search,
@@ -9,15 +12,14 @@ import {
   X,
   Send,
   Loader2,
+  Upload,
 } from "lucide-react";
-import AdminSidebar from "../../components/common/AdminSidebar"; // Mocked below
-import Header from "../../components/common/Header"; // Mocked below
+import AdminSidebar from "../../components/common/AdminSidebar";
+import Header from "../../components/common/Header";
 import { Link } from "react-router-dom";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
-
-
 
 const taskTypes = ["Auctions", "General", "Remainder"];
 const priorities = ["High", "Medium", "Low"];
@@ -86,70 +88,10 @@ const AdmintaskPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState(null);
+  const [showEmployeeDropdown, setShowEmployeeDropdown] = useState(false);
+  const [employeeSearchTerm, setEmployeeSearchTerm] = useState("");
 
   useEffect(() => {
-    const fetchTasks = async () => {
-      try {
-        const response = await fetch(
-          "https://task-manager-backend-vqen.onrender.com/api/admin/gettasks",
-          {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-        if (!response.ok) {
-          throw new Error(`Failed to fetch tasks: ${response.statusText}`);
-        }
-        const data = await response.json();
-        const validTasks = Array.isArray(data)
-          ? data
-              .map((task) => ({
-                _id: task._id,
-                taskId: task.taskId,
-                taskName: task.taskName || "",
-                description: task.description || "",
-                dueDate: task.dueDate || "",
-                dueTime: task.dueTime || "N/A",
-                priority: task.priority || "Low",
-                status: task.status || "Open",
-                assignedBy: task.assignedBy || "admin@company.com",
-                assignedTo: Array.isArray(task.assignedTo)
-                  ? task.assignedTo
-                  : task.assignedTo
-                  ? [task.assignedTo]
-                  : [],
-                taskType: task.taskType || "General",
-                fileUrls: task.fileUrls || [],
-                assignedDateTime: task.assignedDateTime || "",
-                activityLogs: task.activityLogs || [],
-                comments: task.comments || [],
-                remark: task.remark || "",
-              }))
-              .filter((task) => {
-                const isValid =
-                  task._id &&
-                  task.taskName &&
-                  task.status &&
-                  task.priority &&
-                  task.taskType &&
-                  task.dueDate;
-                if (!isValid) {
-                  console.warn("Invalid task filtered out:", task);
-                }
-                return isValid;
-              })
-          : [];
-        setTasks(validTasks);
-        localStorage.setItem("tasks_stepper", JSON.stringify(validTasks));
-      } catch (err) {
-        setError(err.message);
-        console.error("Error fetching tasks:", err);
-      }
-    };
-
     const fetchEmployees = async () => {
       try {
         const response = await fetch(
@@ -166,21 +108,105 @@ const AdmintaskPage = () => {
           throw new Error(`Failed to fetch employees: ${response.statusText}`);
         }
         const data = await response.json();
-        setEmployees(data);
+        const validEmployees = Array.isArray(data)
+          ? data.map((emp) => ({
+              id: emp.id || emp._id || "",
+              name: emp.firstName || emp.name || "Unknown",
+              email: emp.email || "",
+              department: emp.department || "Unknown",
+              avatar: emp.profileImage || "",
+            }))
+          : [];
+        setEmployees(validEmployees);
+        // console.log("Fetched employees:", validEmployees);
       } catch (err) {
         setError(err.message);
         console.error("Error fetching employees:", err);
       }
     };
 
+    const fetchTasks = async () => {
+      try {
+        const response = await fetch(
+          "https://task-manager-backend-vqen.onrender.com/api/admin/gettasks",
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        if (!response.ok) {
+          throw new Error(`Failed to fetch tasks: ${response.statusText}`);
+        }
+        const data = await response.json();
+        // console.log("Fetched tasks:", data);
+        const validTasks = Array.isArray(data)
+          ? data
+              .map((task) => {
+                const assignedTo = Array.isArray(task.assignedTo)
+                  ? task.assignedTo.map((email) => {
+                      const employee = employees.find((emp) => emp.email === email);
+                      return {
+                        email: email || "",
+                        name: employee ? employee.name : email || "Unknown",
+                        avatar: employee ? employee.avatar : "",
+                      };
+                    })
+                  : [];
+
+                return {
+                  _id: task._id || "",
+                  taskId: task.taskId || 0,
+                  taskName: task.taskName || "",
+                  description: task.description || "",
+                  dueDate: task.dueDate
+                    ? task.dueDate.split("/").reverse().join("-")
+                    : "",
+                  dueTime: task.dueTime || "N/A",
+                  priority: task.priority || "Low",
+                  status: task.status || "Open",
+                  assignedBy: task.assignedBy || "admin@company.com",
+                  assignedTo,
+                  taskType: task.taskType || "General",
+                  fileUrls: task.fileUrls || [],
+                  assignedDateTime: task.assignedDateTime || "",
+                  activityLogs: task.activityLogs || [],
+                  comments: task.comments || [],
+                  remark: task.remark || "",
+                };
+              })
+              .filter((task) => {
+                const isValid =
+                  task._id &&
+                  task.taskName &&
+                  task.status &&
+                  task.priority &&
+                  task.taskType &&
+                  task.dueDate;
+                if (!isValid) {
+                  console.warn("Invalid task filtered out:", task);
+                }
+                return isValid;
+              })
+          : [];
+        setTasks(validTasks);
+        localStorage.setItem("tasks_stepper", JSON.stringify(validTasks));
+        // console.log("Processed tasks:", validTasks);
+      } catch (err) {
+        setError(err.message);
+        console.error("Error fetching tasks:", err);
+      }
+    };
+
     if (token) {
-      fetchTasks();
-      fetchEmployees();
+      fetchEmployees().then(() => fetchTasks());
     } else {
       setError("No authentication token found");
       console.error("No token found in localStorage");
     }
-  }, [token]);
+  }, [token, employees]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -188,6 +214,28 @@ const AdmintaskPage = () => {
       ...prev,
       [name]: value,
       errors: { ...prev.errors, [name]: "" },
+    }));
+  };
+
+  const handleEmployeeSelect = (employee) => {
+    if (!formData.assignedTo.find((emp) => emp.email === employee.email)) {
+      setFormData((prev) => ({
+        ...prev,
+        assignedTo: [
+          ...prev.assignedTo,
+          { email: employee.email, name: employee.name, avatar: employee.avatar },
+        ],
+        errors: { ...prev.errors, assignedTo: "" },
+      }));
+    }
+    setEmployeeSearchTerm("");
+    setShowEmployeeDropdown(false);
+  };
+
+  const handleEmployeeRemove = (email) => {
+    setFormData((prev) => ({
+      ...prev,
+      assignedTo: prev.assignedTo.filter((emp) => emp.email !== email),
     }));
   };
 
@@ -241,7 +289,10 @@ const AdmintaskPage = () => {
     formDataToSend.append("priority", formData.priority);
     formDataToSend.append("status", isDraft ? "Draft" : formData.status);
     formDataToSend.append("assignedBy", formData.assignedBy);
-    formDataToSend.append("assignedTo", JSON.stringify(formData.assignedTo));
+    formDataToSend.append(
+      "assignedTo",
+      JSON.stringify(formData.assignedTo.map((emp) => emp.email))
+    );
     formDataToSend.append("taskType", formData.taskType);
     formDataToSend.append("remark", formData.remark || "");
     formDataToSend.append("assignedDateTime", assignedDateTime);
@@ -295,7 +346,15 @@ const AdmintaskPage = () => {
               ? {
                   ...updatedTask.task,
                   fileUrls: updatedTask.task.fileUrls || [],
-                  assignedTo: updatedTask.task.assignedTo || [],
+                  assignedTo: updatedTask.task.assignedTo.map((email) => ({
+                    email,
+                    name:
+                      employees.find((emp) => emp.email === email)?.name ||
+                      email ||
+                      "Unknown",
+                    avatar:
+                      employees.find((emp) => emp.email === email)?.avatar || "",
+                  })),
                 }
               : task
           )
@@ -306,7 +365,15 @@ const AdmintaskPage = () => {
           {
             ...updatedTask.task,
             fileUrls: updatedTask.task.fileUrls || [],
-            assignedTo: updatedTask.task.assignedTo || [],
+            assignedTo: updatedTask.task.assignedTo.map((email) => ({
+              email,
+              name:
+                employees.find((emp) => emp.email === email)?.name ||
+                email ||
+                "Unknown",
+              avatar:
+                employees.find((emp) => emp.email === email)?.avatar || "",
+            })),
           },
         ]);
       }
@@ -315,6 +382,7 @@ const AdmintaskPage = () => {
       setFormData(initialForm);
       setEditId(null);
       setSelectedFiles([]);
+      setEmployeeSearchTerm("");
     } catch (err) {
       setError(err.message);
       console.error("Error submitting task:", err);
@@ -326,6 +394,7 @@ const AdmintaskPage = () => {
   const handleEditTask = (task) => {
     setFormData({
       ...task,
+      dueDate: task.dueDate.split("/").reverse().join("-"),
       assignedTo: task.assignedTo,
       errors: {},
     });
@@ -366,7 +435,10 @@ const AdmintaskPage = () => {
   };
 
   const handleViewTask = (task) => {
-    setViewTask(task);
+    setViewTask({
+      ...task,
+      dueDate: task.dueDate.split("/").reverse().join("-"),
+    });
     setIsViewModalOpen(true);
     setActiveTab("all");
   };
@@ -395,7 +467,15 @@ const AdmintaskPage = () => {
             ? {
                 ...updatedTask.task,
                 fileUrls: updatedTask.task.fileUrls || [],
-                assignedTo: updatedTask.task.assignedTo || [],
+                assignedTo: updatedTask.task.assignedTo.map((email) => ({
+                  email,
+                  name:
+                    employees.find((emp) => emp.email === email)?.name ||
+                    email ||
+                    "Unknown",
+                  avatar:
+                    employees.find((emp) => emp.email === email)?.avatar || "",
+                })),
               }
             : task
         )
@@ -464,6 +544,7 @@ const AdmintaskPage = () => {
   const handleEditFromView = (task) => {
     setFormData({
       ...task,
+      dueDate: task.dueDate.split("/").reverse().join("-"),
       assignedTo: task.assignedTo,
       errors: {},
     });
@@ -491,10 +572,14 @@ const AdmintaskPage = () => {
   const sortedTasks = [...filteredTasks].sort((a, b) => {
     switch (sortBy) {
       case "dueDate":
-        return new Date(a.dueDate || 0).getTime() - new Date(b.dueDate || 0).getTime();
+        return (
+          new Date(a.dueDate || 0).getTime() - new Date(b.dueDate || 0).getTime()
+        );
       case "priority":
         const priorityOrder = { High: 3, Medium: 2, Low: 1 };
-        return (priorityOrder[b.priority] || 0) - (priorityOrder[a.priority] || 0);
+        return (
+          (priorityOrder[b.priority] || 0) - (priorityOrder[a.priority] || 0)
+        );
       case "status":
         return (a.status || "").localeCompare(b.status || "");
       case "taskName":
@@ -503,6 +588,16 @@ const AdmintaskPage = () => {
         return 0;
     }
   });
+
+  const filteredEmployees = employees.filter(
+    (emp) =>
+      (emp.name &&
+        typeof emp.name === "string" &&
+        emp.name.toLowerCase().includes(employeeSearchTerm.toLowerCase())) ||
+      (emp.department &&
+        typeof emp.department === "string" &&
+        emp.department.toLowerCase().includes(employeeSearchTerm.toLowerCase()))
+  );
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -562,7 +657,7 @@ const AdmintaskPage = () => {
         "Assigned By": task.assignedBy,
         "Assigned To":
           Array.isArray(task.assignedTo) && task.assignedTo.length > 0
-            ? task.assignedTo.join(", ")
+            ? task.assignedTo.map((emp) => emp.name).join(", ")
             : "Unassigned",
         "Task Type": task.taskType,
         "File URLs": task.fileUrls.join(", "),
@@ -592,7 +687,7 @@ const AdmintaskPage = () => {
       task.status,
       task.assignedBy,
       Array.isArray(task.assignedTo) && task.assignedTo.length > 0
-        ? task.assignedTo.join(", ")
+        ? task.assignedTo.map((emp) => emp.name).join(", ")
         : "Unassigned",
       task.taskType,
       task.fileUrls.join(", "),
@@ -674,9 +769,7 @@ const AdmintaskPage = () => {
                         <Plus className="w-4 h-4" />
                         <span>Create Task</span>
                       </button>
-                      
                     </Link>
-                    
                     <button
                       onClick={exportToExcel}
                       className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center space-x-2 text-sm sm:text-base w-full sm:w-auto"
@@ -684,13 +777,13 @@ const AdmintaskPage = () => {
                     >
                       <span>Export to Excel</span>
                     </button>
-                    {/* <button
+                    <button
                       onClick={exportToPDF}
                       className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 flex items-center space-x-2 text-sm sm:text-base w-full sm:w-auto"
                       disabled={isLoading}
                     >
                       <span>Export to PDF</span>
-                    </button> */}
+                    </button>
                   </div>
                 </div>
 
@@ -826,14 +919,18 @@ const AdmintaskPage = () => {
                           isOverdue(task.dueDate, task.status) ? "bg-red-50" : ""
                         }`}
                       >
-                        <td className="py-3 px-2 sm:px-4 text-gray-900">{task.taskId}</td>
+                        <td className="py-3 px-2 sm:px-4 text-gray-900">
+                          {task.taskId}
+                        </td>
                         <td className="py-3 px-2 sm:px-4 text-gray-600">
                           {task.assignedDateTime
                             ? new Date(task.assignedDateTime).toLocaleDateString()
                             : "N/A"}
                         </td>
                         <td className="py-3 px-2 sm:px-4">
-                          <div className="font-medium text-gray-900">{task.taskName}</div>
+                          <div className="font-medium text-gray-900">
+                            {task.taskName}
+                          </div>
                         </td>
                         <td className="py-3 px-2 sm:px-4">
                           <span
@@ -853,10 +950,13 @@ const AdmintaskPage = () => {
                             <AlertCircle className="inline ml-2 text-red-600 w-4 h-4" />
                           )}
                         </td>
-                        <td className="py-3 px-2 sm:px-4 text-gray-600">{task.assignedBy}</td>
                         <td className="py-3 px-2 sm:px-4 text-gray-600">
-                          {Array.isArray(task.assignedTo) && task.assignedTo.length > 0
-                            ? task.assignedTo.join(", ")
+                          {task.assignedBy}
+                        </td>
+                        <td className="py-3 px-2 sm:px-4 text-gray-600">
+                          {Array.isArray(task.assignedTo) &&
+                          task.assignedTo.length > 0
+                            ? task.assignedTo.map((emp) => emp.name).join(", ")
                             : "Unassigned"}
                         </td>
                         <td className="py-3 px-2 sm:px-4">
@@ -931,7 +1031,9 @@ const AdmintaskPage = () => {
                     >
                       <div className="flex justify-between items-start">
                         <div className="flex items-center gap-2">
-                          <span className="font-medium text-sm">{task.taskName}</span>
+                          <span className="font-medium text-sm">
+                            {task.taskName}
+                          </span>
                         </div>
                         <div className="flex gap-2">
                           <button
@@ -959,7 +1061,8 @@ const AdmintaskPage = () => {
                       </div>
                       <div className="mt-2 text-xs grid grid-cols-1 sm:grid-cols-2 gap-2">
                         <div>
-                          <span className="font-semibold">Task ID:</span> {task.taskId}
+                          <span className="font-semibold">Task ID:</span>{" "}
+                          {task.taskId}
                         </div>
                         <div>
                           <span className="font-semibold">Assigned Date:</span>{" "}
@@ -968,7 +1071,7 @@ const AdmintaskPage = () => {
                             : "N/A"}
                         </div>
                         <div>
-                          <span className="font-semibold">Status:</span>{" "}
+                          <span className="font-semibold">Status:</span>
                           <span
                             className={`ml-1 px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
                               task.status
@@ -993,8 +1096,9 @@ const AdmintaskPage = () => {
                         </div>
                         <div>
                           <span className="font-semibold">Assigned To:</span>{" "}
-                          {Array.isArray(task.assignedTo) && task.assignedTo.length > 0
-                            ? task.assignedTo.join(", ")
+                          {Array.isArray(task.assignedTo) &&
+                          task.assignedTo.length > 0
+                            ? task.assignedTo.map((emp) => emp.name).join(", ")
                             : "Unassigned"}
                         </div>
                         <div>
@@ -1052,6 +1156,7 @@ const AdmintaskPage = () => {
                           setFormData(initialForm);
                           setEditId(null);
                           setSelectedFiles([]);
+                          setEmployeeSearchTerm("");
                         }}
                         className="text-gray-500 hover:text-gray-700"
                         disabled={isLoading}
@@ -1100,33 +1205,71 @@ const AdmintaskPage = () => {
                         />
                       </div>
 
-                      <div>
+                      <div className="relative">
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Assigned To *
+                          Assign Employees *
                         </label>
-                        <select
-                          multiple
-                          value={formData.assignedTo}
-                          onChange={(e) => {
-                            const selectedOptions = Array.from(
-                              e.target.selectedOptions,
-                              (option) => option.value
-                            );
-                            setFormData((prev) => ({
-                              ...prev,
-                              assignedTo: selectedOptions,
-                              errors: { ...prev.errors, assignedTo: "" },
-                            }));
-                          }}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm h-32"
+                        <input
+                          type="text"
+                          value={employeeSearchTerm}
+                          onChange={(e) => setEmployeeSearchTerm(e.target.value)}
+                          onFocus={() => setShowEmployeeDropdown(true)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                          placeholder="Search employee by name or department"
                           disabled={isLoading}
-                        >
-                          {employees.map((employee) => (
-                            <option key={employee.email} value={employee.email}>
-                              {employee.name} ({employee.email})
-                            </option>
+                        />
+                        {showEmployeeDropdown && (
+                          <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                            {filteredEmployees.map((employee) => (
+                              <button
+                                key={employee.id}
+                                type="button"
+                                onClick={() => handleEmployeeSelect(employee)}
+                                className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center space-x-3"
+                                disabled={isLoading}
+                              >
+                                <img
+                                  src={employee.avatar || ""}
+                                  alt={employee.name}
+                                  className="w-8 h-8 rounded-full"
+                                />
+                                <div>
+                                  <p className="font-medium">
+                                    {employee.name || "Unknown"}
+                                  </p>
+                                  <p className="text-sm text-gray-500">
+                                    {employee.email}
+                                  </p>
+                                </div>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {formData.assignedTo.map((emp) => (
+                            <div
+                              key={emp.email}
+                              className="flex items-center bg-blue-50 text-blue-700 px-3 py-1 rounded-full"
+                            >
+                              <img
+                                src={emp.avatar || ""}
+                                alt={emp.name}
+                                className="w-5 h-5 rounded-full mr-2"
+                              />
+                              <span className="text-sm">
+                                {emp.name || "Unknown"}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => handleEmployeeRemove(emp.email)}
+                                className="ml-2 text-blue-500 hover:text-blue-700"
+                                disabled={isLoading}
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </div>
                           ))}
-                        </select>
+                        </div>
                         {formData.errors.assignedTo && (
                           <p className="text-red-500 text-xs mt-1">
                             {formData.errors.assignedTo}
@@ -1230,13 +1373,17 @@ const AdmintaskPage = () => {
                           File Attachments
                         </label>
                         <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
-                          <input
-                            type="file"
-                            multiple
-                            onChange={handleAttachmentAdd}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                            disabled={isLoading}
-                          />
+                          <label className="px-4 py-2 bg-blue-100 text-blue-700 border border-blue-300 rounded-md cursor-pointer hover:bg-blue-200 text-sm inline-flex items-center space-x-2">
+                            <Upload className="w-4 h-4" />
+                            <span>Choose Files</span>
+                            <input
+                              type="file"
+                              multiple
+                              onChange={handleAttachmentAdd}
+                              className="hidden"
+                              disabled={isLoading}
+                            />
+                          </label>
                         </div>
 
                         {formData.fileUrls.length > 0 && (
@@ -1247,7 +1394,10 @@ const AdmintaskPage = () => {
                                 className="flex items-center justify-between bg-gray-50 p-2 rounded"
                               >
                                 <div className="flex items-center space-x-2">
-                                  <span className="text-sm truncate">{attachment}</span>
+                                  <Upload className="w-4 h-4 text-gray-500" />
+                                  <span className="text-sm truncate">
+                                    {attachment}
+                                  </span>
                                 </div>
                                 <button
                                   type="button"
@@ -1293,6 +1443,7 @@ const AdmintaskPage = () => {
                             setFormData(initialForm);
                             setEditId(null);
                             setSelectedFiles([]);
+                            setEmployeeSearchTerm("");
                           }}
                           className="px-4 sm:px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 text-sm"
                           disabled={isLoading}
@@ -1317,7 +1468,9 @@ const AdmintaskPage = () => {
                   <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl sm:max-w-2xl md:max-w-3xl lg:max-w-4xl p-4 sm:p-6 max-h-[90vh] overflow-y-auto">
                     <div className="flex justify-between items-start mb-6">
                       <div className="flex items-center space-x-2">
-                        <h2 className="text-lg sm:text-xl font-semibold">{viewTask.taskName}</h2>
+                        <h2 className="text-lg sm:text-xl font-semibold">
+                          {viewTask.taskName}
+                        </h2>
                         {isOverdue(viewTask.dueDate, viewTask.status) && (
                           <AlertCircle className="text-red-500 w-5 h-5" />
                         )}
@@ -1332,7 +1485,9 @@ const AdmintaskPage = () => {
 
                     <div className="mb-6">
                       <p className="text-sm text-gray-500 mb-2">Description</p>
-                      <p className="text-gray-800 text-sm">{viewTask.description || "None"}</p>
+                      <p className="text-gray-800 text-sm">
+                        {viewTask.description || "None"}
+                      </p>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6">
@@ -1378,21 +1533,28 @@ const AdmintaskPage = () => {
                       <div>
                         <p className="text-sm text-gray-500 mb-2">Assigned To</p>
                         <p className="text-sm text-gray-800 break-words">
-                          {Array.isArray(viewTask.assignedTo) && viewTask.assignedTo.length > 0
-                            ? viewTask.assignedTo.join(", ")
+                          {Array.isArray(viewTask.assignedTo) &&
+                          viewTask.assignedTo.length > 0
+                            ? viewTask.assignedTo
+                                .map((emp) => emp.name)
+                                .join(", ")
                             : "Unassigned"}
                         </p>
                       </div>
                       <div>
                         <p className="text-sm text-gray-500 mb-2">Assigned By</p>
-                        <p className="text-sm text-gray-800">{viewTask.assignedBy}</p>
+                        <p className="text-sm text-gray-800">
+                          {viewTask.assignedBy}
+                        </p>
                       </div>
                       <div>
                         <p className="text-sm text-gray-500 mb-2">Task ID</p>
                         <p className="text-sm text-gray-800">{viewTask.taskId}</p>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-500 mb-2">Assigned Date</p>
+                        <p className="text-sm text-gray-500 mb-2">
+                          Assigned Date
+                        </p>
                         <p className="text-sm text-gray-800">
                           {viewTask.assignedDateTime
                             ? new Date(viewTask.assignedDateTime).toLocaleDateString()
@@ -1462,7 +1624,9 @@ const AdmintaskPage = () => {
 
                     <div className="mb-6">
                       <p className="text-sm text-gray-500 mb-2">Remark</p>
-                      <p className="text-sm text-gray-800">{viewTask.remark || "None"}</p>
+                      <p className="text-sm text-gray-800">
+                        {viewTask.remark || "None"}
+                      </p>
                     </div>
 
                     <div className="mb-6">
@@ -1492,7 +1656,9 @@ const AdmintaskPage = () => {
                       <div className="max-h-40 overflow-y-auto bg-gray-50 p-3 rounded-lg shadow-sm">
                         {viewTask.comments.length > 0 ? (
                           [...viewTask.comments]
-                            .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+                            .sort(
+                              (a, b) => new Date(b.timestamp) - new Date(a.timestamp)
+                            )
                             .map((comment, index) => (
                               <div
                                 key={index}
@@ -1506,8 +1672,8 @@ const AdmintaskPage = () => {
                                       {comment.message || "No message"}
                                     </p>
                                     <p className="text-xs text-gray-500 mt-1">
-                                      {comment.userName || comment.user || "Unknown User"} •{" "}
-                                      {new Date(comment.timestamp).toLocaleString()}
+                                      {comment.userName || comment.user || "Unknown User"}{" "}
+                                      • {new Date(comment.timestamp).toLocaleString()}
                                     </p>
                                     {comment.profileImage && (
                                       <img
@@ -1534,7 +1700,9 @@ const AdmintaskPage = () => {
                             .slice(0, showFullLog ? viewTask.activityLogs.length : 1)
                             .map((log, index) => (
                               <div key={index} className="mb-2 last:mb-0">
-                                <p className="text-gray-700">{log.message || "No message"}</p>
+                                <p className="text-gray-700">
+                                  {log.message || "No message"}
+                                </p>
                                 <p className="text-xs text-gray-400">
                                   {log.user || "Unknown User"} •{" "}
                                   {new Date(log.timestamp || Date.now()).toLocaleString()}
@@ -1542,17 +1710,20 @@ const AdmintaskPage = () => {
                               </div>
                             ))
                         ) : (
-                          <p className="text-gray-400 text-sm">No activity logs yet.</p>
+                          <p className="text-gray-400 text-sm">
+                            No activity logs yet.
+                          </p>
                         )}
-                        {viewTask.activityLogs && viewTask.activityLogs.length > 1 && (
-                          <button
-                            onClick={() => setShowFullLog(!showFullLog)}
-                            className="mt-2 text-blue-600 text-sm hover:underline"
-                            disabled={isLoading}
-                          >
-                            {showFullLog ? "Hide" : "Show More"}
-                          </button>
-                        )}
+                        {viewTask.activityLogs &&
+                          viewTask.activityLogs.length > 1 && (
+                            <button
+                              onClick={() => setShowFullLog(!showFullLog)}
+                              className="mt-2 text-blue-600 text-sm hover:underline"
+                              disabled={isLoading}
+                            >
+                              {showFullLog ? "Hide" : "Show More"}
+                            </button>
+                          )}
                       </div>
                     </div>
 
@@ -1595,7 +1766,9 @@ const AdmintaskPage = () => {
                       </button>
                     </div>
                     <p className="text-gray-700 mb-4 text-sm">
-                      Are you sure you want to delete the task "{taskToDelete.taskName}" (Task ID: {taskToDelete.taskId})? This action cannot be undone.
+                      Are you sure you want to delete the task "
+                      {taskToDelete.taskName}" (Task ID: {taskToDelete.taskId})?
+                      This action cannot be undone.
                     </p>
                     <div className="flex justify-end space-x-4">
                       <button

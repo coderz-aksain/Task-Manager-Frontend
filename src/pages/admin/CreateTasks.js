@@ -129,7 +129,7 @@ function CreateTasks({ onSubmit, editTask, onCancel }) {
     formDataToSend.append('remark', formData.remark);
     formData.attachments.forEach((file, index) => {
       if (file instanceof File) {
-        formDataToSend.append('files', file);
+        formDataToSend.append('file', file);
       }
     });
 

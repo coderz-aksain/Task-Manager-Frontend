@@ -298,7 +298,7 @@ const AdmintaskPage = () => {
     formDataToSend.append("assignedDateTime", assignedDateTime);
     selectedFiles.forEach((file, index) => {
       if (file instanceof File) {
-        formDataToSend.append("files", file);
+        formDataToSend.append("file", file);
       } else {
         console.error(`Invalid file at index ${index}:`, file);
       }
@@ -391,16 +391,29 @@ const AdmintaskPage = () => {
     }
   };
 
+  // const handleEditTask = (task) => {
+  //   setFormData({
+  //     ...task,
+  //     dueDate: task.dueDate.split("/").reverse().join("-"),
+  //     assignedTo: task.assignedTo,
+  //     errors: {},
+  //   });
+  //   setEditId(task._id);
+  //   setIsModalOpen(true);
+  // };
+
+
   const handleEditTask = (task) => {
-    setFormData({
-      ...task,
-      dueDate: task.dueDate.split("/").reverse().join("-"),
-      assignedTo: task.assignedTo,
-      errors: {},
-    });
-    setEditId(task._id);
-    setIsModalOpen(true);
-  };
+  setFormData({
+    ...task,
+    dueDate: task.dueDate.split("/").reverse().join("-"),
+    assignedTo: task.assignedTo,
+    errors: {},
+    fileUrls: task.fileUrls.filter(url => typeof url === 'string' && url.startsWith('http')), // Filter valid URLs
+  });
+  setEditId(task._id);
+  setIsModalOpen(true);
+};
 
   const handleDeleteTask = async (taskId) => {
     setIsLoading(true);

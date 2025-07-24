@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Plus, X, Upload } from 'lucide-react';
 import Header from '../../components/common/Header';
 import Sidebar from '../../components/common/Sidebar';
+import { useNavigate } from 'react-router-dom';
 
 function CreateTasksEmployee({ onSubmit, editTask, onCancel }) {
   const [formData, setFormData] = useState({
@@ -15,16 +16,19 @@ function CreateTasksEmployee({ onSubmit, editTask, onCancel }) {
     assignedTo: '', // Hidden in UI but kept in state for reference
   });
 
-  const [newAttachment, setNewAttachment] = useState('');
   const [showSidebar, setShowSidebar] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isDragActive, setIsDragActive] = useState(false);
+  const navigate = useNavigate();
   const fileInputRef = useRef(null);
+  const dropZoneRef = useRef(null);
+  const dateInputRef = useRef(null);
 
   // Set assignedTo from localStorage on mount
   useEffect(() => {
     const token = localStorage.getItem('token');
-    const user = JSON.parse(localStorage.getItem('user'));
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
     if (token) {
       console.log('Token:', token);
     }
@@ -38,6 +42,52 @@ function CreateTasksEmployee({ onSubmit, editTask, onCancel }) {
     }
   }, []);
 
+  // Handle drag-and-drop events
+  useEffect(() => {
+    const dropZone = dropZoneRef.current;
+    if (!dropZone) return;
+
+    const handleDragOver = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDragActive(true);
+    };
+
+    const handleDragEnter = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDragActive(true);
+    };
+
+    const handleDragLeave = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDragActive(false);
+    };
+
+    const handleDrop = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDragActive(false);
+      const files = Array.from(e.dataTransfer.files);
+      if (files.length) {
+        handleAttachmentAdd(files);
+      }
+    };
+
+    dropZone.addEventListener('dragover', handleDragOver);
+    dropZone.addEventListener('dragenter', handleDragEnter);
+    dropZone.addEventListener('dragleave', handleDragLeave);
+    dropZone.addEventListener('drop', handleDrop);
+
+    return () => {
+      dropZone.removeEventListener('dragover', handleDragOver);
+      dropZone.removeEventListener('dragenter', handleDragEnter);
+      dropZone.removeEventListener('dragleave', handleDragLeave);
+      dropZone.removeEventListener('drop', handleDrop);
+    };
+  }, []);
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -46,21 +96,22 @@ function CreateTasksEmployee({ onSubmit, editTask, onCancel }) {
     }));
   };
 
-  const handleAttachmentAdd = (e) => {
-    if (e.target.files) {
-      const files = Array.from(e.target.files);
-      console.log('Files captured in handleAttachmentAdd:', files);
-      const fileNames = files.map(file => file.name);
-      setFormData(prev => ({
-        ...prev,
-        attachments: [...prev.attachments, ...fileNames]
-      }));
-    } else if (newAttachment.trim()) {
-      setFormData(prev => ({
-        ...prev,
-        attachments: [...prev.attachments, newAttachment.trim()]
-      }));
-      setNewAttachment('');
+  const handleAttachmentAdd = (files) => {
+    if (!files || !Array.isArray(files)) {
+      console.warn('No valid files provided to handleAttachmentAdd');
+      return;
+    }
+    const fileNames = files.map(file => file.name);
+    console.log('Files captured in handleAttachmentAdd:', files);
+    setFormData(prev => ({
+      ...prev,
+      attachments: [...prev.attachments, ...fileNames]
+    }));
+    // Update fileInputRef for submission
+    if (fileInputRef.current) {
+      const dataTransfer = new DataTransfer();
+      files.forEach(file => dataTransfer.items.add(file));
+      fileInputRef.current.files = dataTransfer.files;
     }
   };
 
@@ -69,6 +120,34 @@ function CreateTasksEmployee({ onSubmit, editTask, onCancel }) {
       ...prev,
       attachments: prev.attachments.filter((_, i) => i !== index)
     }));
+    // Update fileInputRef to reflect removed files
+    if (fileInputRef.current) {
+      const remainingFiles = formData.attachments.filter((_, i) => i !== index);
+      const dataTransfer = new DataTransfer();
+      Array.from(fileInputRef.current.files || [])
+        .filter(file => remainingFiles.includes(file.name))
+        .forEach(file => dataTransfer.items.add(file));
+      fileInputRef.current.files = dataTransfer.files;
+    }
+  };
+
+  const handleFileInputChange = (e) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length) {
+      handleAttachmentAdd(files);
+    }
+  };
+
+  const handleDropZoneClick = () => {
+    if (fileInputRef.current && !loading) {
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleDateClick = () => {
+    if (dateInputRef.current && !loading) {
+      dateInputRef.current.focus();
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -82,7 +161,7 @@ function CreateTasksEmployee({ onSubmit, editTask, onCancel }) {
       return;
     }
 
-    const [year, month, day] = formData.dueDate.split('-');
+    const [year, month, day] = formData.dueDate.split('-') || ['', '', ''];
     const formattedDueDate = `${day.padStart(2, '0')}-${month.padStart(2, '0')}-${year}`; // DD-MM-YYYY
 
     try {
@@ -108,8 +187,13 @@ function CreateTasksEmployee({ onSubmit, editTask, onCancel }) {
         console.log(`${key}: ${value instanceof File ? value.name : value}`);
       }
 
-      const response = await fetch('https://task-manager-backend-vqen.onrender.com/api/tasks', {
-        method: 'POST',
+      const url = editTask
+        ? `https://task-manager-backend-vqen.onrender.com/api/tasks/update/${editTask.taskId}`
+        : 'https://task-manager-backend-vqen.onrender.com/api/tasks';
+      const method = editTask ? 'PATCH' : 'POST';
+
+      const response = await fetch(url, {
+        method,
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -130,11 +214,14 @@ function CreateTasksEmployee({ onSubmit, editTask, onCancel }) {
       }
 
       if (!response.ok) {
-        throw new Error(data.message || 'Failed to create task');
+        throw new Error(data.message || (editTask ? 'Failed to update task' : 'Failed to create task'));
       }
 
-      setToastMessage('Task created successfully!');
-      setTimeout(() => setToastMessage(''), 3000);
+      setToastMessage(editTask ? 'Task updated successfully!' : 'Task created successfully!');
+      setTimeout(() => {
+        setToastMessage('');
+        navigate('/employee/tasks');
+      }, 3000);
       if (onSubmit) onSubmit(data);
       if (onCancel) onCancel();
 
@@ -148,10 +235,9 @@ function CreateTasksEmployee({ onSubmit, editTask, onCancel }) {
         attachments: [],
         assignedTo: formData.assignedTo,
       });
-      setNewAttachment('');
       if (fileInputRef.current) fileInputRef.current.value = '';
     } catch (err) {
-      console.error('Error creating task:', err.message);
+      console.error('Error processing task:', err.message);
       setToastMessage(`Error: ${err.message}`);
       setTimeout(() => setToastMessage(''), 3000);
     } finally {
@@ -182,7 +268,7 @@ function CreateTasksEmployee({ onSubmit, editTask, onCancel }) {
                 {editTask ? 'Edit Task' : 'Create New Task'}
               </h2>
               {onCancel && (
-                <button onClick={onCancel} className="text-gray-500 hover:text-gray-700">
+                <button onClick={onCancel} className="text-gray-500 hover:text-gray-700" disabled={loading}>
                   <X className="w-5 h-5" />
                 </button>
               )}
@@ -199,6 +285,7 @@ function CreateTasksEmployee({ onSubmit, editTask, onCancel }) {
                   required
                   className="w-full px-3 py-2 border border-gray-300 rounded-md"
                   placeholder="Enter task name"
+                  disabled={loading}
                 />
               </div>
 
@@ -212,6 +299,7 @@ function CreateTasksEmployee({ onSubmit, editTask, onCancel }) {
                   required
                   className="w-full px-3 py-2 border border-gray-300 rounded-md"
                   placeholder="Enter task description"
+                  disabled={loading}
                 />
               </div>
 
@@ -224,6 +312,7 @@ function CreateTasksEmployee({ onSubmit, editTask, onCancel }) {
                     onChange={handleInputChange}
                     required
                     className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    disabled={loading}
                   >
                     <option value="General">General</option>
                     <option value="Auction">Auction</option>
@@ -238,13 +327,14 @@ function CreateTasksEmployee({ onSubmit, editTask, onCancel }) {
                     onChange={handleInputChange}
                     required
                     className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    disabled={loading}
                   >
                     <option value="High">High</option>
                     <option value="Medium">Medium</option>
                     <option value="Low">Low</option>
                   </select>
                 </div>
-                <div>
+                <div onClick={handleDateClick}>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Due Date *</label>
                   <input
                     type="date"
@@ -252,7 +342,9 @@ function CreateTasksEmployee({ onSubmit, editTask, onCancel }) {
                     value={formData.dueDate}
                     onChange={handleInputChange}
                     required
+                    ref={dateInputRef}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    disabled={loading}
                   />
                 </div>
               </div>
@@ -267,38 +359,33 @@ function CreateTasksEmployee({ onSubmit, editTask, onCancel }) {
                   required
                   className="w-full px-3 py-2 border border-gray-300 rounded-md"
                   placeholder="Enter remark"
+                  disabled={loading}
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">File Attachments</label>
-                <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-2 space-y-2 sm:space-y-0 mb-4">
-                  <label className="px-4 py-2 bg-blue-100 text-blue-700 border border-blue-300 rounded-md cursor-pointer hover:bg-blue-200 text-sm inline-flex items-center space-x-2">
-                    <Upload className="w-4 h-4" />
-                    <span>Choose Files</span>
-                    <input
-                      type="file"
-                      multiple
-                      ref={fileInputRef}
-                      onChange={handleAttachmentAdd}
-                      className="hidden"
-                    />
-                  </label>
+                <div
+                  ref={dropZoneRef}
+                  onClick={handleDropZoneClick}
+                  className={`border-2 border-dashed rounded-md p-6 text-center cursor-pointer ${
+                    isDragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-300 bg-gray-50'
+                  }`}
+                >
                   <input
-                    type="text"
-                    value={newAttachment}
-                    onChange={(e) => setNewAttachment(e.target.value)}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md"
-                    placeholder="Enter file name or URL"
+                    type="file"
+                    multiple
+                    ref={fileInputRef}
+                    onChange={handleFileInputChange}
+                    className="hidden"
+                    disabled={loading}
                   />
-                  <button
-                    type="button"
-                    onClick={() => handleAttachmentAdd({ target: { files: null } })}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center space-x-2"
-                  >
-                    <Plus className="w-4 h-4" />
-                    <span>Add</span>
-                  </button>
+                  <Upload className="w-8 h-8 text-gray-500 mx-auto mb-2" />
+                  <p className="text-sm text-gray-600">
+                    {isDragActive
+                      ? 'Drop the files here ...'
+                      : 'Drag and drop files here, or click to select files'}
+                  </p>
                 </div>
 
                 {formData.attachments.length > 0 && (
@@ -313,6 +400,7 @@ function CreateTasksEmployee({ onSubmit, editTask, onCancel }) {
                           type="button"
                           onClick={() => handleAttachmentRemove(index)}
                           className="text-red-500 hover:text-red-700"
+                          disabled={loading}
                         >
                           <X className="w-4 h-4" />
                         </button>
@@ -328,6 +416,7 @@ function CreateTasksEmployee({ onSubmit, editTask, onCancel }) {
                     type="button"
                     onClick={onCancel}
                     className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                    disabled={loading}
                   >
                     Cancel
                   </button>
@@ -335,6 +424,7 @@ function CreateTasksEmployee({ onSubmit, editTask, onCancel }) {
                 <button
                   type="submit"
                   className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center space-x-2"
+                  disabled={loading}
                 >
                   <Plus className="w-4 h-4" />
                   <span>{editTask ? 'Update Task' : 'Create Task'}</span>
@@ -343,7 +433,7 @@ function CreateTasksEmployee({ onSubmit, editTask, onCancel }) {
             </form>
 
             {toastMessage && (
-              <div className="fixed bottom-4 right-4 bg-green-100 text-green-700 px-4 py-2 rounded-md shadow-md">
+              <div className="fixed top-4 right-4 bg-blue-600 text-white px-6 py-3 rounded-md shadow-lg z-50 text-sm max-w-sm">
                 {toastMessage}
               </div>
             )}

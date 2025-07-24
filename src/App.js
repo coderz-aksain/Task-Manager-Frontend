@@ -95,14 +95,29 @@
 import React, { useEffect, useState } from 'react';
 import { BrowserRouter } from 'react-router-dom';
 import AppRoutes from './routes';
+import DashboardDemo from './pages/DashboardDemo';
 
 function App() {
   const [isVerified, setIsVerified] = useState(false);
+  const [showDemo, setShowDemo] = useState(false);
 
   useEffect(() => {
     // No token verification, just set isVerified to true immediately
     setIsVerified(true);
+    
+    // Check if we should show the demo (you can remove this logic)
+    const urlParams = new URLSearchParams(window.location.search);
+    setShowDemo(urlParams.get('demo') === 'true');
   }, []);
+
+  // Show demo dashboard if demo=true in URL
+  if (showDemo) {
+    return (
+      <BrowserRouter>
+        <DashboardDemo />
+      </BrowserRouter>
+    );
+  }
 
   return (
     <div className="App">

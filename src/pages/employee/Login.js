@@ -1,8 +1,11 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "../../components/common/Header";
+import Card from "../../components/ui/Card";
+import Button from "../../components/ui/Button";
+import Input from "../../components/ui/Input";
 import LoginpagaImagemain from "../../assets/images/loginpageimagemain.jpg";
-import { FaEye, FaEyeSlash } from "react-icons/fa";
+import { Eye, EyeOff, Mail, Lock, Key } from "lucide-react";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -207,203 +210,180 @@ const Login = () => {
   return (
     <>
       <Header />
-      <div className="min-h-screen flex flex-col lg:flex-row bg-gradient-to-br from-blue-50 to-blue-100">
+      <div className="min-h-screen flex flex-col lg:flex-row bg-gray-50">
         <div className="flex-1 flex items-center justify-center p-6 lg:p-12">
           <div className="w-full max-w-md space-y-8">
             <div className="text-center">
               <h2
                 ref={headingRef}
-                className="text-3xl font-bold text-blue-900 drop-shadow-md"
+                className="text-3xl font-bold text-gray-900"
               ></h2>
             </div>
-            <div className="w-full max-w-md mx-auto p-8 bg-white bg-opacity-90 backdrop-blur-md rounded-xl shadow-2xl border border-blue-100">
+            <Card className="w-full max-w-md mx-auto p-8">
               <div className="mb-10 text-center">
                 <div className="flex justify-center items-center mb-4">
-                  <div className="text-3xl font-extrabold text-blue-700 flex items-center animate-pulse">
+                  <div className="text-3xl font-extrabold text-blue-600 flex items-center">
                     EMPLOYEE'S PORTAL
                   </div>
                 </div>
-                <h1 className="text-4xl font-bold text-blue-900 mb-3 animate-fade-in drop-shadow-md">
+                <h1 className="text-4xl font-bold text-gray-900 mb-3">
                   Welcome Back!
                 </h1>
-                <p className="text-blue-400 text-lg drop-shadow-md">Sign in to continue</p>
+                <p className="text-gray-600 text-lg">Sign in to continue</p>
               </div>
 
               {isOtpLogin ? (
                 <form className="space-y-6" onSubmit={otpRequested ? handleOtpSubmit : handleOtpRequest}>
-                  <div className="relative group">
-                    <label htmlFor="email" className="block text-sm font-semibold text-blue-900 mb-2">
-                      Email
-                    </label>
-                    <div className="relative">
-                      <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-blue-400">
-                        ✉️
-                      </span>
-                      <input
-                        type="email"
-                        id="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="w-full pl-10 pr-4 py-3 bg-blue-50 border border-blue-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all duration-300 hover:shadow-md text-blue-900"
-                        placeholder="Enter your email"
-                        required
-                      />
-                    </div>
-                  </div>
+                  <Input
+                    label="Email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Enter your email"
+                    icon={Mail}
+                    required
+                  />
 
                   {otpRequested && (
-                    <div className="relative group">
-                      <label htmlFor="otp" className="block text-sm font-semibold text-blue-900 mb-2">
-                        OTP
-                      </label>
-                      <div className="relative">
-                        <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-blue-400">
-                          🔑
-                        </span>
-                        <input
-                          type="text"
-                          id="otp"
-                          value={otp}
-                          onChange={(e) => setOtp(e.target.value)}
-                          className="w-full pl-10 pr-4 py-3 bg-blue-50 border border-blue-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all duration-300 hover:shadow-md text-blue-900"
-                          placeholder="Enter your OTP"
-                          required
-                        />
-                      </div>
-                    </div>
+                    <Input
+                      label="OTP"
+                      type="text"
+                      value={otp}
+                      onChange={(e) => setOtp(e.target.value)}
+                      placeholder="Enter your OTP"
+                      icon={Key}
+                      required
+                    />
                   )}
 
                   {errorMessage && (
-                    <p className="text-red-500 text-sm text-center animate-fade-in">
+                    <p className="text-red-600 text-sm text-center">
                       {errorMessage}
                     </p>
                   )}
 
                   {otpMessage && (
-                    <p className="text-green-600 text-sm text-center animate-fade-in">
+                    <p className="text-green-600 text-sm text-center">
                       {otpMessage}
                     </p>
                   )}
 
                   {loading && (
                     <div className="flex justify-center">
-                      <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+                      <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-600"></div>
                     </div>
                   )}
 
-                  <button
+                  <Button
                     type="submit"
+                    className="w-full"
                     disabled={loading}
-                    className="w-full bg-blue-600 text-white py-3 rounded-xl font-semibold hover:bg-blue-700 transition-all duration-300 disabled:opacity-50 transform hover:scale-105"
+                    loading={loading}
                   >
-                    {loading ? "Loading..." : otpRequested ? "Sign in" : "Send OTP"}
-                  </button>
+                    {otpRequested ? "Sign in" : "Send OTP"}
+                  </Button>
 
                   {otpRequested && (
                     <div className="text-center">
-                      <button
+                      <Button
                         type="button"
+                        variant="ghost"
+                        size="sm"
                         onClick={handleResendOtp}
                         disabled={resendCooldown > 0 || loading}
-                        className={`text-sm ${resendCooldown > 0 || loading ? "text-gray-400" : "text-blue-400 hover:text-blue-600"} transition-colors duration-300 focus:outline-none`}
                       >
                         {resendCooldown > 0 ? `Resend OTP in ${resendCooldown}s` : "Resend OTP"}
-                      </button>
+                      </Button>
                     </div>
                   )}
                 </form>
               ) : (
                 <form className="space-y-6" onSubmit={handlePasswordSubmit}>
-                  <div className="relative group">
-                    <label htmlFor="email" className="block text-sm font-semibold text-blue-900 mb-2">
-                      Email
-                    </label>
-                    <div className="relative">
-                      <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-blue-400">
-                        ✉️
-                      </span>
-                      <input
-                        type="email"
-                        id="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="w-full pl-10 pr-4 py-3 bg-blue-50 border border-blue-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all duration-300 hover:shadow-md text-blue-900"
-                        placeholder="Enter your email"
-                        required
-                      />
-                    </div>
-                  </div>
+                  <Input
+                    label="Email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Enter your email"
+                    icon={Mail}
+                    required
+                  />
 
                   <div className="relative group">
-                    <label htmlFor="password" className="block text-sm font-semibold text-blue-900 mb-2">
+                    <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
                       Password
                     </label>
                     <div className="relative">
-                      <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-blue-400">
-                        🔒
-                      </span>
+                      <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                        <Lock className="h-4 w-4 text-gray-400" />
+                      </div>
                       <input
                         type={showPassword ? "text" : "password"}
                         id="password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        className="w-full pl-10 pr-10 py-3 bg-blue-50 border border-blue-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all duration-300 hover:shadow-md text-blue-900"
+                        className="block w-full rounded-lg border border-gray-300 bg-white pl-10 pr-10 py-2.5 text-sm text-gray-900 placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                         placeholder="Enter your password"
                         required
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute inset-y-0 right-0 flex items-center pr-3 text-blue-400 hover:text-blue-600 focus:outline-none"
+                        className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 focus:outline-none"
                       >
-                        {showPassword ? <FaEyeSlash className="w-5 h-5" /> : <FaEye className="w-5 h-5" />}
+                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
                   </div>
 
                   <div className="flex justify-between">
-                    <button
+                    <Button
                       type="button"
+                      variant="ghost"
+                      size="sm"
                       onClick={() => setShowForgotModal(true)}
-                      className="text-sm text-blue-400 hover:text-blue-600 transition-colors duration-300 focus:outline-none"
                     >
                       Forgot password?
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       type="button"
+                      variant="ghost"
+                      size="sm"
                       onClick={() => setIsOtpLogin(true)}
-                      className="text-sm text-blue-400 hover:text-blue-600 transition-colors duration-300 focus:outline-none"
                     >
                       Login with OTP
-                    </button>
+                    </Button>
                   </div>
 
                   {errorMessage && (
-                    <p className="text-red-500 text-sm text-center animate-fade-in">
+                    <p className="text-red-600 text-sm text-center">
                       {errorMessage}
                     </p>
                   )}
 
                   {loading && (
                     <div className="flex justify-center">
-                      <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+                      <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-600"></div>
                     </div>
                   )}
 
-                  <button
+                  <Button
                     type="submit"
+                    className="w-full"
                     disabled={loading}
-                    className="w-full bg-blue-600 text-white py-3 rounded-xl font-semibold hover:bg-blue-700 transition-all duration-300 disabled:opacity-50 transform hover:scale-105"
+                    loading={loading}
                   >
-                    {loading ? "Loading..." : "Sign in"}
-                  </button>
+                    Sign in
+                  </Button>
                 </form>
               )}
 
               {isOtpLogin && (
                 <div className="text-center mt-4">
-                  <button
+                  <Button
                     type="button"
+                    variant="ghost"
+                    size="sm"
                     onClick={() => {
                       setIsOtpLogin(false);
                       setOtpRequested(false);
@@ -413,13 +393,12 @@ const Login = () => {
                       setOtpMessage("");
                       setErrorMessage("");
                     }}
-                    className="text-sm text-blue-400 hover:text-blue-600 transition-colors duration-300 focus:outline-none"
                   >
                     Back to Password Login
-                  </button>
+                  </Button>
                 </div>
               )}
-            </div>
+            </Card>
           </div>
         </div>
 
@@ -435,43 +414,42 @@ const Login = () => {
 
         {showForgotModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-            <div className="bg-white bg-opacity-90 backdrop-blur-md rounded-xl shadow-2xl p-8 w-full max-w-sm animate-fade-in-up relative border border-blue-200">
-              <button
-                className="absolute top-2 right-3 text-blue-700 hover:text-blue-900 text-2xl font-bold focus:outline-none"
-                onClick={() => setShowForgotModal(false)}
-              >
-                ×
-              </button>
-              <h2 className="text-2xl font-bold mb-4 text-center text-blue-900">Forgot Password</h2>
-              <form onSubmit={handleForgotSubmit} className="space-y-6">
-                <div>
-                  <label htmlFor="forgot-email" className="block text-sm font-semibold text-blue-900 mb-2">
-                    Enter your registered email
-                  </label>
-                  <input
-                    type="email"
-                    id="forgot-email"
-                    value={forgotEmail}
-                    onChange={(e) => setForgotEmail(e.target.value)}
-                    className="w-full px-4 py-3 bg-blue-50 border border-blue-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all duration-300 text-blue-900"
-                    placeholder="Email"
-                    required
-                  />
-                </div>
-                <button
-                  type="submit"
-                  className="w-full bg-blue-600 text-white py-2 rounded-xl font-semibold hover:bg-blue-700 transition-all duration-300"
-                  disabled={forgotSubmitted || loading}
+            <Card className="w-full max-w-sm p-8 relative">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-gray-900">Forgot Password</h2>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowForgotModal(false)}
                 >
-                  {loading ? "Loading..." : forgotSubmitted ? "Submitted!" : "Submit"}
-                </button>
+                  ×
+                </Button>
+              </div>
+              <form onSubmit={handleForgotSubmit} className="space-y-6">
+                <Input
+                  label="Enter your registered email"
+                  type="email"
+                  value={forgotEmail}
+                  onChange={(e) => setForgotEmail(e.target.value)}
+                  placeholder="Email"
+                  icon={Mail}
+                  required
+                />
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={forgotSubmitted || loading}
+                  loading={loading}
+                >
+                  {forgotSubmitted ? "Submitted!" : "Submit"}
+                </Button>
                 {forgotSubmitted && (
-                  <p className="text-green-600 text-sm text-center mt-4 animate-fade-in">
+                  <p className="text-green-600 text-sm text-center mt-4">
                     If this email is registered, you'll receive reset instructions.
                   </p>
                 )}
               </form>
-            </div>
+            </Card>
           </div>
         )}
       </div>

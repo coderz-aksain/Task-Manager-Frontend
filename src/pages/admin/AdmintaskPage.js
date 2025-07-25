@@ -1925,7 +1925,7 @@ const AdmintaskPage = () => {
                         >
                           All Attachments
                         </button>
-                        {/* <button
+                        <button
                           onClick={() => setActiveTab("recent")}
                           className={`px-4 py-2 rounded-t-md text-sm ${
                             activeTab === "recent"
@@ -1935,7 +1935,7 @@ const AdmintaskPage = () => {
                           disabled={isLoading}
                         >
                           Recent Attachments
-                        </button> */}
+                        </button>
                       </div>
                       <div className="p-4 bg-gray-50 rounded-b-md">
                         {activeTab === "all" &&
@@ -2263,8 +2263,8 @@ const AdmintaskPage = () => {
                   </div>
                 </div>
               )}
-              </div>
             </div>
+          </div>
           </main>
         </div>
       </div>

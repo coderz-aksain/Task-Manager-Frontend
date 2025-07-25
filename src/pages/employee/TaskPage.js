@@ -5822,8 +5822,8 @@ const TaskPage = () => {
                 </div>
               </div>
 
-              <div className="hidden lg:block overflow-x-auto  max-h-[600px]">
-                <table className="w-full text-sm  h-[800px]" >
+              <div className="hidden lg:block overflow-x-auto  ">
+                <table className="w-full text-sm " >
                   <thead className="sticky top-0 bg-white z-10 border-b border-gray-200">
                     <tr>
                       <th className="text-left py-3 px-2 sm:px-4 font-medium text-gray-700">

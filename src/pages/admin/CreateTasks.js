@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Plus, X, Upload, Calendar } from 'lucide-react';
 import AdminSidebar from '../../components/common/AdminSidebar';
@@ -25,6 +24,7 @@ function CreateTasks({ onSubmit, editTask, onCancel }) {
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false); // Loader state
   const [showToast, setShowToast] = useState(false); // Custom toast state
+  const [dropActive, setDropActive] = useState(false); // Dropzone highlight state
   const token = localStorage.getItem('token') || '';
   const navigate = useNavigate();
 
@@ -109,6 +109,40 @@ function CreateTasks({ onSubmit, editTask, onCancel }) {
       ...prev,
       attachments: prev.attachments.filter((_, i) => i !== index)
     }));
+  };
+
+  // Dropzone handlers
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setDropActive(false);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const files = Array.from(e.dataTransfer.files);
+      setFormData(prev => ({
+        ...prev,
+        attachments: [...prev.attachments, ...files]
+      }));
+    }
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    setDropActive(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    setDropActive(false);
+  };
+
+  const handleAttachmentInput = (e) => {
+    if (e.target.files) {
+      const files = Array.from(e.target.files);
+      setFormData(prev => ({
+        ...prev,
+        attachments: [...prev.attachments, ...files]
+      }));
+      e.target.value = '';
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -327,34 +361,31 @@ function CreateTasks({ onSubmit, editTask, onCancel }) {
               {/* File Attachments */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">File Attachments</label>
-                <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-2 space-y-2 sm:space-y-0 mb-4">
-                  <label className="px-4 py-2 bg-blue-100 text-blue-700 border border-blue-300 rounded-md cursor-pointer hover:bg-blue-200 text-sm inline-flex items-center space-x-2">
-                    <Upload className="w-4 h-4" />
-                    <span>Choose Files</span>
-                    <input
-                      type="file"
-                      multiple
-                      onChange={handleAttachmentAdd}
-                      className="hidden"
-                    />
-                  </label>
+                <div
+                  className={`flex flex-col items-center justify-center border-2 border-dashed rounded-md transition-colors duration-200
+                    ${dropActive ? 'border-blue-500 bg-blue-50' : 'border-gray-300 bg-gray-50'}
+                    min-h-[100px] cursor-pointer relative`}
+                  onDrop={handleDrop}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onClick={() => document.getElementById('attachment-input').click()}
+                  tabIndex={0}
+                  onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') document.getElementById('attachment-input').click(); }}
+                  style={{ outline: 'none' }}
+                >
                   <input
-                    type="text"
-                    value={newAttachment}
-                    onChange={(e) => setNewAttachment(e.target.value)}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md"
-                    placeholder="Enter file name or URL"
+                    id="attachment-input"
+                    type="file"
+                    multiple
+                    onChange={handleAttachmentInput}
+                    className="hidden"
                   />
-                  <button
-                    type="button"
-                    onClick={() => handleAttachmentAdd({ target: { files: null } })}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center space-x-2"
-                  >
-                    <Plus className="w-4 h-4" />
-                    <span>Add</span>
-                  </button>
+                  <Upload className="w-8 h-8 text-blue-400 mb-2" />
+                  <span className="text-sm text-gray-600 mb-1">
+                    Drag & drop files here, or <span className="text-blue-600 underline">click to select</span>
+                  </span>
+                  <span className="text-xs text-gray-400">(You can select multiple files)</span>
                 </div>
-
                 {formData.attachments.length > 0 && (
                   <div className="mt-2 space-y-2">
                     {formData.attachments.map((attachment, index) => (

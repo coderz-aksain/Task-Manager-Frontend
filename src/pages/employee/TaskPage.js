@@ -6510,9 +6510,9 @@ const TaskPage = () => {
                     </div>
 
                     <div className="mb-6">
-                      <p className="text-sm text-gray-500 mb-2">Attachments</p>
+                      <p className="text-sm text-black mb-2">Attachments</p>
                       <div className="flex space-x-2 mb-4">
-                        <button
+                        {/* <button
                           onClick={() => setActiveTab("all")}
                           className={`px-4 py-2 rounded-t-md text-sm ${
                             activeTab === "all"
@@ -6522,8 +6522,8 @@ const TaskPage = () => {
                           disabled={isLoading}
                         >
                           All Attachments
-                        </button>
-                        <button
+                        </button> */}
+                        {/* <button
                           onClick={() => setActiveTab("recent")}
                           className={`px-4 py-2 rounded-t-md text-sm ${
                             activeTab === "recent"
@@ -6533,7 +6533,7 @@ const TaskPage = () => {
                           disabled={isLoading}
                         >
                           Recent Attachments
-                        </button>
+                        </button> */}
                       </div>
                       <div className="p-4 bg-gray-50 rounded-b-md">
                         {activeTab === "all" && viewTask.fileUrls?.length > 0 ? (

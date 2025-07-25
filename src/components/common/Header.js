@@ -23,7 +23,7 @@ const Header = ({ isLoggedIn = false, onToggleSidebar }) => {
           <img
             src={Seveprocurelogo}
             alt="7procure Logo"
-            className="h-8 w-auto sm:h-10"
+            className="h-24 w-24 "
           />
         </div>
 

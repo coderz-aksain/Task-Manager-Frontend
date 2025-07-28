@@ -27,7 +27,16 @@ const statusOptions = [
   { value: "Hold", label: "Hold" },
   { value: "Complete", label: "Complete" },
   { value: "Archived", label: "Archived" },
+  { value: "Pending", label: "Pending" },
 ];
+
+// Helper to get display status (Pending if overdue and not complete)
+const getDisplayStatus = (task) => {
+  if (isOverdue(task.dueDate, task.status) && task.status !== "Complete") {
+    return "Pending";
+  }
+  return task.status;
+};
 
 const initialForm = {
   _id: "",
@@ -347,8 +356,21 @@ const AdmintaskPage = () => {
   };
 
   const handleSubmit = async (e, isDraft = false) => {
-    e.preventDefault();
-    const errors = validateForm();
+  e.preventDefault();
+  const errors = validateForm();
+
+  // Additional validation for overdue tasks
+  const isEditing = !!editId;
+  const wasPending = isEditing && isOverdue(formData.dueDate, formData.status) && getDisplayStatus(formData) === "Pending";
+  const statusChanged = isEditing && formData.status !== "Pending" && formData.status !== getDisplayStatus(formData);
+
+  if (
+    wasPending &&
+    statusChanged &&
+    (!formData.dueDate || new Date(formData.dueDate) <= new Date())
+  ) {
+    errors.dueDate = "To update the status of an overdue task, please select a new future due date.";
+  }
     if (Object.keys(errors).length > 0) {
       setFormData((prev) => ({ ...prev, errors }));
       return;
@@ -734,6 +756,7 @@ const AdmintaskPage = () => {
   };
 
   const filteredTasks = tasks.filter((task) => {
+    const displayStatus = getDisplayStatus(task);
     const matchesSearch =
       (typeof task.taskName === "string"
         ? task.taskName.toLowerCase().includes(searchTerm.toLowerCase())
@@ -742,7 +765,7 @@ const AdmintaskPage = () => {
         ? task.description.toLowerCase().includes(searchTerm.toLowerCase())
         : false);
     const matchesStatus =
-      filterStatus === "all" || task.status === filterStatus;
+      filterStatus === "all" || displayStatus === filterStatus;
     const matchesPriority =
       filterPriority === "all" || task.priority === filterPriority;
     const matchesTaskType =
@@ -796,6 +819,8 @@ const AdmintaskPage = () => {
         return "bg-orange-100 text-orange-800";
       case "Archived":
         return "bg-gray-100 text-gray-800";
+      case "Pending":
+        return "bg-red-100 text-red-800";
       default:
         return "bg-gray-100 text-gray-800";
     }
@@ -1101,28 +1126,28 @@ const AdmintaskPage = () => {
                               Task ID
                             </th>
                             <th className="text-center py-3 px-6 sm:px-8 font-medium text-gray-700 whitespace-nowrap">
-                              Assigned Date
-                            </th>
-                            <th className="text-center py-3 px-6 sm:px-8 font-medium text-gray-700 whitespace-nowrap">
                               Task Name
-                            </th>
-                            <th className="text-center py-3 px-6 sm:px-8 font-medium text-gray-700 whitespace-nowrap">
-                              Status
-                            </th>
-                            <th className="text-center py-3 px-6 sm:px-8 font-medium text-gray-700 whitespace-nowrap">
-                              Due Date
-                            </th>
-                            <th className="text-center py-3 px-6 sm:px-8 font-medium text-gray-700 whitespace-nowrap">
-                              Assigned By
-                            </th>
-                            <th className="text-center py-3 px-6 sm:px-8 font-medium text-gray-700 whitespace-nowrap">
-                              Assigned To
                             </th>
                             <th className="text-center py-3 px-6 sm:px-8 font-medium text-gray-700 whitespace-nowrap">
                               Task Type
                             </th>
                             <th className="text-center py-3 px-6 sm:px-8 font-medium text-gray-700 whitespace-nowrap">
                               Priority
+                            </th>
+                            <th className="text-center py-3 px-6 sm:px-8 font-medium text-gray-700 whitespace-nowrap">
+                              Status
+                            </th>
+                            <th className="text-center py-3 px-6 sm:px-8 font-medium text-gray-700 whitespace-nowrap">
+                              Assigned To
+                            </th>
+                            <th className="text-center py-3 px-6 sm:px-8 font-medium text-gray-700 whitespace-nowrap">
+                              Assigned By
+                            </th>
+                            <th className="text-center py-3 px-6 sm:px-8 font-medium text-gray-700 whitespace-nowrap">
+                              Assigned Date
+                            </th>
+                            <th className="text-center py-3 px-6 sm:px-8 font-medium text-gray-700 whitespace-nowrap">
+                              Due Date
                             </th>
                             <th className="text-center py-3 px-6 sm:px-8 font-medium text-gray-700 whitespace-nowrap">
                               Actions
@@ -1142,13 +1167,6 @@ const AdmintaskPage = () => {
                               <td className="py-4 px-6 sm:px-8 text-gray-900 text-center">
                                 {task.taskId}
                               </td>
-                              <td className="py-4 px-6 sm:px-8 text-gray-600 text-center">
-                                {task.assignedDateTime
-                                  ? new Date(
-                                      task.assignedDateTime
-                                    ).toLocaleDateString()
-                                  : "N/A"}
-                              </td>
                               <td className="py-4 px-6 sm:px-8 text-center">
                                 <div className="font-medium text-gray-900">
                                   {task.taskName}
@@ -1156,34 +1174,30 @@ const AdmintaskPage = () => {
                               </td>
                               <td className="py-4 px-6 sm:px-8 text-center">
                                 <span
-                                  className={`px-2 py-1 min-w-[90px] text-center whitespace-nowrap rounded-full text-xs font-medium ${getStatusColor(
-                                    task.status
+                                  className={`px-2 py-1 rounded-full text-xs font-medium ${getTaskTypeColor(
+                                    task.taskType
                                   )}`}
                                 >
-                                  {task.status}
+                                  {task.taskType}
                                 </span>
                               </td>
-                              <td className="py-4 px-6 sm:px-8 text-gray-600 text-center">
-                                {task.dueDate
-                                  ? new Date(task.dueDate).toLocaleDateString()
-                                  : "N/A"}
-                                {task.dueTime !== "N/A" && ` ${task.dueTime}`}
-                                {isOverdue(task.dueDate, task.status) && (
-                                  <AlertCircle className="inline ml-2 text-red-600 w-4 h-4" />
-                                )}
+                              <td className="py-4 px-6 sm:px-8 text-center">
+                                <span
+                                  className={`px-2 py-1 rounded-full text-sm font-medium ${getPriorityColor(
+                                    task.priority
+                                  )}`}
+                                >
+                                  {task.priority}
+                                </span>
                               </td>
-                              <td className="py-4 px-6 sm:px-8 text-gray-600 text-center">
-                                <div className="relative group">
-                                  <span
-                                    className="inline-flex w-6 h-6 bg-blue-100 rounded-full items-center justify-center text-blue-600 text-xs font-medium"
-                                    title={task.assignedBy}
-                                  >
-                                    {getInitials(task.assignedBy)}
-                                  </span>
-                                  <span className="absolute left-1/2 transform -translate-x-1/2 top-8 bg-gray-800 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                                    {task.assignedBy}
-                                  </span>
-                                </div>
+                              <td className="py-4 px-6 sm:px-8 text-center">
+                                <span
+                                  className={`px-2 py-1 min-w-[90px] text-center whitespace-nowrap rounded-full text-xs font-medium ${getStatusColor(
+                                    getDisplayStatus(task)
+                                  )}`}
+                                >
+                                  {getDisplayStatus(task)}
+                                </span>
                               </td>
                               <td className="py-4 px-6 sm:px-8 text-gray-600 text-center">
                                 <span className="flex -space-x-1 justify-center">
@@ -1217,23 +1231,34 @@ const AdmintaskPage = () => {
                                   )}
                                 </span>
                               </td>
-                              <td className="py-4 px-6 sm:px-8 text-center">
-                                <span
-                                  className={`px-2 py-1 rounded-full text-xs font-medium ${getTaskTypeColor(
-                                    task.taskType
-                                  )}`}
-                                >
-                                  {task.taskType}
-                                </span>
+                              <td className="py-4 px-6 sm:px-8 text-gray-600 text-center">
+                                <div className="relative group">
+                                  <span
+                                    className="inline-flex w-6 h-6 bg-blue-100 rounded-full items-center justify-center text-blue-600 text-xs font-medium"
+                                    title={task.assignedBy}
+                                  >
+                                    {getInitials(task.assignedBy)}
+                                  </span>
+                                  <span className="absolute left-1/2 transform -translate-x-1/2 top-8 bg-gray-800 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                                    {task.assignedBy}
+                                  </span>
+                                </div>
                               </td>
-                              <td className="py-4 px-6 sm:px-8 text-center">
-                                <span
-                                  className={`px-2 py-1 rounded-full text-sm font-medium ${getPriorityColor(
-                                    task.priority
-                                  )}`}
-                                >
-                                  {task.priority}
-                                </span>
+                              <td className="py-4 px-6 sm:px-8 text-gray-600 text-center">
+                                {task.assignedDateTime
+                                  ? new Date(
+                                      task.assignedDateTime
+                                    ).toLocaleDateString()
+                                  : "N/A"}
+                              </td>
+                              <td className="py-4 px-6 sm:px-8 text-gray-600 text-center">
+                                {task.dueDate
+                                  ? new Date(task.dueDate).toLocaleDateString()
+                                  : "N/A"}
+                                {task.dueTime !== "N/A" && ` ${task.dueTime}`}
+                                {isOverdue(task.dueDate, task.status) && (
+                                  <AlertCircle className="inline ml-2 text-red-600 w-4 h-4" />
+                                )}
                               </td>
                               <td className="py-4 px-6 sm:px-8 text-center">
                                 <div className="flex items-center justify-center space-x-2">
@@ -1370,10 +1395,10 @@ const AdmintaskPage = () => {
                           <span className="font-semibold">Status:</span>
                           <span
                             className={`ml-1 px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
-                              task.status
+                              getDisplayStatus(task)
                             )}`}
                           >
-                            {task.status}
+                            {getDisplayStatus(task)}
                           </span>
                         </div>
                         <div className="text-center">
@@ -1690,11 +1715,18 @@ const AdmintaskPage = () => {
                             <label className="block text-sm font-medium text-gray-700 mb-2">
                               Status
                             </label>
+                            {/* Show badge for computed status (including Pending) */}
+                            <span
+                              className={`mb-2 inline-block px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(getDisplayStatus(formData))}`}
+                            >
+                              {getDisplayStatus(formData)}
+                            </span>
+                            {/* Only allow changing to editable statuses, not Pending */}
                             <select
                               name="status"
                               value={formData.status}
                               onChange={handleInputChange}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm mt-2"
                               disabled={isLoading}
                             >
                               <option value="Open">Open</option>
@@ -1845,10 +1877,10 @@ const AdmintaskPage = () => {
                         <p className="text-sm text-gray-500 mb-2">Status</p>
                         <span
                           className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
-                            viewTask.status
+                            getDisplayStatus(viewTask)
                           )}`}
                         >
-                          {viewTask.status}
+                          {getDisplayStatus(viewTask)}
                         </span>
                       </div>
                       <div>
@@ -1948,7 +1980,7 @@ const AdmintaskPage = () => {
                                 download
                                 className="px-3 py-1 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700"
                               >
-                                {att.split("/").pop()}
+                                                               {att.split("/").pop()}
                               </a>
                             ))}
                           </div>

@@ -19,6 +19,17 @@ import Header from "../../components/common/Header";
 import { Link } from "react-router-dom";
 import * as XLSX from "xlsx";
 
+// Helper to format date as DD/MMMM/YYYY (e.g., 01/January/2025)
+const formatDisplayDate = (dateStr) => {
+  if (!dateStr) return "N/A";
+  const date = new Date(dateStr);
+  if (isNaN(date)) return "N/A";
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = date.toLocaleString("default", { month: "long" });
+  const year = date.getFullYear();
+  return `${day}/${month}/${year}`;
+};
+
 const taskTypes = ["Auctions", "General", "Remainder"];
 const priorities = ["High", "Medium", "Low"];
 const statusOptions = [
@@ -111,7 +122,7 @@ const AdmintaskPage = () => {
   const [employeeSearchTerm, setEmployeeSearchTerm] = useState("");
   const [showReminderConfirm, setShowReminderConfirm] = useState(false);
   const [taskToRemind, setTaskToRemind] = useState(null);
-  const [confirmDelete, setConfirmDelete] = useState(false);
+  // const [confirmDelete, setConfirmDelete] = useState(false);
   // Remainder Email Modal State
   const [showRemainderEmailModal, setShowRemainderEmailModal] = useState(false);
   const [remainderEmailTask, setRemainderEmailTask] = useState(null);
@@ -325,6 +336,10 @@ const AdmintaskPage = () => {
       assignedTo: prev.assignedTo.filter((emp) => emp.email !== email),
     }));
   };
+  const confirmDelete = (task) => {
+    setTaskToDelete(task);
+    setShowDeleteConfirm(true);
+  };
 
   const handleAttachmentAdd = (e) => {
     const files = Array.from(e.target.files);
@@ -493,6 +508,7 @@ const AdmintaskPage = () => {
       setIsLoading(false);
     }
   };
+  
 
   const handleEditTask = (task) => {
     setFormData({
@@ -858,9 +874,7 @@ const AdmintaskPage = () => {
         "Task ID": task.taskId,
         "Task Name": task.taskName,
         Description: task.description,
-        "Due Date": task.dueDate
-          ? new Date(task.dueDate).toLocaleDateString()
-          : "N/A",
+        "Due Date": formatDisplayDate(task.dueDate),
         "Due Time": task.dueTime,
         Priority: task.priority,
         Status: task.status,
@@ -1245,16 +1259,10 @@ const AdmintaskPage = () => {
                                 </div>
                               </td>
                               <td className="py-4 px-6 sm:px-8 text-gray-600 text-center">
-                                {task.assignedDateTime
-                                  ? new Date(
-                                      task.assignedDateTime
-                                    ).toLocaleDateString()
-                                  : "N/A"}
+                                {formatDisplayDate(task.assignedDateTime)}
                               </td>
                               <td className="py-4 px-6 sm:px-8 text-gray-600 text-center">
-                                {task.dueDate
-                                  ? new Date(task.dueDate).toLocaleDateString()
-                                  : "N/A"}
+                                {formatDisplayDate(task.dueDate)}
                                 {task.dueTime !== "N/A" && ` ${task.dueTime}`}
                                 {isOverdue(task.dueDate, task.status) && (
                                   <AlertCircle className="inline ml-2 text-red-600 w-4 h-4" />
@@ -1385,11 +1393,7 @@ const AdmintaskPage = () => {
                         </div>
                         <div className="text-center">
                           <span className="font-semibold">Assigned Date:</span>{" "}
-                          {task.assignedDateTime
-                            ? new Date(
-                                task.assignedDateTime
-                              ).toLocaleDateString()
-                            : "N/A"}
+                          {formatDisplayDate(task.assignedDateTime)}
                         </div>
                         <div className="text-center">
                           <span className="font-semibold">Status:</span>
@@ -1403,9 +1407,7 @@ const AdmintaskPage = () => {
                         </div>
                         <div className="text-center">
                           <span className="font-semibold">Due Date:</span>{" "}
-                          {task.dueDate
-                            ? new Date(task.dueDate).toLocaleDateString()
-                            : "N/A"}{" "}
+                          {formatDisplayDate(task.dueDate)}{" "}
                           {task.dueTime !== "N/A" && task.dueTime}{" "}
                           {isOverdue(task.dueDate, task.status) && (
                             <AlertCircle className="inline ml-1 text-red-600 w-4 h-4" />

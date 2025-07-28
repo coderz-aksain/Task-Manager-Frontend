@@ -1991,7 +1991,7 @@ const EmployeeListPage = () => {
                 <div className="space-y-6">
                   {Object.entries(detailFields).map(([section, fields]) => (
                     <div key={section}>
-                      <h3 className="text-base font-semibold text-blue-800 mb-3">
+                      <h3 className="text-base font-semibold text-red-700 mb-3">
                         {section === 'personalInfo' && 'Personal Information'}
                         {section === 'contactInfo' && 'Contact Information'}
                         {section === 'bankingInfo' && 'Banking Information'}

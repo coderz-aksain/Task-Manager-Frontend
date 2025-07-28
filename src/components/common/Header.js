@@ -18,7 +18,7 @@ const Header = ({ isLoggedIn = false, onToggleSidebar }) => {
           >
             <Menu className="h-5 w-5" />
           </button>
-          
+          {/* a small change */}
           {/* Logo - responsive sizing */}
           <img
             src={Seveprocurelogo}

@@ -932,7 +932,7 @@ const AdmintaskPage = () => {
                   {error}
                 </div>
               )}
-              <div className="bg-white rounded-lg shadow-md p-2 sm:p-4 md:p-6">
+              <div className="bg-white rounded-lg shadow-md p-2 sm:p-2 md:p-1 lg:p-10">
                 <div className="mb-6">
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-4">
                     <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-blue-600">
@@ -1318,8 +1318,8 @@ const AdmintaskPage = () => {
                   </div>
                 </div> */}
 <div className="hidden lg:block">
-  <div className="w-full overflow-x-auto">
-    <div className="overflow-y-auto">
+  <div className="w-full overflow-x-scroll">
+    <div className="overflow-y-scroll">
       <table className="w-full text-xs sm:text-sm">
         <thead className="bg-white sticky top-0 z-10 border-b border-gray-200">
           <tr>

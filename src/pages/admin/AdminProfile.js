@@ -165,7 +165,7 @@ const AdminProfile = () => {
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header isLoggedIn={!!localStorage.getItem('token')} onToggleSidebar={toggleSidebar} />
         <main className="p-4 sm:p-6 overflow-auto">
-          <div className="max-w-4xl mx-auto">
+          <div className="max-w-7xl mx-auto">
             {/* Page Header */}
             <div className="bg-white rounded-lg shadow-sm border border-blue-100 p-4 sm:p-6 mb-6">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">

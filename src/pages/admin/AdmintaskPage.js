@@ -1093,7 +1093,7 @@ const AdmintaskPage = () => {
                 {/* Responsive Table */}
                 <div className="hidden lg:block">
                   <div className="w-full overflow-x-auto">
-                    <div className="max-h-[500px] overflow-y-auto">
+                    <div className=" overflow-y-auto">
                       <table className="w-full text-xs sm:text-sm">
                         <thead className="bg-white sticky top-0 z-10 border-b border-gray-200">
                           <tr>

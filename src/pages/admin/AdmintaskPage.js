@@ -1130,7 +1130,7 @@ const AdmintaskPage = () => {
                 </div>
 
                 {/* Responsive Table */}
-                <div className="hidden lg:block">
+                {/* <div className="hidden lg:block">
                   <div className="w-full overflow-x-auto">
                     <div className=" overflow-y-auto">
                       <table className="w-full text-xs sm:text-sm">
@@ -1316,8 +1316,194 @@ const AdmintaskPage = () => {
                       </table>
                     </div>
                   </div>
+                </div> */}
+<div className="hidden lg:block">
+  <div className="w-full overflow-x-auto">
+    <div className="overflow-y-auto">
+      <table className="w-full text-xs sm:text-sm">
+        <thead className="bg-white sticky top-0 z-10 border-b border-gray-200">
+          <tr>
+            <th className="text-center py-3 px-6 sm:px-8 font-medium text-gray-700 whitespace-nowrap">
+              Task ID
+            </th>
+            <th className="text-center py-3 px-6 sm:px-8 font-medium text-gray-700 whitespace-nowrap">
+              Task Name
+            </th>
+            <th className="text-center py-3 px-6 sm:px-8 font-medium text-gray-700 whitespace-nowrap">
+              Task Type
+            </th>
+            <th className="text-center py-3 px-6 sm:px-8 font-medium text-gray-700 whitespace-nowrap">
+              Priority
+            </th>
+            <th className="text-center py-3 px-6 sm:px-8 font-medium text-gray-700 whitespace-nowrap">
+              Status
+            </th>
+            <th className="text-center py-3 px-6 sm:px-8 font-medium text-gray-700 whitespace-nowrap">
+              Assigned To
+            </th>
+            <th className="text-center py-3 px-6 sm:px-8 font-medium text-gray-700 whitespace-nowrap">
+              Assigned By
+            </th>
+            <th className="text-center py-3 px-6 sm:px-8 font-medium text-gray-700 whitespace-nowrap">
+              Assigned Date
+            </th>
+            <th className="text-center py-3 px-6 sm:px-8 font-medium text-gray-700 whitespace-nowrap">
+              Due Date
+            </th>
+            <th className="text-center py-3 px-6 sm:px-8 font-medium text-gray-700 whitespace-nowrap">
+              Actions
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {sortedTasks.map((task) => (
+            <tr
+              key={task._id}
+              className={`border-b border-gray-100 hover:bg-gray-50 ${
+                isOverdue(task.dueDate, task.status)
+                  ? "bg-red-50"
+                  : ""
+              }`}
+            >
+              <td className="py-4 px-6 sm:px-8 text-gray-900 text-center">
+                {task.taskId}
+              </td>
+              <td className="py-4 px-6 sm:px-8 text-center max-w-[200px] whitespace-normal line-clamp-2">
+                <div className="font-medium text-gray-900">
+                  {task.taskName}
                 </div>
-
+              </td>
+              <td className="py-4 px-6 sm:px-8 text-center">
+                <span
+                  className={`px-2 py-1 rounded-full text-xs font-medium ${getTaskTypeColor(
+                    task.taskType
+                  )}`}
+                >
+                  {task.taskType}
+                </span>
+              </td>
+              <td className="py-4 px-6 sm:px-8 text-center">
+                <span
+                  className={`px-2 py-1 rounded-full text-sm font-medium ${getPriorityColor(
+                    task.priority
+                  )}`}
+                >
+                  {task.priority}
+                </span>
+              </td>
+              <td className="py-4 px-6 sm:px-8 text-center">
+                <span
+                  className={`px-2 py-1 min-w-[90px] text-center whitespace-nowrap rounded-full text-xs font-medium ${getStatusColor(
+                    getDisplayStatus(task)
+                  )}`}
+                >
+                  {getDisplayStatus(task)}
+                </span>
+              </td>
+              <td className="py-4 px-6 sm:px-8 text-gray-600 text-center">
+                <span className="flex -space-x-1 justify-center">
+                  {Array.isArray(task.assignedTo) &&
+                  task.assignedTo.length > 0 ? (
+                    task.assignedTo.map((emp) => (
+                      <div
+                        key={emp.email}
+                        className="relative group"
+                      >
+                        <span
+                          className="inline-flex w-6 h-6 bg-blue-100 rounded-full items-center justify-center text-blue-600 text-xs font-medium"
+                          title={emp.name}
+                        >
+                          {getInitials(emp.name)}
+                        </span>
+                        <span className="absolute left-1/2 transform -translate-x-1/2 top-8 bg-gray-800 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                          {emp.name}
+                        </span>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="relative group">
+                      <span className="inline-flex w-6 h-6 bg-gray-100 rounded-full items-center justify-center text-gray-600 text-xs font-medium">
+                        UN
+                      </span>
+                      <span className="absolute left-1/2 transform -translate-x-1/2 top-8 bg-gray-800 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                        Unassigned
+                      </span>
+                    </div>
+                  )}
+                </span>
+              </td>
+              <td className="py-4 px-6 sm:px-8 text-gray-600 text-center">
+                <div className="relative group">
+                  <span
+                    className="inline-flex w-6 h-6 bg-blue-100 rounded-full items-center justify-center text-blue-600 text-xs font-medium"
+                    title={task.assignedBy}
+                  >
+                    {getInitials(task.assignedBy)}
+                  </span>
+                  <span className="absolute left-1/2 transform -translate-x-1/2 top-8 bg-gray-800 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                    {task.assignedBy}
+                  </span>
+                </div>
+              </td>
+              <td className="py-4 px-6 sm:px-8 text-gray-600 text-center">
+                {formatDisplayDate(task.assignedDateTime)}
+              </td>
+              <td className="py-4 px-6 sm:px-8 text-gray-600 text-center">
+                {formatDisplayDate(task.dueDate)}
+                {task.dueTime !== "N/A" && ` ${task.dueTime}`}
+                {isOverdue(task.dueDate, task.status) && (
+                  <AlertCircle className="inline ml-2 text-red-600 w-4 h-4" />
+                )}
+              </td>
+              <td className="py-4 px-6 sm:px-8 text-center">
+                <div className="flex items-center justify-center space-x-2">
+                  <button
+                    onClick={() => handleViewTask(task)}
+                    className="p-2 text-blue-600 hover:bg-blue-50 rounded relative"
+                    title="View Details"
+                    disabled={isLoading}
+                  >
+                    <Eye className="w-4 h-4" />
+                    {unseenComments[task._id] &&
+                      unseenComments[task._id].length > 0 && (
+                        <span className="absolute -top-1 -right-1">
+                          <MessageCircle className="w-4 h-4 text-orange-500 animate-bounce" title="New comment" />
+                        </span>
+                      )}
+                  </button>
+                  <button
+                    onClick={() => handleEditTask(task)}
+                    className="p-2 text-green-600 hover:bg-green-50 rounded"
+                    title="Edit Task"
+                    disabled={isLoading}
+                  >
+                    <Edit className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => confirmDelete(task)}
+                    className="p-2 text-red-600 hover:bg-red-50 rounded"
+                    title="Delete Task"
+                    disabled={isLoading}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => handleOpenRemainderEmailModal(task)}
+                    className="p-2 text-purple-600 hover:bg-purple-50 rounded"
+                    title="Send Remainder Email"
+                    disabled={isLoading}
+                  >
+                    <Mail className="w-4 h-4" />
+                  </button>
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
                 {/* Responsive Card List for small screens */}
                 <div className="lg:hidden grid gap-4">
                   {sortedTasks.length === 0 ? (

@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Menu, Bell, Search, User } from 'lucide-react';
-import Seveprocurelogo from '../../assets/images/seven-procure-logo.png'; // Adjust the path as necessary
+import Seveprocurelogo from '../../assets/images/icon.png'; // Adjust the path as necessary
 
 const Header = ({ isLoggedIn = false, onToggleSidebar }) => {
   return (
@@ -23,7 +23,7 @@ const Header = ({ isLoggedIn = false, onToggleSidebar }) => {
           <img
             src={Seveprocurelogo}
             alt="7procure Logo"
-            className="h-24 w-24 "
+            className="h-12 w-12 "
           />
         </div>
 

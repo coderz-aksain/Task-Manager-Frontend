@@ -1673,7 +1673,7 @@ const AdmintaskPage = () => {
               }`}
             >
               <td className="py-4 px-2 sm:px-4 text-gray-900 text-center truncate">{task.taskId}</td>
-              <td className="py-4 px-2 sm:px-4 text-center truncate">{task.taskName}</td>
+              <td className="py-4 px-2 sm:px-4 text-start truncate">{task.taskName}</td>
               <td className="py-4 px-2 sm:px-4 text-center">
                 <span className={`px-2 py-1 rounded-full text-xs font-medium ${getTaskTypeColor(task.taskType)}`}>
                   {task.taskType}

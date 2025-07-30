@@ -5822,7 +5822,7 @@ const TaskPage = () => {
                 </div>
               </div>
 
-              <div className="hidden lg:block overflow-x-auto  ">
+              {/* <div className="hidden lg:block overflow-x-auto  ">
                 <table className="w-full text-sm " >
                   <thead className="sticky top-0 bg-white z-10 border-b border-gray-200">
                     <tr>
@@ -5938,7 +5938,103 @@ const TaskPage = () => {
                     ))}
                   </tbody>
                 </table>
+              </div> */}
+<div className="hidden lg:block overflow-x-auto">
+  <table className="w-full text-sm">
+    <thead className="sticky top-0 bg-white z-10 border-b border-gray-200">
+      <tr>
+        <th className="text-left py-3 px-2 sm:px-4 font-medium text-gray-700">Task ID</th>
+        <th className="text-left py-3 px-2 sm:px-4 font-medium text-gray-700">Task Name</th>
+        <th className="text-left py-3 px-2 sm:px-4 font-medium text-gray-700">Task Type</th>
+        <th className="text-left py-3 px-2 sm:px-4 font-medium text-gray-700">Priority</th>
+        <th className="text-left py-3 px-2 sm:px-4 font-medium text-gray-700">Status</th>
+        <th className="text-left py-3 px-2 sm:px-4 font-medium text-gray-700">Assigned By</th>
+        <th className="text-left py-3 px-2 sm:px-4 font-medium text-gray-700">Assigned Date</th>
+        <th className="text-left py-3 px-2 sm:px-4 font-medium text-gray-700">Due Date</th>
+        <th className="text-left py-3 px-2 sm:px-4 font-medium text-gray-700">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {filteredTasks.map((task) => (
+        <tr
+          key={task._id}
+          className={`border-b border-gray-100 hover:bg-gray-50 ${
+            isOverdue(task.dueDate, task.status) ? "bg-red-50" : ""
+          }`}
+        >
+          <td className="py-3 px-2 sm:px-4 text-gray-900">{task.taskId}</td>
+          <td className="py-3 px-2 sm:px-4">
+            <div className="font-medium text-gray-900">{task.taskName}</div>
+          </td>
+          <td className="py-3 px-2 sm:px-4">
+            <span
+              className={`px-2 py-1 rounded-full text-xs font-medium ${getTaskTypeColor(
+                task.taskType
+              )}`}
+            >
+              {task.taskType}
+            </span>
+          </td>
+          <td className="py-3 px-2 sm:px-4">
+            <span
+              className={`px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(
+                task.priority
+              )}`}
+            >
+              {task.priority}
+            </span>
+          </td>
+          <td className="py-3 px-2 sm:px-4">
+            <span
+              className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
+                task.status
+              )}`}
+            >
+              {task.status}
+            </span>
+          </td>
+          <td className="py-3 px-2 sm:px-4 text-gray-600">
+            <div className="relative group">
+              <div
+                className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 text-sm font-medium"
+                title={task.assignedBy}
+              >
+                {getInitials(task.assignedBy)}
               </div>
+              <span className="absolute left-0 top-10 bg-gray-800 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                {task.assignedBy}
+              </span>
+            </div>
+          </td>
+          <td className="py-3 px-2 sm:px-4 text-gray-600">
+            {task.assignedDateTime
+              ? new Date(task.assignedDateTime).toLocaleDateString()
+              : "N/A"}
+          </td>
+          <td className="py-3 px-2 sm:px-4 text-gray-600">
+            {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : "N/A"}
+            {task.dueTime !== "N/A" && ` ${task.dueTime}`}
+            {isOverdue(task.dueDate, task.status) && (
+              <AlertCircle className="inline ml-2 text-red-600 w-4 h-4" />
+            )}
+          </td>
+          <td className="py-3 px-2 sm:px-4">
+            <div className="flex items-center space-x-1">
+              <button
+                onClick={() => handleViewTask(task)}
+                className="p-1 text-blue-600 hover:bg-blue-50 rounded"
+                title="View Details"
+                disabled={isLoading}
+              >
+                <Eye className="w-4 h-4" />
+              </button>
+            </div>
+          </td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+</div>
 
               <div className="lg:hidden grid gap-4">
                 {filteredTasks.length === 0 ? (

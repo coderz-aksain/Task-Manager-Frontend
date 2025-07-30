@@ -686,7 +686,7 @@ const EmployeeListPage = () => {
 
         {modalOpen && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-60 p-4 sm:p-6" onClick={() => setModalOpen(false)}>
-            <div className="bg-white rounded-xl shadow-xl w-full max-w-md sm:max-w-lg md:max-w-6xl max-h-[90vh] overflow-y-auto p-4 sm:p-6 relative" onClick={(e) => e.stopPropagation()}>
+            <div className="bg-white rounded-xl shadow-xl w-full max-w-md sm:max-w-lg md:max-w-6xl max-h-[80vh] overflow-y-auto p-4 sm:p-6 relative " onClick={(e) => e.stopPropagation()}>
               {saving && (
                 <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-10">
                   <div className="flex items-center gap-2 text-blue-500">

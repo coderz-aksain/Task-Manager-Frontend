@@ -14,11 +14,12 @@ import {
   Mail,
   MessageCircle,
 } from "lucide-react";
+import { FaEllipsisH } from "react-icons/fa";
 import AdminSidebar from "../../components/common/AdminSidebar";
 import Header from "../../components/common/Header";
 import { Link } from "react-router-dom";
 import * as XLSX from "xlsx";
-
+import { useRef } from "react";
 // Helper to format date as DD/MMMM/YYYY (e.g., 01/January/2025)
 const formatDisplayDate = (dateStr) => {
   if (!dateStr) return "N/A";
@@ -130,7 +131,13 @@ const AdmintaskPage = () => {
   const [isSendingRemainderEmail, setIsSendingRemainderEmail] = useState(false);
   const [adminEmail, setAdminEmail] = useState(ADMIN_EMAIL);
   // Toast state
-  const [toast, setToast] = useState({ show: false, message: "", type: "success" });
+  const [toast, setToast] = useState({
+    show: false,
+    message: "",
+    type: "success",
+  });
+
+  const [openDropdown, setOpenDropdown] = useState(null);
 
   // Unseen comments state: { [taskId]: true }
   const [unseenComments, setUnseenComments] = useState(() => {
@@ -164,7 +171,8 @@ const AdmintaskPage = () => {
         (c) =>
           c.user &&
           c.user !== adminEmail &&
-          (!unseenComments[task._id] || !unseenComments[task._id].includes(c.timestamp))
+          (!unseenComments[task._id] ||
+            !unseenComments[task._id].includes(c.timestamp))
       );
       if (hasUnseen) {
         const unseenTimestamps = task.comments
@@ -172,7 +180,8 @@ const AdmintaskPage = () => {
             (c) =>
               c.user &&
               c.user !== adminEmail &&
-              (!unseenComments[task._id] || !unseenComments[task._id].includes(c.timestamp))
+              (!unseenComments[task._id] ||
+                !unseenComments[task._id].includes(c.timestamp))
           )
           .map((c) => c.timestamp);
         newUnseen[task._id] = [
@@ -371,21 +380,28 @@ const AdmintaskPage = () => {
   };
 
   const handleSubmit = async (e, isDraft = false) => {
-  e.preventDefault();
-  const errors = validateForm();
+    e.preventDefault();
+    const errors = validateForm();
 
-  // Additional validation for overdue tasks
-  const isEditing = !!editId;
-  const wasPending = isEditing && isOverdue(formData.dueDate, formData.status) && getDisplayStatus(formData) === "Pending";
-  const statusChanged = isEditing && formData.status !== "Pending" && formData.status !== getDisplayStatus(formData);
+    // Additional validation for overdue tasks
+    const isEditing = !!editId;
+    const wasPending =
+      isEditing &&
+      isOverdue(formData.dueDate, formData.status) &&
+      getDisplayStatus(formData) === "Pending";
+    const statusChanged =
+      isEditing &&
+      formData.status !== "Pending" &&
+      formData.status !== getDisplayStatus(formData);
 
-  if (
-    wasPending &&
-    statusChanged &&
-    (!formData.dueDate || new Date(formData.dueDate) <= new Date())
-  ) {
-    errors.dueDate = "To update the status of an overdue task, please select a new future due date.";
-  }
+    if (
+      wasPending &&
+      statusChanged &&
+      (!formData.dueDate || new Date(formData.dueDate) <= new Date())
+    ) {
+      errors.dueDate =
+        "To update the status of an overdue task, please select a new future due date.";
+    }
     if (Object.keys(errors).length > 0) {
       setFormData((prev) => ({ ...prev, errors }));
       return;
@@ -508,7 +524,6 @@ const AdmintaskPage = () => {
       setIsLoading(false);
     }
   };
-  
 
   const handleEditTask = (task) => {
     setFormData({
@@ -727,7 +742,11 @@ const AdmintaskPage = () => {
   const handleOpenRemainderEmailModal = (task) => {
     setRemainderEmailTask(task);
     setRemainderEmailBody(
-      `Hi,this is a reminder to complete the task before due tae which due on ${task.dueDate ? new Date(task.dueDate).toLocaleDateString() : "N/A"}${task.dueTime !== "N/A" ? " at " + task.dueTime : ""}.\n\nPlease ensure timely completion.`
+      `Hi,this is a reminder to complete the task before due tae which due on ${
+        task.dueDate ? new Date(task.dueDate).toLocaleDateString() : "N/A"
+      }${
+        task.dueTime !== "N/A" ? " at " + task.dueTime : ""
+      }.\n\nPlease ensure timely completion.`
     );
     setShowRemainderEmailModal(true);
   };
@@ -770,6 +789,7 @@ const AdmintaskPage = () => {
       setIsSendingRemainderEmail(false);
     }
   };
+const dropdownRef = useRef(null);
 
   const filteredTasks = tasks.filter((task) => {
     const displayStatus = getDisplayStatus(task);
@@ -789,7 +809,13 @@ const AdmintaskPage = () => {
     const matchesEmployee =
       filterEmployee === "all" ||
       task.assignedTo.some((emp) => emp.email === filterEmployee);
-    return matchesSearch && matchesStatus && matchesPriority && matchesTaskType && matchesEmployee;
+    return (
+      matchesSearch &&
+      matchesStatus &&
+      matchesPriority &&
+      matchesTaskType &&
+      matchesEmployee
+    );
   });
 
   const sortedTasks = [...filteredTasks].sort((a, b) => {
@@ -895,6 +921,22 @@ const AdmintaskPage = () => {
     XLSX.utils.book_append_sheet(wb, ws, "Tasks");
     XLSX.writeFile(wb, "tasks_export.xlsx");
   };
+  useEffect(() => {
+  const handleClickOutside = (event) => {
+    if (
+      dropdownRef.current &&
+      !dropdownRef.current.contains(event.target)
+    ) {
+      setOpenDropdown(null);
+    }
+  };
+
+  document.addEventListener("mousedown", handleClickOutside);
+  return () => {
+    document.removeEventListener("mousedown", handleClickOutside);
+  };
+}, []);
+
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-100">
@@ -935,7 +977,7 @@ const AdmintaskPage = () => {
               <div className="bg-white rounded-lg shadow-md p-2 sm:p-2 md:p-1 lg:p-10">
                 <div className="mb-6">
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-4">
-                    <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-blue-600">
+                    <h2 className="text-lg sm:text-xl md:text-4xl font-bold text-blue-600">
                       My Tasks
                     </h2>
                     <div className="flex flex-col sm:flex-row gap-2">
@@ -1055,115 +1097,140 @@ const AdmintaskPage = () => {
                     </select> */}
 
                     <div className="relative w-full sm:w-56">
-  {/* Trigger Button */}
-  <div
-    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white cursor-pointer flex items-center space-x-2"
-    onClick={() => setShowEmployeeDropdown(!showEmployeeDropdown)}
-  >
-    {filterEmployee !== "all" && employees.find((emp) => emp.email === filterEmployee)?.avatar ? (
-      <img
-        src={employees.find((emp) => emp.email === filterEmployee)?.avatar}
-        alt="Profile"
-        className="w-5 h-5 rounded-full"
-      />
-    ) : (
-      <span className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center text-xs text-gray-600">
-        {filterEmployee === "all" ? "All" : getInitials(employees.find((emp) => emp.email === filterEmployee)?.name || "U")}
-      </span>
-    )}
-    <div className="flex flex-col">
-      <span className="text-gray-700 text-sm leading-tight truncate w-40">
-        {filterEmployee === "all"
-          ? "All Employees"
-          : employees.find((emp) => emp.email === filterEmployee)?.name || "Unknown"}
-      </span>
-      {filterEmployee !== "all" && (
-        <span className="text-gray-400 text-xs leading-tight truncate w-40">
-          {employees.find((emp) => emp.email === filterEmployee)?.position || ""}
-        </span>
-      )}
-    </div>
-  </div>
+                      {/* Trigger Button */}
+                      <div
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white cursor-pointer flex items-center space-x-2"
+                        onClick={() =>
+                          setShowEmployeeDropdown(!showEmployeeDropdown)
+                        }
+                      >
+                        {filterEmployee !== "all" &&
+                        employees.find((emp) => emp.email === filterEmployee)
+                          ?.avatar ? (
+                          <img
+                            src={
+                              employees.find(
+                                (emp) => emp.email === filterEmployee
+                              )?.avatar
+                            }
+                            alt="Profile"
+                            className="w-5 h-5 rounded-full"
+                          />
+                        ) : (
+                          <span className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center text-xs text-gray-600">
+                            {filterEmployee === "all"
+                              ? "All"
+                              : getInitials(
+                                  employees.find(
+                                    (emp) => emp.email === filterEmployee
+                                  )?.name || "U"
+                                )}
+                          </span>
+                        )}
+                        <div className="flex flex-col">
+                          <span className="text-gray-700 text-sm leading-tight truncate w-40">
+                            {filterEmployee === "all"
+                              ? "All Employees"
+                              : employees.find(
+                                  (emp) => emp.email === filterEmployee
+                                )?.name || "Unknown"}
+                          </span>
+                          {filterEmployee !== "all" && (
+                            <span className="text-gray-400 text-xs leading-tight truncate w-40">
+                              {employees.find(
+                                (emp) => emp.email === filterEmployee
+                              )?.position || ""}
+                            </span>
+                          )}
+                        </div>
+                      </div>
 
-  {/* Dropdown */}
-  {showEmployeeDropdown && (
-    <div className="absolute z-20 mt-1 w-full sm:w-56 bg-white border border-gray-300 rounded-md shadow-lg max-h-64 overflow-y-auto">
-      <div
-        className="flex items-center px-3 py-2 hover:bg-gray-100 cursor-pointer"
-        onClick={() => {
-          setFilterEmployee("all");
-          setShowEmployeeDropdown(false);
-        }}
-      >
-        <span className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center text-xs text-gray-600 mr-2">All</span>
-        <div>
-          <span className="text-sm text-gray-900">All Employees</span>
-        </div>
-      </div>
-      {filteredEmployees.map((emp) => (
-        <div
-          key={emp.email}
-          className="flex items-center px-3 py-2 hover:bg-gray-100 cursor-pointer"
-          onClick={() => {
-            setFilterEmployee(emp.email);
-            setShowEmployeeDropdown(false);
-          }}
-        >
-          {emp.avatar ? (
-            <img src={emp.avatar} alt={emp.name} className="w-5 h-5 rounded-full mr-2" />
-          ) : (
-            <span className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center text-xs text-gray-600 mr-2">
-              {getInitials(emp.name || "Unknown")}
-            </span>
-          )}
-          <div>
-            <span className="text-sm text-gray-900">{emp.name || "Unknown"}</span>
-            <span className="block text-xs text-gray-500">{emp.position || "Unknown"}</span>
-          </div>
-        </div>
-      ))}
-    </div>
-  )}
-</div>
-
+                      {/* Dropdown */}
+                      {showEmployeeDropdown && (
+                        <div className="absolute z-20 mt-1 w-full sm:w-56 bg-white border border-gray-300 rounded-md shadow-lg max-h-64 overflow-y-auto">
+                          <div
+                            className="flex items-center px-3 py-2 hover:bg-gray-100 cursor-pointer"
+                            onClick={() => {
+                              setFilterEmployee("all");
+                              setShowEmployeeDropdown(false);
+                            }}
+                          >
+                            <span className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center text-xs text-gray-600 mr-2">
+                              All
+                            </span>
+                            <div>
+                              <span className="text-sm text-gray-900">
+                                All Employees
+                              </span>
+                            </div>
+                          </div>
+                          {filteredEmployees.map((emp) => (
+                            <div
+                              key={emp.email}
+                              className="flex items-center px-3 py-2 hover:bg-gray-100 cursor-pointer"
+                              onClick={() => {
+                                setFilterEmployee(emp.email);
+                                setShowEmployeeDropdown(false);
+                              }}
+                            >
+                              {emp.avatar ? (
+                                <img
+                                  src={emp.avatar}
+                                  alt={emp.name}
+                                  className="w-5 h-5 rounded-full mr-2"
+                                />
+                              ) : (
+                                <span className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center text-xs text-gray-600 mr-2">
+                                  {getInitials(emp.name || "Unknown")}
+                                </span>
+                              )}
+                              <div>
+                                <span className="text-sm text-gray-900">
+                                  {emp.name || "Unknown"}
+                                </span>
+                                <span className="block text-xs text-gray-500">
+                                  {emp.position || "Unknown"}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
 
-                {/* Responsive Table */}
-                {/* <div className="hidden lg:block">
+                <div className="hidden lg:block">
                   <div className="w-full overflow-x-auto">
-                    <div className=" overflow-y-auto">
-                      <table className="w-full text-xs sm:text-sm">
+                    <div className="overflow-y-auto">
+                      <table className="w-full text-xs sm:text-sm table-fixed">
                         <thead className="bg-white sticky top-0 z-10 border-b border-gray-200">
                           <tr>
-                            <th className="text-center py-3 px-6 sm:px-8 font-medium text-gray-700 whitespace-nowrap">
+                            <th className="w-20 text-center py-3 px-2 sm:px-4 font-medium text-gray-700 whitespace-nowrap">
                               Task ID
                             </th>
-                            <th className="text-center py-3 px-6 sm:px-8 font-medium text-gray-700 whitespace-nowrap">
+                            <th className="w-48 text-center py-3 px-2 sm:px-4 font-medium text-gray-700">
                               Task Name
                             </th>
-                            <th className="text-center py-3 px-6 sm:px-8 font-medium text-gray-700 whitespace-nowrap">
+                            <th className="w-28 text-center py-3 px-2 sm:px-4 font-medium text-gray-700 whitespace-nowrap">
                               Task Type
                             </th>
-                            <th className="text-center py-3 px-6 sm:px-8 font-medium text-gray-700 whitespace-nowrap">
+                            <th className="w-28 text-center py-3 px-2 sm:px-4 font-medium text-gray-700 whitespace-nowrap">
                               Priority
                             </th>
-                            <th className="text-center py-3 px-6 sm:px-8 font-medium text-gray-700 whitespace-nowrap">
+                            <th className="w-28 text-center py-3 px-2 sm:px-4 font-medium text-gray-700 whitespace-nowrap">
                               Status
                             </th>
-                            <th className="text-center py-3 px-6 sm:px-8 font-medium text-gray-700 whitespace-nowrap">
+                            <th className="w-32 text-center py-3 px-2 sm:px-4 font-medium text-gray-700 whitespace-nowrap">
                               Assigned To
                             </th>
-                            <th className="text-center py-3 px-6 sm:px-8 font-medium text-gray-700 whitespace-nowrap">
+                            <th className="w-32 text-center py-3 px-2 sm:px-4 font-medium text-gray-700 whitespace-nowrap">
                               Assigned By
                             </th>
-                            <th className="text-center py-3 px-6 sm:px-8 font-medium text-gray-700 whitespace-nowrap">
-                              Assigned Date
-                            </th>
-                            <th className="text-center py-3 px-6 sm:px-8 font-medium text-gray-700 whitespace-nowrap">
+                            <th className="w-32 text-center py-3 px-2 sm:px-4 font-medium text-gray-700 whitespace-nowrap">
                               Due Date
                             </th>
-                            <th className="text-center py-3 px-6 sm:px-8 font-medium text-gray-700 whitespace-nowrap">
+                            <th className="w-40 text-center py-3 px-2 sm:px-4 font-medium text-gray-700 whitespace-nowrap">
                               Actions
                             </th>
                           </tr>
@@ -1178,15 +1245,13 @@ const AdmintaskPage = () => {
                                   : ""
                               }`}
                             >
-                              <td className="py-4 px-6 sm:px-8 text-gray-900 text-center">
+                              <td className="py-4 px-2 sm:px-4 text-gray-900 text-center truncate">
                                 {task.taskId}
                               </td>
-                              <td className="py-4 px-6 sm:px-8 text-center">
-                                <div className="font-medium text-gray-900">
-                                  {task.taskName}
-                                </div>
+                              <td className="py-4 px-2 sm:px-4 text-start truncate">
+                                {task.taskName}
                               </td>
-                              <td className="py-4 px-6 sm:px-8 text-center">
+                              <td className="py-4 px-2 sm:px-4 text-center">
                                 <span
                                   className={`px-2 py-1 rounded-full text-xs font-medium ${getTaskTypeColor(
                                     task.taskType
@@ -1195,7 +1260,7 @@ const AdmintaskPage = () => {
                                   {task.taskType}
                                 </span>
                               </td>
-                              <td className="py-4 px-6 sm:px-8 text-center">
+                              <td className="py-4 px-2 sm:px-4 text-center">
                                 <span
                                   className={`px-2 py-1 rounded-full text-sm font-medium ${getPriorityColor(
                                     task.priority
@@ -1204,7 +1269,7 @@ const AdmintaskPage = () => {
                                   {task.priority}
                                 </span>
                               </td>
-                              <td className="py-4 px-6 sm:px-8 text-center">
+                              <td className="py-4 px-2 sm:px-4 text-center">
                                 <span
                                   className={`px-2 py-1 min-w-[90px] text-center whitespace-nowrap rounded-full text-xs font-medium ${getStatusColor(
                                     getDisplayStatus(task)
@@ -1213,7 +1278,7 @@ const AdmintaskPage = () => {
                                   {getDisplayStatus(task)}
                                 </span>
                               </td>
-                              <td className="py-4 px-6 sm:px-8 text-gray-600 text-center">
+                              <td className="py-4 px-2 sm:px-4 text-gray-600 text-center">
                                 <span className="flex -space-x-1 justify-center">
                                   {Array.isArray(task.assignedTo) &&
                                   task.assignedTo.length > 0 ? (
@@ -1245,7 +1310,7 @@ const AdmintaskPage = () => {
                                   )}
                                 </span>
                               </td>
-                              <td className="py-4 px-6 sm:px-8 text-gray-600 text-center">
+                              <td className="py-4 px-2 sm:px-4 text-gray-600 text-center">
                                 <div className="relative group">
                                   <span
                                     className="inline-flex w-6 h-6 bg-blue-100 rounded-full items-center justify-center text-blue-600 text-xs font-medium"
@@ -1258,18 +1323,16 @@ const AdmintaskPage = () => {
                                   </span>
                                 </div>
                               </td>
-                              <td className="py-4 px-6 sm:px-8 text-gray-600 text-center">
-                                {formatDisplayDate(task.assignedDateTime)}
-                              </td>
-                              <td className="py-4 px-6 sm:px-8 text-gray-600 text-center">
+                              <td className="py-4 px-2 sm:px-4 text-gray-600 text-center truncate">
                                 {formatDisplayDate(task.dueDate)}
                                 {task.dueTime !== "N/A" && ` ${task.dueTime}`}
                                 {isOverdue(task.dueDate, task.status) && (
                                   <AlertCircle className="inline ml-2 text-red-600 w-4 h-4" />
                                 )}
                               </td>
-                              <td className="py-4 px-6 sm:px-8 text-center">
+                              {/* <td className="py-4 px-2 sm:px-4 text-center">
                                 <div className="flex items-center justify-center space-x-2">
+                                  <>    <FaEllipsisH size={12} /></>
                                   <button
                                     onClick={() => handleViewTask(task)}
                                     className="p-2 text-blue-600 hover:bg-blue-50 rounded relative"
@@ -1280,7 +1343,10 @@ const AdmintaskPage = () => {
                                     {unseenComments[task._id] &&
                                       unseenComments[task._id].length > 0 && (
                                         <span className="absolute -top-1 -right-1">
-                                          <MessageCircle className="w-4 h-4 text-orange-500 animate-bounce" title="New comment" />
+                                          <MessageCircle
+                                            className="w-4 h-4 text-orange-500 animate-bounce"
+                                            title="New comment"
+                                          />
                                         </span>
                                       )}
                                   </button>
@@ -1301,7 +1367,9 @@ const AdmintaskPage = () => {
                                     <Trash2 className="w-4 h-4" />
                                   </button>
                                   <button
-                                    onClick={() => handleOpenRemainderEmailModal(task)}
+                                    onClick={() =>
+                                      handleOpenRemainderEmailModal(task)
+                                    }
                                     className="p-2 text-purple-600 hover:bg-purple-50 rounded"
                                     title="Send Remainder Email"
                                     disabled={isLoading}
@@ -1309,482 +1377,120 @@ const AdmintaskPage = () => {
                                     <Mail className="w-4 h-4" />
                                   </button>
                                 </div>
-                              </td>
+                              </td> */}
+
+                              <td className="py-4 px-2 sm:px-4 text-center relative">
+  <div className="relative inline-block text-left">
+    <button
+      onClick={() =>
+        setOpenDropdown((prev) => (prev === task._id ? null : task._id))
+      }
+      className="p-2 text-blue-600 hover:bg-gray-100 rounded"
+      title="Actions"
+      disabled={isLoading}
+    >
+      <FaEllipsisH size={14} />
+    </button>
+
+    {openDropdown === task._id && (
+      <div className="absolute right-0 z-20 mt-2 w-44 bg-white border border-gray-200 rounded-lg shadow-lg">
+        <button
+          onClick={() => handleViewTask(task)}
+          className="w-full px-4 py-2 text-left text-blue-600 hover:bg-blue-50 text-sm flex items-center gap-2"
+        >
+          <Eye className="w-4 h-4" /> View Details
+        </button>
+        <button
+          onClick={() => handleEditTask(task)}
+          className="w-full px-4 py-2 text-left text-green-600 hover:bg-green-50 text-sm flex items-center gap-2"
+        >
+          <Edit className="w-4 h-4" /> Edit Task
+        </button>
+        <button
+          onClick={() => confirmDelete(task)}
+          className="w-full px-4 py-2 text-left text-red-600 hover:bg-red-50 text-sm flex items-center gap-2"
+        >
+          <Trash2 className="w-4 h-4" /> Delete Task
+        </button>
+        <button
+          onClick={() => handleOpenRemainderEmailModal(task)}
+          className="w-full px-4 py-2 text-left text-purple-600 hover:bg-purple-50 text-sm flex items-center gap-2"
+        >
+          <Mail className="w-4 h-4" /> Send Reminder
+        </button>
+      </div>
+    )}
+  </div>
+</td>
+
+
+{/* <td className="py-4 px-2 sm:px-4 text-center relative">
+  <div
+    className="relative inline-block text-left"
+    ref={dropdownRef}
+  >
+    <button
+      onClick={() =>
+        setOpenDropdown((prev) => (prev === task._id ? null : task._id))
+      }
+      className="p-2 text-gray-600 hover:bg-gray-100 rounded"
+      title="Actions"
+      disabled={isLoading}
+    >
+      <FaEllipsisH size={14} />
+    </button>
+
+    {openDropdown === task._id && (
+      <div className="absolute right-0 z-20 mt-2 w-44 bg-white border border-gray-200 rounded-lg shadow-lg">
+        <button
+          onClick={() => {
+            handleViewTask(task);
+            setOpenDropdown(null);
+          }}
+          className="w-full px-4 py-2 text-left text-blue-600 hover:bg-blue-50 text-sm flex items-center gap-2"
+        >
+          <Eye className="w-4 h-4" /> View Details
+        </button>
+        <button
+          onClick={() => {
+            handleEditTask(task);
+            setOpenDropdown(null);
+          }}
+          className="w-full px-4 py-2 text-left text-green-600 hover:bg-green-50 text-sm flex items-center gap-2"
+        >
+          <Edit className="w-4 h-4" /> Edit Task
+        </button>
+        <button
+          onClick={() => {
+            confirmDelete(task);
+            setOpenDropdown(null);
+          }}
+          className="w-full px-4 py-2 text-left text-red-600 hover:bg-red-50 text-sm flex items-center gap-2"
+        >
+          <Trash2 className="w-4 h-4" /> Delete Task
+        </button>
+        <button
+          onClick={() => {
+            handleOpenRemainderEmailModal(task);
+            setOpenDropdown(null);
+          }}
+          className="w-full px-4 py-2 text-left text-purple-600 hover:bg-purple-50 text-sm flex items-center gap-2"
+        >
+          <Mail className="w-4 h-4" /> Send Reminder
+        </button>
+      </div>
+    )}
+  </div>
+</td> */}
+
+
                             </tr>
                           ))}
                         </tbody>
                       </table>
                     </div>
                   </div>
-                </div> */}
-{/* <div className="hidden lg:block">
-  <div className="w-full overflow-x-scroll">
-    <div className="overflow-y-scroll">
-      <table className="w-full text-xs sm:text-sm">
-        <thead className="bg-white sticky top-0 z-10 border-b border-gray-200">
-          <tr>
-            <th className="text-center py-3 px-6 sm:px-8 font-medium text-gray-700 whitespace-nowrap">
-              Task ID
-            </th>
-            <th className="text-center py-3 px-6 sm:px-8 font-medium text-gray-700 whitespace-nowrap">
-              Task Name
-            </th>
-            <th className="text-center py-3 px-6 sm:px-8 font-medium text-gray-700 whitespace-nowrap">
-              Task Type
-            </th>
-            <th className="text-center py-3 px-6 sm:px-8 font-medium text-gray-700 whitespace-nowrap">
-              Priority
-            </th>
-            <th className="text-center py-3 px-6 sm:px-8 font-medium text-gray-700 whitespace-nowrap">
-              Status
-            </th>
-            <th className="text-center py-3 px-6 sm:px-8 font-medium text-gray-700 whitespace-nowrap">
-              Assigned To
-            </th>
-            <th className="text-center py-3 px-6 sm:px-8 font-medium text-gray-700 whitespace-nowrap">
-              Assigned By
-            </th>
-            <th className="text-center py-3 px-6 sm:px-8 font-medium text-gray-700 whitespace-nowrap">
-              Assigned Date
-            </th>
-            <th className="text-center py-3 px-6 sm:px-8 font-medium text-gray-700 whitespace-nowrap">
-              Due Date
-            </th>
-            <th className="text-center py-3 px-6 sm:px-8 font-medium text-gray-700 whitespace-nowrap">
-              Actions
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {sortedTasks.map((task) => (
-            <tr
-              key={task._id}
-              className={`border-b border-gray-100 hover:bg-gray-50 ${
-                isOverdue(task.dueDate, task.status)
-                  ? "bg-red-50"
-                  : ""
-              }`}
-            >
-              <td className="py-4 px-6 sm:px-8 text-gray-900 text-center">
-                {task.taskId}
-              </td>
-              <td className="py-4 px-6 sm:px-8 text-center max-w-[200px] whitespace-normal line-clamp-2">
-                <div className="font-medium text-gray-900">
-                  {task.taskName}
                 </div>
-              </td>
-              <td className="py-4 px-6 sm:px-8 text-center">
-                <span
-                  className={`px-2 py-1 rounded-full text-xs font-medium ${getTaskTypeColor(
-                    task.taskType
-                  )}`}
-                >
-                  {task.taskType}
-                </span>
-              </td>
-              <td className="py-4 px-6 sm:px-8 text-center">
-                <span
-                  className={`px-2 py-1 rounded-full text-sm font-medium ${getPriorityColor(
-                    task.priority
-                  )}`}
-                >
-                  {task.priority}
-                </span>
-              </td>
-              <td className="py-4 px-6 sm:px-8 text-center">
-                <span
-                  className={`px-2 py-1 min-w-[90px] text-center whitespace-nowrap rounded-full text-xs font-medium ${getStatusColor(
-                    getDisplayStatus(task)
-                  )}`}
-                >
-                  {getDisplayStatus(task)}
-                </span>
-              </td>
-              <td className="py-4 px-6 sm:px-8 text-gray-600 text-center">
-                <span className="flex -space-x-1 justify-center">
-                  {Array.isArray(task.assignedTo) &&
-                  task.assignedTo.length > 0 ? (
-                    task.assignedTo.map((emp) => (
-                      <div
-                        key={emp.email}
-                        className="relative group"
-                      >
-                        <span
-                          className="inline-flex w-6 h-6 bg-blue-100 rounded-full items-center justify-center text-blue-600 text-xs font-medium"
-                          title={emp.name}
-                        >
-                          {getInitials(emp.name)}
-                        </span>
-                        <span className="absolute left-1/2 transform -translate-x-1/2 top-8 bg-gray-800 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                          {emp.name}
-                        </span>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="relative group">
-                      <span className="inline-flex w-6 h-6 bg-gray-100 rounded-full items-center justify-center text-gray-600 text-xs font-medium">
-                        UN
-                      </span>
-                      <span className="absolute left-1/2 transform -translate-x-1/2 top-8 bg-gray-800 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                        Unassigned
-                      </span>
-                    </div>
-                  )}
-                </span>
-              </td>
-              <td className="py-4 px-6 sm:px-8 text-gray-600 text-center">
-                <div className="relative group">
-                  <span
-                    className="inline-flex w-6 h-6 bg-blue-100 rounded-full items-center justify-center text-blue-600 text-xs font-medium"
-                    title={task.assignedBy}
-                  >
-                    {getInitials(task.assignedBy)}
-                  </span>
-                  <span className="absolute left-1/2 transform -translate-x-1/2 top-8 bg-gray-800 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                    {task.assignedBy}
-                  </span>
-                </div>
-              </td>
-              <td className="py-4 px-6 sm:px-8 text-gray-600 text-center">
-                {formatDisplayDate(task.assignedDateTime)}
-              </td>
-              <td className="py-4 px-6 sm:px-8 text-gray-600 text-center">
-                {formatDisplayDate(task.dueDate)}
-                {task.dueTime !== "N/A" && ` ${task.dueTime}`}
-                {isOverdue(task.dueDate, task.status) && (
-                  <AlertCircle className="inline ml-2 text-red-600 w-4 h-4" />
-                )}
-              </td>
-              <td className="py-4 px-6 sm:px-8 text-center">
-                <div className="flex items-center justify-center space-x-2">
-                  <button
-                    onClick={() => handleViewTask(task)}
-                    className="p-2 text-blue-600 hover:bg-blue-50 rounded relative"
-                    title="View Details"
-                    disabled={isLoading}
-                  >
-                    <Eye className="w-4 h-4" />
-                    {unseenComments[task._id] &&
-                      unseenComments[task._id].length > 0 && (
-                        <span className="absolute -top-1 -right-1">
-                          <MessageCircle className="w-4 h-4 text-orange-500 animate-bounce" title="New comment" />
-                        </span>
-                      )}
-                  </button>
-                  <button
-                    onClick={() => handleEditTask(task)}
-                    className="p-2 text-green-600 hover:bg-green-50 rounded"
-                    title="Edit Task"
-                    disabled={isLoading}
-                  >
-                    <Edit className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => confirmDelete(task)}
-                    className="p-2 text-red-600 hover:bg-red-50 rounded"
-                    title="Delete Task"
-                    disabled={isLoading}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => handleOpenRemainderEmailModal(task)}
-                    className="p-2 text-purple-600 hover:bg-purple-50 rounded"
-                    title="Send Remainder Email"
-                    disabled={isLoading}
-                  >
-                    <Mail className="w-4 h-4" />
-                  </button>
-                </div>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  </div>
-</div> */}
-
-{/* <div className="hidden lg:block">
-  <div className="w-full overflow-x-auto">
-    <div className="overflow-y-auto">
-      <table className="w-full text-xs sm:text-sm table-fixed">
-        <thead className="bg-white sticky top-0 z-10 border-b border-gray-200">
-          <tr>
-            <th className="w-20 text-center py-3 px-2 sm:px-4 font-medium text-gray-700 whitespace-nowrap">Task ID</th>
-            <th className="w-48 text-center py-3 px-2 sm:px-4 font-medium text-gray-700">Task Name</th>
-            <th className="w-28 text-center py-3 px-2 sm:px-4 font-medium text-gray-700 whitespace-nowrap">Task Type</th>
-            <th className="w-28 text-center py-3 px-2 sm:px-4 font-medium text-gray-700 whitespace-nowrap">Priority</th>
-            <th className="w-28 text-center py-3 px-2 sm:px-4 font-medium text-gray-700 whitespace-nowrap">Status</th>
-            <th className="w-32 text-center py-3 px-2 sm:px-4 font-medium text-gray-700 whitespace-nowrap">Assigned To</th>
-            <th className="w-32 text-center py-3 px-2 sm:px-4 font-medium text-gray-700 whitespace-nowrap">Assigned By</th>
-            <th className="w-32 text-center py-3 px-2 sm:px-4 font-medium text-gray-700 whitespace-nowrap">Assigned Date</th>
-            <th className="w-32 text-center py-3 px-2 sm:px-4 font-medium text-gray-700 whitespace-nowrap">Due Date</th>
-            <th className="w-40 text-center py-3 px-2 sm:px-4 font-medium text-gray-700 whitespace-nowrap">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {sortedTasks.map((task) => (
-            <tr
-              key={task._id}
-              className={`border-b border-gray-100 hover:bg-gray-50 ${
-                isOverdue(task.dueDate, task.status) ? "bg-red-50" : ""
-              }`}
-            >
-              <td className="py-4 px-2 sm:px-4 text-gray-900 text-center truncate">{task.taskId}</td>
-              <td className="py-4 px-2 sm:px-4 text-center truncate">{task.taskName}</td>
-              <td className="py-4 px-2 sm:px-4 text-center">
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${getTaskTypeColor(task.taskType)}`}>
-                  {task.taskType}
-                </span>
-              </td>
-              <td className="py-4 px-2 sm:px-4 text-center">
-                <span className={`px-2 py-1 rounded-full text-sm font-medium ${getPriorityColor(task.priority)}`}>
-                  {task.priority}
-                </span>
-              </td>
-              <td className="py-4 px-2 sm:px-4 text-center">
-                <span className={`px-2 py-1 min-w-[90px] text-center whitespace-nowrap rounded-full text-xs font-medium ${getStatusColor(getDisplayStatus(task))}`}>
-                  {getDisplayStatus(task)}
-                </span>
-              </td>
-              <td className="py-4 px-2 sm:px-4 text-gray-600 text-center">
-                <span className="flex -space-x-1 justify-center">
-                  {Array.isArray(task.assignedTo) && task.assignedTo.length > 0 ? (
-                    task.assignedTo.map((emp) => (
-                      <div key={emp.email} className="relative group">
-                        <span
-                          className="inline-flex w-6 h-6 bg-blue-100 rounded-full items-center justify-center text-blue-600 text-xs font-medium"
-                          title={emp.name}
-                        >
-                          {getInitials(emp.name)}
-                        </span>
-                        <span className="absolute left-1/2 transform -translate-x-1/2 top-8 bg-gray-800 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                          {emp.name}
-                        </span>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="relative group">
-                      <span className="inline-flex w-6 h-6 bg-gray-100 rounded-full items-center justify-center text-gray-600 text-xs font-medium">
-                        UN
-                      </span>
-                      <span className="absolute left-1/2 transform -translate-x-1/2 top-8 bg-gray-800 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                        Unassigned
-                      </span>
-                    </div>
-                  )}
-                </span>
-              </td>
-              <td className="py-4 px-2 sm:px-4 text-gray-600 text-center">
-                <div className="relative group">
-                  <span
-                    className="inline-flex w-6 h-6 bg-blue-100 rounded-full items-center justify-center text-blue-600 text-xs font-medium"
-                    title={task.assignedBy}
-                  >
-                    {getInitials(task.assignedBy)}
-                  </span>
-                  <span className="absolute left-1/2 transform -translate-x-1/2 top-8 bg-gray-800 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                    {task.assignedBy}
-                  </span>
-                </div>
-              </td>
-              <td className="py-4 px-2 sm:px-4 text-gray-600 text-center truncate">{formatDisplayDate(task.assignedDateTime)}</td>
-              <td className="py-4 px-2 sm:px-4 text-gray-600 text-center truncate">
-                {formatDisplayDate(task.dueDate)}
-                {task.dueTime !== "N/A" && ` ${task.dueTime}`}
-                {isOverdue(task.dueDate, task.status) && (
-                  <AlertCircle className="inline ml-2 text-red-600 w-4 h-4" />
-                )}
-              </td>
-              <td className="py-4 px-2 sm:px-4 text-center">
-                <div className="flex items-center justify-center space-x-2">
-                  <button
-                    onClick={() => handleViewTask(task)}
-                    className="p-2 text-blue-600 hover:bg-blue-50 rounded relative"
-                    title="View Details"
-                    disabled={isLoading}
-                  >
-                    <Eye className="w-4 h-4" />
-                    {unseenComments[task._id] && unseenComments[task._id].length > 0 && (
-                      <span className="absolute -top-1 -right-1">
-                        <MessageCircle className="w-4 h-4 text-orange-500 animate-bounce" title="New comment" />
-                      </span>
-                    )}
-                  </button>
-                  <button
-                    onClick={() => handleEditTask(task)}
-                    className="p-2 text-green-600 hover:bg-green-50 rounded"
-                    title="Edit Task"
-                    disabled={isLoading}
-                  >
-                    <Edit className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => confirmDelete(task)}
-                    className="p-2 text-red-600 hover:bg-red-50 rounded"
-                    title="Delete Task"
-                    disabled={isLoading}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => handleOpenRemainderEmailModal(task)}
-                    className="p-2 text-purple-600 hover:bg-purple-50 rounded"
-                    title="Send Remainder Email"
-                    disabled={isLoading}
-                  >
-                    <Mail className="w-4 h-4" />
-                  </button>
-                </div>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  </div>
-</div> */}
-
-
-<div className="hidden lg:block">
-  <div className="w-full overflow-x-auto">
-    <div className="overflow-y-auto">
-      <table className="w-full text-xs sm:text-sm table-fixed">
-        <thead className="bg-white sticky top-0 z-10 border-b border-gray-200">
-          <tr>
-            <th className="w-20 text-center py-3 px-2 sm:px-4 font-medium text-gray-700 whitespace-nowrap">Task ID</th>
-            <th className="w-48 text-center py-3 px-2 sm:px-4 font-medium text-gray-700">Task Name</th>
-            <th className="w-28 text-center py-3 px-2 sm:px-4 font-medium text-gray-700 whitespace-nowrap">Task Type</th>
-            <th className="w-28 text-center py-3 px-2 sm:px-4 font-medium text-gray-700 whitespace-nowrap">Priority</th>
-            <th className="w-28 text-center py-3 px-2 sm:px-4 font-medium text-gray-700 whitespace-nowrap">Status</th>
-            <th className="w-32 text-center py-3 px-2 sm:px-4 font-medium text-gray-700 whitespace-nowrap">Assigned To</th>
-            <th className="w-32 text-center py-3 px-2 sm:px-4 font-medium text-gray-700 whitespace-nowrap">Assigned By</th>
-            <th className="w-32 text-center py-3 px-2 sm:px-4 font-medium text-gray-700 whitespace-nowrap">Due Date</th>
-            <th className="w-40 text-center py-3 px-2 sm:px-4 font-medium text-gray-700 whitespace-nowrap">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {sortedTasks.map((task) => (
-            <tr
-              key={task._id}
-              className={`border-b border-gray-100 hover:bg-gray-50 ${
-                isOverdue(task.dueDate, task.status) ? "bg-red-50" : ""
-              }`}
-            >
-              <td className="py-4 px-2 sm:px-4 text-gray-900 text-center truncate">{task.taskId}</td>
-              <td className="py-4 px-2 sm:px-4 text-start truncate">{task.taskName}</td>
-              <td className="py-4 px-2 sm:px-4 text-center">
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${getTaskTypeColor(task.taskType)}`}>
-                  {task.taskType}
-                </span>
-              </td>
-              <td className="py-4 px-2 sm:px-4 text-center">
-                <span className={`px-2 py-1 rounded-full text-sm font-medium ${getPriorityColor(task.priority)}`}>
-                  {task.priority}
-                </span>
-              </td>
-              <td className="py-4 px-2 sm:px-4 text-center">
-                <span className={`px-2 py-1 min-w-[90px] text-center whitespace-nowrap rounded-full text-xs font-medium ${getStatusColor(getDisplayStatus(task))}`}>
-                  {getDisplayStatus(task)}
-                </span>
-              </td>
-              <td className="py-4 px-2 sm:px-4 text-gray-600 text-center">
-                <span className="flex -space-x-1 justify-center">
-                  {Array.isArray(task.assignedTo) && task.assignedTo.length > 0 ? (
-                    task.assignedTo.map((emp) => (
-                      <div key={emp.email} className="relative group">
-                        <span
-                          className="inline-flex w-6 h-6 bg-blue-100 rounded-full items-center justify-center text-blue-600 text-xs font-medium"
-                          title={emp.name}
-                        >
-                          {getInitials(emp.name)}
-                        </span>
-                        <span className="absolute left-1/2 transform -translate-x-1/2 top-8 bg-gray-800 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                          {emp.name}
-                        </span>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="relative group">
-                      <span className="inline-flex w-6 h-6 bg-gray-100 rounded-full items-center justify-center text-gray-600 text-xs font-medium">
-                        UN
-                      </span>
-                      <span className="absolute left-1/2 transform -translate-x-1/2 top-8 bg-gray-800 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                        Unassigned
-                      </span>
-                    </div>
-                  )}
-                </span>
-              </td>
-              <td className="py-4 px-2 sm:px-4 text-gray-600 text-center">
-                <div className="relative group">
-                  <span
-                    className="inline-flex w-6 h-6 bg-blue-100 rounded-full items-center justify-center text-blue-600 text-xs font-medium"
-                    title={task.assignedBy}
-                  >
-                    {getInitials(task.assignedBy)}
-                  </span>
-                  <span className="absolute left-1/2 transform -translate-x-1/2 top-8 bg-gray-800 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                    {task.assignedBy}
-                  </span>
-                </div>
-              </td>
-              <td className="py-4 px-2 sm:px-4 text-gray-600 text-center truncate">
-                {formatDisplayDate(task.dueDate)}
-                {task.dueTime !== "N/A" && ` ${task.dueTime}`}
-                {isOverdue(task.dueDate, task.status) && (
-                  <AlertCircle className="inline ml-2 text-red-600 w-4 h-4" />
-                )}
-              </td>
-              <td className="py-4 px-2 sm:px-4 text-center">
-                <div className="flex items-center justify-center space-x-2">
-                  <button
-                    onClick={() => handleViewTask(task)}
-                    className="p-2 text-blue-600 hover:bg-blue-50 rounded relative"
-                    title="View Details"
-                    disabled={isLoading}
-                  >
-                    <Eye className="w-4 h-4" />
-                    {unseenComments[task._id] && unseenComments[task._id].length > 0 && (
-                      <span className="absolute -top-1 -right-1">
-                        <MessageCircle className="w-4 h-4 text-orange-500 animate-bounce" title="New comment" />
-                      </span>
-                    )}
-                  </button>
-                  <button
-                    onClick={() => handleEditTask(task)}
-                    className="p-2 text-green-600 hover:bg-green-50 rounded"
-                    title="Edit Task"
-                    disabled={isLoading}
-                  >
-                    <Edit className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => confirmDelete(task)}
-                    className="p-2 text-red-600 hover:bg-red-50 rounded"
-                    title="Delete Task"
-                    disabled={isLoading}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => handleOpenRemainderEmailModal(task)}
-                    className="p-2 text-purple-600 hover:bg-purple-50 rounded"
-                    title="Send Remainder Email"
-                    disabled={isLoading}
-                  >
-                    <Mail className="w-4 h-4" />
-                  </button>
-                </div>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  </div>
-</div>
 
                 {/* Responsive Card List for small screens */}
                 <div className="lg:hidden grid gap-4">
@@ -1814,7 +1520,10 @@ const AdmintaskPage = () => {
                             </span>
                             {unseenComments[task._id] &&
                               unseenComments[task._id].length > 0 && (
-                                <MessageCircle className="w-4 h-4 text-orange-500 animate-bounce" title="New comment" />
+                                <MessageCircle
+                                  className="w-4 h-4 text-orange-500 animate-bounce"
+                                  title="New comment"
+                                />
                               )}
                           </div>
                           <div className="flex gap-2">
@@ -1844,440 +1553,144 @@ const AdmintaskPage = () => {
                               className="p-1 text-purple-600 hover:bg-purple-50 rounded"
                               disabled={isLoading}
                             > */}
-                              <button
-  onClick={() => handleOpenRemainderEmailModal(task)}
-  className="p-2 text-purple-600 hover:bg-purple-50 rounded"
-  title="Send Remainder Email"
-  disabled={isLoading}
->
-  <Mail className="w-4 h-4" />
-</button>
-                        </div>
-                      </div>
-                      <div className="mt-2 text-xs grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        <div className="text-center">
-                          <span className="font-semibold">Task ID:</span>{" "}
-                          {task.taskId}
-                        </div>
-                        <div className="text-center">
-                          <span className="font-semibold">Assigned Date:</span>{" "}
-                          {formatDisplayDate(task.assignedDateTime)}
-                        </div>
-                        <div className="text-center">
-                          <span className="font-semibold">Status:</span>
-                          <span
-                            className={`ml-1 px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
-                              getDisplayStatus(task)
-                            )}`}
-                          >
-                            {getDisplayStatus(task)}
-                          </span>
-                        </div>
-                        <div className="text-center">
-                          <span className="font-semibold">Due Date:</span>{" "}
-                          {formatDisplayDate(task.dueDate)}{" "}
-                          {task.dueTime !== "N/A" && task.dueTime}{" "}
-                          {isOverdue(task.dueDate, task.status) && (
-                            <AlertCircle className="inline ml-1 text-red-600 w-4 h-4" />
-                          )}
-                        </div>
-                        <div className="text-center">
-                          <span className="font-semibold">Assigned By:</span>{" "}
-                          <div className="relative group inline-block">
-                            <span
-                              className="inline-flex w-6 h-6 bg-blue-100 rounded-full items-center justify-center text-blue-600 text-xs font-medium"
-                              title={task.assignedBy}
+                            <button
+                              onClick={() =>
+                                handleOpenRemainderEmailModal(task)
+                              }
+                              className="p-2 text-purple-600 hover:bg-purple-50 rounded"
+                              title="Send Remainder Email"
+                              disabled={isLoading}
                             >
-                              {getInitials(task.assignedBy)}
-                            </span>
-                            <span className="absolute left-1/2 transform -translate-x-1/2 top-8 bg-gray-800 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                              {task.assignedBy}
-                            </span>
+                              <Mail className="w-4 h-4" />
+                            </button>
                           </div>
                         </div>
-                        <div className="text-center">
-                          <span className="font-semibold">Assigned To:</span>{" "}
-                          <span className="flex -space-x-1 justify-center">
-                            {Array.isArray(task.assignedTo) &&
-                            task.assignedTo.length > 0 ? (
-                              task.assignedTo.map((emp) => (
-                                <div key={emp.email} className="relative group">
-                                  <span
-                                    className="inline-flex w-6 h-6 bg-blue-100 rounded-full items-center justify-center text-blue-600 text-xs font-medium"
-                                    title={emp.name}
+                        <div className="mt-2 text-xs grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          <div className="text-center">
+                            <span className="font-semibold">Task ID:</span>{" "}
+                            {task.taskId}
+                          </div>
+                          <div className="text-center">
+                            <span className="font-semibold">
+                              Assigned Date:
+                            </span>{" "}
+                            {formatDisplayDate(task.assignedDateTime)}
+                          </div>
+                          <div className="text-center">
+                            <span className="font-semibold">Status:</span>
+                            <span
+                              className={`ml-1 px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
+                                getDisplayStatus(task)
+                              )}`}
+                            >
+                              {getDisplayStatus(task)}
+                            </span>
+                          </div>
+                          <div className="text-center">
+                            <span className="font-semibold">Due Date:</span>{" "}
+                            {formatDisplayDate(task.dueDate)}{" "}
+                            {task.dueTime !== "N/A" && task.dueTime}{" "}
+                            {isOverdue(task.dueDate, task.status) && (
+                              <AlertCircle className="inline ml-1 text-red-600 w-4 h-4" />
+                            )}
+                          </div>
+                          <div className="text-center">
+                            <span className="font-semibold">Assigned By:</span>{" "}
+                            <div className="relative group inline-block">
+                              <span
+                                className="inline-flex w-6 h-6 bg-blue-100 rounded-full items-center justify-center text-blue-600 text-xs font-medium"
+                                title={task.assignedBy}
+                              >
+                                {getInitials(task.assignedBy)}
+                              </span>
+                              <span className="absolute left-1/2 transform -translate-x-1/2 top-8 bg-gray-800 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                                {task.assignedBy}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="text-center">
+                            <span className="font-semibold">Assigned To:</span>{" "}
+                            <span className="flex -space-x-1 justify-center">
+                              {Array.isArray(task.assignedTo) &&
+                              task.assignedTo.length > 0 ? (
+                                task.assignedTo.map((emp) => (
+                                  <div
+                                    key={emp.email}
+                                    className="relative group"
                                   >
-                                    {getInitials(emp.name)}
+                                    <span
+                                      className="inline-flex w-6 h-6 bg-blue-100 rounded-full items-center justify-center text-blue-600 text-xs font-medium"
+                                      title={emp.name}
+                                    >
+                                      {getInitials(emp.name)}
+                                    </span>
+                                    <span className="absolute left-1/2 transform -translate-x-1/2 top-8 bg-gray-800 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                                      {emp.name}
+                                    </span>
+                                  </div>
+                                ))
+                              ) : (
+                                <div className="relative group">
+                                  <span className="inline-flex w-6 h-6 bg-gray-100 rounded-full items-center justify-center text-gray-600 text-xs font-medium">
+                                    UN
                                   </span>
                                   <span className="absolute left-1/2 transform -translate-x-1/2 top-8 bg-gray-800 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                                    {emp.name}
+                                    Unassigned
                                   </span>
                                 </div>
-                              ))
-                            ) : (
-                              <div className="relative group">
-                                <span className="inline-flex w-6 h-6 bg-gray-100 rounded-full items-center justify-center text-gray-600 text-xs font-medium">
-                                  UN
-                                </span>
-                                <span className="absolute left-1/2 transform -translate-x-1/2 top-8 bg-gray-800 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                                  Unassigned
-                                </span>
-                              </div>
-                            )}
-                          </span>
-                        </div>
-                        <div className="text-center">
-                          <span className="font-semibold">Task Type:</span>{" "}
-                          <span
-                            className={`ml-1 px-2 py-1 rounded-full text-xs font-medium ${getTaskTypeColor(
-                              task.taskType
-                            )}`}
-                          >
-                            {task.taskType}
-                          </span>
-                        </div>
-                        <div className="text-center">
-                          <span className="font-semibold">Priority:</span>{" "}
-                          <span
-                            className={`ml-1 px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(
-                              task.priority
-                            )}`}
-                          >
-                            {task.priority}
-                          </span>
-                        </div>
-                        <div className="col-span-full text-center">
-                          <span className="font-semibold">Description:</span>{" "}
-                          {task.description || "None"}
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-
-              {sortedTasks.length === 0 && (
-                <div className="text-center py-12 hidden lg:block">
-                  <div className="text-gray-500 mb-4">
-                    No tasks found matching your criteria
-                  </div>
-                  <div className="text-sm text-gray-400">
-                    Try adjusting your search or filters
-                  </div>
-                </div>
-              )}
-
-              
-
-              {/* Modal: Create/Edit Task */}
-              {(isModalOpen || isEditModalOpen) && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
-                  <div className="bg-white rounded-lg shadow-xl w-full max-w-lg sm:max-w-2xl md:max-w-3xl lg:max-w-4xl p-2 sm:p-4 md:p-6 max-h-[90vh] overflow-y-auto">
-                    <div className="flex items-center justify-between mb-6">
-                      <h2 className="text-lg sm:text-xl font-semibold text-gray-900">
-                        {editId ? "Edit Task" : "Create New Task"}
-                      </h2>
-                      <button
-                        onClick={() => {
-                          setIsModalOpen(false);
-                          setIsEditModalOpen(false);
-                          setFormData(initialForm);
-                          setEditId(null);
-                          setSelectedFiles([]);
-                          setEmployeeSearchTerm("");
-                        }}
-                        className="text-gray-500 hover:text-gray-700"
-                        disabled={isLoading}
-                      >
-                        <X className="w-5 h-5" />
-                      </button>
-                    </div>
-
-                    <form
-                      onSubmit={(e) =>
-                        handleSubmit(e, isEditModalOpen && false)
-                      }
-                      className="space-y-6"
-                    >
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Task Name *
-                        </label>
-                        <input
-                          type="text"
-                          name="taskName"
-                          value={formData.taskName}
-                          onChange={handleInputChange}
-                          required
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                          placeholder="Enter task name"
-                          disabled={isLoading}
-                        />
-                        {formData.errors.taskName && (
-                          <p className="text-red-500 text-xs mt-1">
-                            {formData.errors.taskName}
-                          </p>
-                        )}
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Description
-                        </label>
-                        <textarea
-                          name="description"
-                          value={formData.description}
-                          onChange={handleInputChange}
-                          rows={3}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                          placeholder="Enter task description"
-                          disabled={isLoading}
-                        />
-                      </div>
-
-                      <div className="relative">
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Assign Employees *
-                        </label>
-                        <input
-                          type="text"
-                          value={employeeSearchTerm}
-                          onChange={(e) =>
-                            setEmployeeSearchTerm(e.target.value)
-                          }
-                          onFocus={() => setShowEmployeeDropdown(true)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                          placeholder="Search employee by name or department"
-                          disabled={isLoading}
-                        />
-                        {showEmployeeDropdown && (
-                          <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
-                            {filteredEmployees.map((employee) => (
-                              <button
-                                key={employee.id}
-                                type="button"
-                                onClick={() => handleEmployeeSelect(employee)}
-                                className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center space-x-3"
-                                disabled={isLoading}
-                              >
-                                <img
-                                  src={employee.avatar || ""}
-                                  alt={employee.name}
-                                  className="w-8 h-8 rounded-full"
-                                />
-                                <div>
-                                  <p className="font-medium">
-                                    {employee.name || "Unknown"}
-                                  </p>
-                                  <p className="text-sm text-gray-500">
-                                    {employee.email}
-                                  </p>
-                                  <p className="text-sm text-gray-500">
-                                    {employee.position}
-                                  </p>
-                                </div>
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                        <div className="mt-2 flex flex-wrap gap-2">
-                          {formData.assignedTo.map((emp) => (
-                            <div
-                              key={emp.email}
-                              className="flex items-center bg-blue-50 text-blue-700 px-3 py-1 rounded-full"
-                            >
-                              <img
-                                src={emp.avatar || ""}
-                                alt={emp.name}
-                                className="w-5 h-5 rounded-full mr-2"
-                              />
-                              <span className="text-sm">
-                                {emp.name || "Unknown"}
-                              </span>
-                              <button
-                                type="button"
-                                onClick={() => handleEmployeeRemove(emp.email)}
-                                className="ml-2 text-blue-500 hover:text-blue-700"
-                                disabled={isLoading}
-                              >
-                                <X className="w-3 h-3" />
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                        {formData.errors.assignedTo && (
-                          <p className="text-red-500 text-xs mt-1">
-                            {formData.errors.assignedTo}
-                          </p>
-                        )}
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Task Type *
-                          </label>
-                          <select
-                            name="taskType"
-                            value={formData.taskType}
-                            onChange={handleInputChange}
-                            required
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                            disabled={isLoading}
-                          >
-                            <option value="General">General</option>
-                            <option value="Auctions">Auctions</option>
-                            <option value="Remainder">Remainder</option>
-                          </select>
-                          {formData.errors.taskType && (
-                            <p className="text-red-500 text-xs mt-1">
-                              {formData.errors.taskType}
-                            </p>
-                          )}
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Priority *
-                          </label>
-                          <select
-                            name="priority"
-                            value={formData.priority}
-                            onChange={handleInputChange}
-                            required
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                            disabled={isLoading}
-                          >
-                            <option value="High">High</option>
-                            <option value="Medium">Medium</option>
-                            <option value="Low">Low</option>
-                          </select>
-                          {formData.errors.priority && (
-                            <p className="text-red-500 text-xs mt-1">
-                              {formData.errors.priority}
-                            </p>
-                          )}
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Due Date *
-                          </label>
-                          <input
-                            type="date"
-                            name="dueDate"
-                            value={formData.dueDate}
-                            onChange={handleInputChange}
-                            required
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                            disabled={isLoading}
-                          />
-                          {formData.errors.dueDate && (
-                            <p className="text-red-500 text-xs mt-1">
-                              {formData.errors.dueDate}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-
-                      {editId && (
-                        <div className="grid grid-cols-1 gap-4">
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                              Status
-                            </label>
-                            {/* Show badge for computed status (including Pending) */}
-                            <span
-                              className={`mb-2 inline-block px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(getDisplayStatus(formData))}`}
-                            >
-                              {getDisplayStatus(formData)}
+                              )}
                             </span>
-                            {/* Only allow changing to editable statuses, not Pending */}
-                            <select
-                              name="status"
-                              value={formData.status}
-                              onChange={handleInputChange}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm mt-2"
-                              disabled={isLoading}
+                          </div>
+                          <div className="text-center">
+                            <span className="font-semibold">Task Type:</span>{" "}
+                            <span
+                              className={`ml-1 px-2 py-1 rounded-full text-xs font-medium ${getTaskTypeColor(
+                                task.taskType
+                              )}`}
                             >
-                              <option value="Open">Open</option>
-                              <option value="In Progress">In Progress</option>
-                              <option value="Hold">Hold</option>
-                              <option value="Complete">Complete</option>
-                              <option value="Archive">Archive</option>
-                            </select>
+                              {task.taskType}
+                            </span>
+                          </div>
+                          <div className="text-center">
+                            <span className="font-semibold">Priority:</span>{" "}
+                            <span
+                              className={`ml-1 px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(
+                                task.priority
+                              )}`}
+                            >
+                              {task.priority}
+                            </span>
+                          </div>
+                          <div className="col-span-full text-center">
+                            <span className="font-semibold">Description:</span>{" "}
+                            {task.description || "None"}
                           </div>
                         </div>
-                      )}
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          File Attachments
-                        </label>
-                        <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
-                          <label className="px-4 py-2 bg-blue-100 text-blue-700 border border-blue-300 rounded-md cursor-pointer hover:bg-blue-200 text-sm inline-flex items-center space-x-2">
-                            <Upload className="w-4 h-4" />
-                            <span>Choose Files</span>
-                            <input
-                              type="file"
-                              multiple
-                              onChange={handleAttachmentAdd}
-                              className="hidden"
-                              disabled={isLoading}
-                            />
-                          </label>
-                        </div>
-
-                        {formData.fileUrls.length > 0 && (
-                          <div className="mt-2 space-y-2">
-                            {formData.fileUrls.map((attachment, index) => (
-                              <div
-                                key={index}
-                                className="flex items-center justify-between bg-gray-50 p-2 rounded"
-                              >
-                                <div className="flex items-center space-x-2">
-                                  <Upload className="w-4 h-4 text-gray-500" />
-                                  <span className="text-sm truncate">
-                                    {attachment}
-                                  </span>
-                                </div>
-                                <button
-                                  type="button"
-                                  onClick={() => handleAttachmentRemove(index)}
-                                  className="text-red-500 hover:text-red-700"
-                                  disabled={isLoading}
-                                >
-                                  <X className="w-4 h-4" />
-                                </button>
-                              </div>
-                            ))}
-                          </div>
-                        )}
                       </div>
+                    ))
+                  )}
+                </div>
 
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Remark
-                        </label>
-                        <input
-                          type="text"
-                          name="remark"
-                          value={formData.remark || ""}
-                          onChange={handleInputChange}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                          placeholder="Enter remark"
-                          disabled={isLoading}
-                        />
-                      </div>
+                {sortedTasks.length === 0 && (
+                  <div className="text-center py-12 hidden lg:block">
+                    <div className="text-gray-500 mb-4">
+                      No tasks found matching your criteria
+                    </div>
+                    <div className="text-sm text-gray-400">
+                      Try adjusting your search or filters
+                    </div>
+                  </div>
+                )}
 
-                      {isLoading && (
-                        <div className="flex justify-center">
-                          <Loader2 className="w-6 h-6 text-blue-600 animate-spin" />
-                        </div>
-                      )}
-
-                      <div className="flex justify-end space-x-4">
+                {/* Modal: Create/Edit Task */}
+                {(isModalOpen || isEditModalOpen) && (
+                  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
+                    <div className="bg-white rounded-lg shadow-xl w-full max-w-lg sm:max-w-2xl md:max-w-3xl lg:max-w-4xl p-2 sm:p-4 md:p-6 max-h-[90vh] overflow-y-auto">
+                      <div className="flex items-center justify-between mb-6">
+                        <h2 className="text-lg sm:text-xl font-semibold text-gray-900">
+                          {editId ? "Edit Task" : "Create New Task"}
+                        </h2>
                         <button
-                          type="button"
                           onClick={() => {
                             setIsModalOpen(false);
                             setIsEditModalOpen(false);
@@ -2286,148 +1699,464 @@ const AdmintaskPage = () => {
                             setSelectedFiles([]);
                             setEmployeeSearchTerm("");
                           }}
-                          className="px-4 sm:px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 text-sm"
+                          className="text-gray-500 hover:text-gray-700"
                           disabled={isLoading}
                         >
-                          Cancel
-                        </button>
-                        <button
-                          type="submit"
-                          className="px-4 sm:px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center space-x-2 text-sm"
-                          disabled={isLoading}
-                        >
-                          <span>{editId ? "Update Task" : "Create Task"}</span>
+                          <X className="w-5 h-5" />
                         </button>
                       </div>
-                    </form>
-                  </div>
-                </div>
-              )}
 
-              {/* Modal: View Task */}
-              {isViewModalOpen && viewTask && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
-                  <div className="bg-white rounded-lg shadow-xl w-full max-w-lg sm:max-w-2xl md:max-w-3xl lg:max-w-6xl p-2 sm:p-4 md:p-6 max-h-[90vh] overflow-y-auto">
-                    <div className="flex justify-between items-start mb-6">
-                      <div className="flex items-center space-x-2">
-                        <h2 className="text-lg sm:text-xl font-semibold">
-                          {viewTask.taskName}
-                        </h2>
-                        {isOverdue(viewTask.dueDate, viewTask.status) && (
-                          <AlertCircle className="text-red-500 w-5 h-5" />
-                        )}
-                      </div>
-                      <button
-                        onClick={() => setIsViewModalOpen(false)}
-                        disabled={isLoading}
+                      <form
+                        onSubmit={(e) =>
+                          handleSubmit(e, isEditModalOpen && false)
+                        }
+                        className="space-y-6"
                       >
-                        <X className="w-6 h-6 text-gray-500 hover:text-black" />
-                      </button>
-                    </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Task Name *
+                          </label>
+                          <input
+                            type="text"
+                            name="taskName"
+                            value={formData.taskName}
+                            onChange={handleInputChange}
+                            required
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                            placeholder="Enter task name"
+                            disabled={isLoading}
+                          />
+                          {formData.errors.taskName && (
+                            <p className="text-red-500 text-xs mt-1">
+                              {formData.errors.taskName}
+                            </p>
+                          )}
+                        </div>
 
-                    <div className="mb-6">
-                      <p className="text-sm text-gray-500 mb-2">Description</p>
-                      <p className="text-gray-800 text-sm">
-                        {viewTask.description || "None"}
-                      </p>
-                    </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Description
+                          </label>
+                          <textarea
+                            name="description"
+                            value={formData.description}
+                            onChange={handleInputChange}
+                            rows={3}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                            placeholder="Enter task description"
+                            disabled={isLoading}
+                          />
+                        </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6">
-                      <div>
-                        <p className="text-sm text-gray-500 mb-2">Task Type</p>
-                        <span
-                          className={`px-2 py-1 rounded-full text-xs font-medium ${getTaskTypeColor(
-                            viewTask.taskType
-                          )}`}
-                        >
-                          {viewTask.taskType}
-                        </span>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-500 mb-2">Status</p>
-                        <span
-                          className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
-                            getDisplayStatus(viewTask)
-                          )}`}
-                        >
-                          {getDisplayStatus(viewTask)}
-                        </span>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-500 mb-2">Priority</p>
-                        <span
-                          className={`px-1 py-1 rounded-full text-xs font-medium ${getPriorityColor(
-                            viewTask.priority
-                          )}`}
-                        >
-                          {viewTask.priority}
-                        </span>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-500 mb-2">Due Date</p>
-                        <p className="text-sm">
-                          {viewTask.dueDate
-                            ? new Date(viewTask.dueDate).toLocaleDateString()
-                            : "N/A"}
-                          {viewTask.dueTime !== "N/A" && ` ${viewTask.dueTime}`}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-500 mb-2">
-                          Assigned To
-                        </p>
-                        <p className="text-sm text-gray-800 break-words">
-                          {Array.isArray(viewTask.assignedTo) &&
-                          viewTask.assignedTo.length > 0
-                            ? viewTask.assignedTo
-                                .map((emp) => `${emp.name} `)
-                                .join(", ")
-                            : "Unassigned"}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-500 mb-2">
-                          Assigned By
-                        </p>
-                        <p className="text-sm text-gray-800">
-                          {viewTask.assignedBy}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-500 mb-2">Task ID</p>
-                        <p className="text-sm text-gray-800">
-                          {viewTask.taskId}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-500 mb-2">
-                          Assigned Date
-                        </p>
-                        <p className="text-sm text-gray-800">
-                          {viewTask.assignedDateTime
-                            ? new Date(
-                                viewTask.assignedDateTime
-                              ).toLocaleDateString()
-                            : "N/A"}
-                        </p>
-                      </div>
-                    </div>
+                        <div className="relative">
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Assign Employees *
+                          </label>
+                          <input
+                            type="text"
+                            value={employeeSearchTerm}
+                            onChange={(e) =>
+                              setEmployeeSearchTerm(e.target.value)
+                            }
+                            onFocus={() => setShowEmployeeDropdown(true)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                            placeholder="Search employee by name or department"
+                            disabled={isLoading}
+                          />
+                          {showEmployeeDropdown && (
+                            <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                              {filteredEmployees.map((employee) => (
+                                <button
+                                  key={employee.id}
+                                  type="button"
+                                  onClick={() => handleEmployeeSelect(employee)}
+                                  className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center space-x-3"
+                                  disabled={isLoading}
+                                >
+                                  <img
+                                    src={employee.avatar || ""}
+                                    alt={employee.name}
+                                    className="w-8 h-8 rounded-full"
+                                  />
+                                  <div>
+                                    <p className="font-medium">
+                                      {employee.name || "Unknown"}
+                                    </p>
+                                    <p className="text-sm text-gray-500">
+                                      {employee.email}
+                                    </p>
+                                    <p className="text-sm text-gray-500">
+                                      {employee.position}
+                                    </p>
+                                  </div>
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            {formData.assignedTo.map((emp) => (
+                              <div
+                                key={emp.email}
+                                className="flex items-center bg-blue-50 text-blue-700 px-3 py-1 rounded-full"
+                              >
+                                <img
+                                  src={emp.avatar || ""}
+                                  alt={emp.name}
+                                  className="w-5 h-5 rounded-full mr-2"
+                                />
+                                <span className="text-sm">
+                                  {emp.name || "Unknown"}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    handleEmployeeRemove(emp.email)
+                                  }
+                                  className="ml-2 text-blue-500 hover:text-blue-700"
+                                  disabled={isLoading}
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                          {formData.errors.assignedTo && (
+                            <p className="text-red-500 text-xs mt-1">
+                              {formData.errors.assignedTo}
+                            </p>
+                          )}
+                        </div>
 
-                    <div className="mb-6">
-                      <p className="text-sm text-gray-500 mb-2">Attachments</p>
-                      <div className="flex space-x-2 mb-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Task Type *
+                            </label>
+                            <select
+                              name="taskType"
+                              value={formData.taskType}
+                              onChange={handleInputChange}
+                              required
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                              disabled={isLoading}
+                            >
+                              <option value="General">General</option>
+                              <option value="Auctions">Auctions</option>
+                              <option value="Remainder">Remainder</option>
+                            </select>
+                            {formData.errors.taskType && (
+                              <p className="text-red-500 text-xs mt-1">
+                                {formData.errors.taskType}
+                              </p>
+                            )}
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Priority *
+                            </label>
+                            <select
+                              name="priority"
+                              value={formData.priority}
+                              onChange={handleInputChange}
+                              required
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                              disabled={isLoading}
+                            >
+                              <option value="High">High</option>
+                              <option value="Medium">Medium</option>
+                              <option value="Low">Low</option>
+                            </select>
+                            {formData.errors.priority && (
+                              <p className="text-red-500 text-xs mt-1">
+                                {formData.errors.priority}
+                              </p>
+                            )}
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Due Date *
+                            </label>
+                            <input
+                              type="date"
+                              name="dueDate"
+                              value={formData.dueDate}
+                              onChange={handleInputChange}
+                              required
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                              disabled={isLoading}
+                            />
+                            {formData.errors.dueDate && (
+                              <p className="text-red-500 text-xs mt-1">
+                                {formData.errors.dueDate}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+
+                        {editId && (
+                          <div className="grid grid-cols-1 gap-4">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Status
+                              </label>
+                              {/* Show badge for computed status (including Pending) */}
+                              <span
+                                className={`mb-2 inline-block px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
+                                  getDisplayStatus(formData)
+                                )}`}
+                              >
+                                {getDisplayStatus(formData)}
+                              </span>
+                              {/* Only allow changing to editable statuses, not Pending */}
+                              <select
+                                name="status"
+                                value={formData.status}
+                                onChange={handleInputChange}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm mt-2"
+                                disabled={isLoading}
+                              >
+                                <option value="Open">Open</option>
+                                <option value="In Progress">In Progress</option>
+                                <option value="Hold">Hold</option>
+                                <option value="Complete">Complete</option>
+                                <option value="Archive">Archive</option>
+                              </select>
+                            </div>
+                          </div>
+                        )}
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            File Attachments
+                          </label>
+                          <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
+                            <label className="px-4 py-2 bg-blue-100 text-blue-700 border border-blue-300 rounded-md cursor-pointer hover:bg-blue-200 text-sm inline-flex items-center space-x-2">
+                              <Upload className="w-4 h-4" />
+                              <span>Choose Files</span>
+                              <input
+                                type="file"
+                                multiple
+                                onChange={handleAttachmentAdd}
+                                className="hidden"
+                                disabled={isLoading}
+                              />
+                            </label>
+                          </div>
+
+                          {formData.fileUrls.length > 0 && (
+                            <div className="mt-2 space-y-2">
+                              {formData.fileUrls.map((attachment, index) => (
+                                <div
+                                  key={index}
+                                  className="flex items-center justify-between bg-gray-50 p-2 rounded"
+                                >
+                                  <div className="flex items-center space-x-2">
+                                    <Upload className="w-4 h-4 text-gray-500" />
+                                    <span className="text-sm truncate">
+                                      {attachment}
+                                    </span>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      handleAttachmentRemove(index)
+                                    }
+                                    className="text-red-500 hover:text-red-700"
+                                    disabled={isLoading}
+                                  >
+                                    <X className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Remark
+                          </label>
+                          <input
+                            type="text"
+                            name="remark"
+                            value={formData.remark || ""}
+                            onChange={handleInputChange}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                            placeholder="Enter remark"
+                            disabled={isLoading}
+                          />
+                        </div>
+
+                        {isLoading && (
+                          <div className="flex justify-center">
+                            <Loader2 className="w-6 h-6 text-blue-600 animate-spin" />
+                          </div>
+                        )}
+
+                        <div className="flex justify-end space-x-4">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsModalOpen(false);
+                              setIsEditModalOpen(false);
+                              setFormData(initialForm);
+                              setEditId(null);
+                              setSelectedFiles([]);
+                              setEmployeeSearchTerm("");
+                            }}
+                            className="px-4 sm:px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 text-sm"
+                            disabled={isLoading}
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="submit"
+                            className="px-4 sm:px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center space-x-2 text-sm"
+                            disabled={isLoading}
+                          >
+                            <span>
+                              {editId ? "Update Task" : "Create Task"}
+                            </span>
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                )}
+
+                {/* Modal: View Task */}
+                {isViewModalOpen && viewTask && (
+                  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
+                    <div className="bg-white rounded-lg shadow-xl w-full max-w-lg sm:max-w-2xl md:max-w-3xl lg:max-w-6xl p-2 sm:p-4 md:p-6 max-h-[90vh] overflow-y-auto">
+                      <div className="flex justify-between items-start mb-6">
+                        <div className="flex items-center space-x-2">
+                          <h2 className="text-lg sm:text-xl font-semibold">
+                            {viewTask.taskName}
+                          </h2>
+                          {isOverdue(viewTask.dueDate, viewTask.status) && (
+                            <AlertCircle className="text-red-500 w-5 h-5" />
+                          )}
+                        </div>
                         <button
-                          onClick={() => setActiveTab("all")}
-                          className={`px-4 py-2 rounded-t-md text-sm ${
-                            activeTab === "all"
-                              ? "bg-blue-600 text-white"
-                              : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                          }`}
+                          onClick={() => setIsViewModalOpen(false)}
                           disabled={isLoading}
                         >
-                          All Attachments
+                          <X className="w-6 h-6 text-gray-500 hover:text-black" />
                         </button>
-                        {/* <button
+                      </div>
+
+                      <div className="mb-6">
+                        <p className="text-sm text-gray-500 mb-2">
+                          Description
+                        </p>
+                        <p className="text-gray-800 text-sm">
+                          {viewTask.description || "None"}
+                        </p>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6">
+                        <div>
+                          <p className="text-sm text-gray-500 mb-2">
+                            Task Type
+                          </p>
+                          <span
+                            className={`px-2 py-1 rounded-full text-xs font-medium ${getTaskTypeColor(
+                              viewTask.taskType
+                            )}`}
+                          >
+                            {viewTask.taskType}
+                          </span>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-500 mb-2">Status</p>
+                          <span
+                            className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
+                              getDisplayStatus(viewTask)
+                            )}`}
+                          >
+                            {getDisplayStatus(viewTask)}
+                          </span>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-500 mb-2">Priority</p>
+                          <span
+                            className={`px-1 py-1 rounded-full text-xs font-medium ${getPriorityColor(
+                              viewTask.priority
+                            )}`}
+                          >
+                            {viewTask.priority}
+                          </span>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-500 mb-2">Due Date</p>
+                          <p className="text-sm">
+                            {viewTask.dueDate
+                              ? new Date(viewTask.dueDate).toLocaleDateString()
+                              : "N/A"}
+                            {viewTask.dueTime !== "N/A" &&
+                              ` ${viewTask.dueTime}`}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-500 mb-2">
+                            Assigned To
+                          </p>
+                          <p className="text-sm text-gray-800 break-words">
+                            {Array.isArray(viewTask.assignedTo) &&
+                            viewTask.assignedTo.length > 0
+                              ? viewTask.assignedTo
+                                  .map((emp) => `${emp.name} `)
+                                  .join(", ")
+                              : "Unassigned"}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-500 mb-2">
+                            Assigned By
+                          </p>
+                          <p className="text-sm text-gray-800">
+                            {viewTask.assignedBy}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-500 mb-2">Task ID</p>
+                          <p className="text-sm text-gray-800">
+                            {viewTask.taskId}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-500 mb-2">
+                            Assigned Date
+                          </p>
+                          <p className="text-sm text-gray-800">
+                            {viewTask.assignedDateTime
+                              ? new Date(
+                                  viewTask.assignedDateTime
+                                ).toLocaleDateString()
+                              : "N/A"}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="mb-6">
+                        <p className="text-sm text-gray-500 mb-2">
+                          Attachments
+                        </p>
+                        <div className="flex space-x-2 mb-4">
+                          <button
+                            onClick={() => setActiveTab("all")}
+                            className={`px-4 py-2 rounded-t-md text-sm ${
+                              activeTab === "all"
+                                ? "bg-blue-600 text-white"
+                                : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                            }`}
+                            disabled={isLoading}
+                          >
+                            All Attachments
+                          </button>
+                          {/* <button
                           onClick={() => setActiveTab("recent")}
                           className={`px-4 py-2 rounded-t-md text-sm ${
                             activeTab === "recent"
@@ -2438,335 +2167,344 @@ const AdmintaskPage = () => {
                         >
                           Recent Attachments
                         </button> */}
-                      </div>
-                      <div className="p-4 bg-gray-50 rounded-b-md">
-                        {activeTab === "all" &&
-                        viewTask.fileUrls?.length > 0 ? (
-                          <div className="flex flex-wrap gap-2">
-                            {viewTask.fileUrls.map((att, idx) => (
-                              <a
-                                key={idx}
-                                href={att}
-                                download
-                                className="px-3 py-1 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700"
-                              >
-                                                               {att.split("/").pop()}
-                              </a>
-                            ))}
-                          </div>
-                        ) : activeTab === "recent" &&
+                        </div>
+                        <div className="p-4 bg-gray-50 rounded-b-md">
+                          {activeTab === "all" &&
                           viewTask.fileUrls?.length > 0 ? (
-                          <div className="flex flex-wrap gap-2">
-                            {viewTask.fileUrls.slice(-2).map((att, idx) => (
-                              <a
-                                key={idx}
-                                href={att}
-                                download
-                                className="px-3 py-1 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700"
-                              >
-                                {att.split("/").pop()}
-                              </a>
-                            ))}
-                          </div>
-                        ) : (
-                          <p className="text-sm text-gray-400">
-                            No attachments
-                          </p>
-                        )}
+                            <div className="flex flex-wrap gap-2">
+                              {viewTask.fileUrls.map((att, idx) => (
+                                <a
+                                  key={idx}
+                                  href={att}
+                                  download
+                                  className="px-3 py-1 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700"
+                                >
+                                  {att.split("/").pop()}
+                                </a>
+                              ))}
+                            </div>
+                          ) : activeTab === "recent" &&
+                            viewTask.fileUrls?.length > 0 ? (
+                            <div className="flex flex-wrap gap-2">
+                              {viewTask.fileUrls.slice(-2).map((att, idx) => (
+                                <a
+                                  key={idx}
+                                  href={att}
+                                  download
+                                  className="px-3 py-1 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700"
+                                >
+                                  {att.split("/").pop()}
+                                </a>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-sm text-gray-400">
+                              No attachments
+                            </p>
+                          )}
+                        </div>
                       </div>
-                    </div>
 
-                    <div className="mb-6">
-                      <p className="text-sm text-gray-500 mb-2">Remark</p>
-                      <p className="text-sm text-gray-800">
-                        {viewTask.remark || "None"}
-                      </p>
-                    </div>
+                      <div className="mb-6">
+                        <p className="text-sm text-gray-500 mb-2">Remark</p>
+                        <p className="text-sm text-gray-800">
+                          {viewTask.remark || "None"}
+                        </p>
+                      </div>
 
-                    <div className="mb-6">
-                      <p className="text-sm text-gray-500 mb-2">Comments</p>
-                      <form
-                        onSubmit={handleAddComment}
-                        className="flex gap-2 mb-4"
-                      >
-                        <textarea
-                          name="comment"
-                          className="w-full p-2 border rounded bg-gray-50 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          placeholder="Add a comment..."
-                          rows={2}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter" && !e.shiftKey) {
-                              e.preventDefault();
-                              handleAddComment(null, e.target.value);
-                            }
-                          }}
-                          disabled={isLoading}
-                        />
-                        <button
-                          type="submit"
-                          className="px-2 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                          disabled={isLoading}
+                      <div className="mb-6">
+                        <p className="text-sm text-gray-500 mb-2">Comments</p>
+                        <form
+                          onSubmit={handleAddComment}
+                          className="flex gap-2 mb-4"
                         >
-                          <Send className="w-5 h-5" />
-                        </button>
-                      </form>
-                      <div className="bg-gray-50 p-3 rounded-lg shadow-sm">
-                        {viewTask.comments.length > 0 ? (
-                          [...viewTask.comments]
-                            .sort(
-                              (a, b) =>
-                                new Date(b.timestamp) - new Date(a.timestamp)
-                            )
-                            .slice(
-                              0,
-                              showFullComments ? viewTask.comments.length : 1
-                            )
-                            .map((comment, index) => (
-                              <div
-                                key={index}
-                                className={`mb-3 pb-2 border-b border-gray-200 last:border-b-0 last:mb-0 ${
-                                  index === 0 ? "bg-yellow-100 p-2 rounded" : ""
-                                }`}
-                              >
-                                <div className="flex items-start gap-2">
-                                  <div>
-                                    <p className="text-gray-800 text-sm">
-                                      {comment.message || "No message"}
-                                    </p>
-                                    <p className="text-xs text-gray-500 mt-1">
-                                      {comment.userName ||
-                                        comment.user ||
-                                        "Unknown User"}{" "}
-                                      •{" "}
-                                      {new Date(
-                                        comment.timestamp
-                                      ).toLocaleString()}
-                                    </p>
-                                    {comment.profileImage && (
-                                      <img
-                                        src={comment.profileImage}
-                                        alt="User profile"
-                                        className="w-8 h-8 rounded-full mt-1"
-                                      />
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-                            ))
-                        ) : (
-                          <p className="text-gray-400 text-sm">
-                            No comments yet.
-                          </p>
-                        )}
-                        {viewTask.comments && viewTask.comments.length > 1 && (
+                          <textarea
+                            name="comment"
+                            className="w-full p-2 border rounded bg-gray-50 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="Add a comment..."
+                            rows={2}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" && !e.shiftKey) {
+                                e.preventDefault();
+                                handleAddComment(null, e.target.value);
+                              }
+                            }}
+                            disabled={isLoading}
+                          />
                           <button
-                            onClick={() =>
-                              setShowFullComments(!showFullComments)
-                            }
-                            className="mt-2 text-blue-600 text-sm hover:underline"
+                            type="submit"
+                            className="px-2 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
                             disabled={isLoading}
                           >
-                            {showFullComments ? "Hide" : "Show More"}
+                            <Send className="w-5 h-5" />
                           </button>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="mb-6">
-                      <p className="text-sm text-gray-500 mb-2">Activity Log</p>
-                      <div className="bg-gray-50 p-3 rounded text-sm">
-                        {viewTask.activityLogs &&
-                        viewTask.activityLogs.length > 0 ? (
-                          viewTask.activityLogs
-                            .slice(
-                              0,
-                              showFullComments
-                                ? viewTask.activityLogs.length
-                                : 1
-                            )
-                            .map((log, index) => (
-                              <div key={index} className="mb-2 last:mb-0">
-                                <p className="text-gray-700">
-                                  {log.message || "No message"}
-                                </p>
-                                <p className="text-xs text-gray-400">
-                                  {log.user || "Unknown User"} •{" "}
-                                  {new Date(
-                                    log.timestamp || Date.now()
-                                  ).toLocaleString()}
-                                </p>
-                              </div>
-                            ))
-                        ) : (
-                          <p className="text-gray-400 text-sm">
-                            No activity logs yet.
-                          </p>
-                        )}
-                        {viewTask.activityLogs &&
-                          viewTask.activityLogs.length > 1 && (
-                            <button
-                              onClick={() =>
-                                setShowFullComments(!showFullComments)
-                              }
-                              className="mt-2 text-blue-600 text-sm hover:underline"
-                              disabled={isLoading}
-                            >
-                              {showFullComments ? "Hide" : "Show More"}
-                            </button>
+                        </form>
+                        <div className="bg-gray-50 p-3 rounded-lg shadow-sm">
+                          {viewTask.comments.length > 0 ? (
+                            [...viewTask.comments]
+                              .sort(
+                                (a, b) =>
+                                  new Date(b.timestamp) - new Date(a.timestamp)
+                              )
+                              .slice(
+                                0,
+                                showFullComments ? viewTask.comments.length : 1
+                              )
+                              .map((comment, index) => (
+                                <div
+                                  key={index}
+                                  className={`mb-3 pb-2 border-b border-gray-200 last:border-b-0 last:mb-0 ${
+                                    index === 0
+                                      ? "bg-yellow-100 p-2 rounded"
+                                      : ""
+                                  }`}
+                                >
+                                  <div className="flex items-start gap-2">
+                                    <div>
+                                      <p className="text-gray-800 text-sm">
+                                        {comment.message || "No message"}
+                                      </p>
+                                      <p className="text-xs text-gray-500 mt-1">
+                                        {comment.userName ||
+                                          comment.user ||
+                                          "Unknown User"}{" "}
+                                        •{" "}
+                                        {new Date(
+                                          comment.timestamp
+                                        ).toLocaleString()}
+                                      </p>
+                                      {comment.profileImage && (
+                                        <img
+                                          src={comment.profileImage}
+                                          alt="User profile"
+                                          className="w-8 h-8 rounded-full mt-1"
+                                        />
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              ))
+                          ) : (
+                            <p className="text-gray-400 text-sm">
+                              No comments yet.
+                            </p>
                           )}
+                          {viewTask.comments &&
+                            viewTask.comments.length > 1 && (
+                              <button
+                                onClick={() =>
+                                  setShowFullComments(!showFullComments)
+                                }
+                                className="mt-2 text-blue-600 text-sm hover:underline"
+                                disabled={isLoading}
+                              >
+                                {showFullComments ? "Hide" : "Show More"}
+                              </button>
+                            )}
+                        </div>
                       </div>
-                    </div>
 
-                    <div className="flex justify-end mt-6 space-x-4">
-                      <button
-                        onClick={() => handleEditFromView(viewTask)}
-                        className="p-2 bg-green-600 text-white rounded-md hover:bg-green-700"
-                        title="Edit Task"
-                        disabled={isLoading}
-                      >
-                        <Edit className="w-5 h-5" />
-                      </button>
-                      <button
-                        onClick={() => setIsViewModalOpen(false)}
-                        className="px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300 text-sm"
-                        disabled={isLoading}
-                      >
-                        Close
-                      </button>
+                      <div className="mb-6">
+                        <p className="text-sm text-gray-500 mb-2">
+                          Activity Log
+                        </p>
+                        <div className="bg-gray-50 p-3 rounded text-sm">
+                          {viewTask.activityLogs &&
+                          viewTask.activityLogs.length > 0 ? (
+                            viewTask.activityLogs
+                              .slice(
+                                0,
+                                showFullComments
+                                  ? viewTask.activityLogs.length
+                                  : 1
+                              )
+                              .map((log, index) => (
+                                <div key={index} className="mb-2 last:mb-0">
+                                  <p className="text-gray-700">
+                                    {log.message || "No message"}
+                                  </p>
+                                  <p className="text-xs text-gray-400">
+                                    {log.user || "Unknown User"} •{" "}
+                                    {new Date(
+                                      log.timestamp || Date.now()
+                                    ).toLocaleString()}
+                                  </p>
+                                </div>
+                              ))
+                          ) : (
+                            <p className="text-gray-400 text-sm">
+                              No activity logs yet.
+                            </p>
+                          )}
+                          {viewTask.activityLogs &&
+                            viewTask.activityLogs.length > 1 && (
+                              <button
+                                onClick={() =>
+                                  setShowFullComments(!showFullComments)
+                                }
+                                className="mt-2 text-blue-600 text-sm hover:underline"
+                                disabled={isLoading}
+                              >
+                                {showFullComments ? "Hide" : "Show More"}
+                              </button>
+                            )}
+                        </div>
+                      </div>
+
+                      <div className="flex justify-end mt-6 space-x-4">
+                        <button
+                          onClick={() => handleEditFromView(viewTask)}
+                          className="p-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+                          title="Edit Task"
+                          disabled={isLoading}
+                        >
+                          <Edit className="w-5 h-5" />
+                        </button>
+                        <button
+                          onClick={() => setIsViewModalOpen(false)}
+                          className="px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300 text-sm"
+                          disabled={isLoading}
+                        >
+                          Close
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              {/* Modal: Confirm Delete */}
-              {showDeleteConfirm && taskToDelete && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
-                  <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-2 sm:p-4 md:p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <h2 className="text-lg font-semibold text-gray-900">
-                        Confirm Deletion
-                      </h2>
-                      <button
-                        onClick={() => {
-                          setShowDeleteConfirm(false);
-                          setTaskToDelete(null);
-                        }}
-                        className="text-gray-500 hover:text-gray-700"
-                        disabled={isLoading}
-                      >
-                        <X className="w-5 h-5" />
-                      </button>
-                    </div>
-                    <p className="text-gray-700 mb-4 text-sm">
-                      Are you sure you want to delete the task "
-                      {taskToDelete.taskName}" (Task ID: {taskToDelete.taskId})?
-                      This action cannot be undone.
-                    </p>
-                    <div className="flex justify-end space-x-4">
-                      <button
-                        onClick={() => {
-                          setShowDeleteConfirm(false);
-                          setTaskToDelete(null);
-                        }}
-                        className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 text-sm"
-                        disabled={isLoading}
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        onClick={() => handleDeleteTask(taskToDelete.taskId)}
-                        className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 text-sm"
-                        disabled={isLoading}
-                      >
-                        Delete
-                      </button>
+                {/* Modal: Confirm Delete */}
+                {showDeleteConfirm && taskToDelete && (
+                  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
+                    <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-2 sm:p-4 md:p-6">
+                      <div className="flex items-center justify-between mb-4">
+                        <h2 className="text-lg font-semibold text-gray-900">
+                          Confirm Deletion
+                        </h2>
+                        <button
+                          onClick={() => {
+                            setShowDeleteConfirm(false);
+                            setTaskToDelete(null);
+                          }}
+                          className="text-gray-500 hover:text-gray-700"
+                          disabled={isLoading}
+                        >
+                          <X className="w-5 h-5" />
+                        </button>
+                      </div>
+                      <p className="text-gray-700 mb-4 text-sm">
+                        Are you sure you want to delete the task "
+                        {taskToDelete.taskName}" (Task ID: {taskToDelete.taskId}
+                        )? This action cannot be undone.
+                      </p>
+                      <div className="flex justify-end space-x-4">
+                        <button
+                          onClick={() => {
+                            setShowDeleteConfirm(false);
+                            setTaskToDelete(null);
+                          }}
+                          className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 text-sm"
+                          disabled={isLoading}
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={() => handleDeleteTask(taskToDelete.taskId)}
+                          className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 text-sm"
+                          disabled={isLoading}
+                        >
+                          Delete
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              {/* Modal: Remainder Email */}
-              {showRemainderEmailModal && remainderEmailTask && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
-                  <div className="bg-white rounded-lg shadow-xl w-full max-w-lg p-2 sm:p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <h2 className="text-lg font-semibold text-gray-900">
-                        Send Remainder Email
-                      </h2>
-                      <button
-                        onClick={() => {
-                          setShowRemainderEmailModal(false);
-                          setRemainderEmailTask(null);
-                          setRemainderEmailBody("");
-                        }}
-                        className="text-gray-500 hover:text-gray-700"
-                        disabled={isSendingRemainderEmail}
-                      >
-                        <X className="w-5 h-5" />
-                      </button>
-                    </div>
-                    <div className="mb-4">
-                      <div className="mb-2 text-sm text-gray-700">
-                        <span className="font-semibold">To:</span>{" "}
-                        {remainderEmailTask.assignedTo
-                          .map((emp) => emp.email)
-                          .join(", ")}
+                {/* Modal: Remainder Email */}
+                {showRemainderEmailModal && remainderEmailTask && (
+                  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
+                    <div className="bg-white rounded-lg shadow-xl w-full max-w-lg p-2 sm:p-6">
+                      <div className="flex items-center justify-between mb-4">
+                        <h2 className="text-lg font-semibold text-gray-900">
+                          Send Remainder Email
+                        </h2>
+                        <button
+                          onClick={() => {
+                            setShowRemainderEmailModal(false);
+                            setRemainderEmailTask(null);
+                            setRemainderEmailBody("");
+                          }}
+                          className="text-gray-500 hover:text-gray-700"
+                          disabled={isSendingRemainderEmail}
+                        >
+                          <X className="w-5 h-5" />
+                        </button>
                       </div>
-                      <div className="mb-2 text-sm text-gray-700">
-                        <span className="font-semibold">Task:</span>{" "}
-                        {remainderEmailTask.taskName}
+                      <div className="mb-4">
+                        <div className="mb-2 text-sm text-gray-700">
+                          <span className="font-semibold">To:</span>{" "}
+                          {remainderEmailTask.assignedTo
+                            .map((emp) => emp.email)
+                            .join(", ")}
+                        </div>
+                        <div className="mb-2 text-sm text-gray-700">
+                          <span className="font-semibold">Task:</span>{" "}
+                          {remainderEmailTask.taskName}
+                        </div>
+                        <div className="mb-2 text-sm text-gray-700">
+                          <span className="font-semibold">Due:</span>{" "}
+                          {remainderEmailTask.dueDate
+                            ? new Date(
+                                remainderEmailTask.dueDate
+                              ).toLocaleDateString()
+                            : "N/A"}{" "}
+                          {remainderEmailTask.dueTime !== "N/A" &&
+                            remainderEmailTask.dueTime}
+                        </div>
                       </div>
-                      <div className="mb-2 text-sm text-gray-700">
-                        <span className="font-semibold">Due:</span>{" "}
-                        {remainderEmailTask.dueDate
-                          ? new Date(remainderEmailTask.dueDate).toLocaleDateString()
-                          : "N/A"}{" "}
-                        {remainderEmailTask.dueTime !== "N/A" &&
-                          remainderEmailTask.dueTime}
+                      <div className="mb-4">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Email Body
+                        </label>
+                        <textarea
+                          className="w-full border border-gray-300 rounded-md p-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          rows={7}
+                          value={remainderEmailBody}
+                          onChange={(e) =>
+                            setRemainderEmailBody(e.target.value)
+                          }
+                          disabled={isSendingRemainderEmail}
+                        />
                       </div>
-                    </div>
-                    <div className="mb-4">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Email Body
-                      </label>
-                      <textarea
-                        className="w-full border border-gray-300 rounded-md p-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        rows={7}
-                        value={remainderEmailBody}
-                        onChange={(e) => setRemainderEmailBody(e.target.value)}
-                        disabled={isSendingRemainderEmail}
-                      />
-                    </div>
-                    <div className="flex justify-end space-x-4">
-                      <button
-                        onClick={() => {
-                          setShowRemainderEmailModal(false);
-                          setRemainderEmailTask(null);
-                          setRemainderEmailBody("");
-                        }}
-                        className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 text-sm"
-                        disabled={isSendingRemainderEmail}
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        onClick={handleSendRemainderEmail}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm flex items-center"
-                        disabled={isSendingRemainderEmail}
-                      >
-                        {isSendingRemainderEmail ? (
-                          <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                        ) : (
-                          <Send className="w-4 h-4 mr-2" />
-                        )}
-                        Send Email
-                      </button>
+                      <div className="flex justify-end space-x-4">
+                        <button
+                          onClick={() => {
+                            setShowRemainderEmailModal(false);
+                            setRemainderEmailTask(null);
+                            setRemainderEmailBody("");
+                          }}
+                          className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 text-sm"
+                          disabled={isSendingRemainderEmail}
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={handleSendRemainderEmail}
+                          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm flex items-center"
+                          disabled={isSendingRemainderEmail}
+                        >
+                          {isSendingRemainderEmail ? (
+                            <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                          ) : (
+                            <Send className="w-4 h-4 mr-2" />
+                          )}
+                          Send Email
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
-          </div>
           </main>
         </div>
       </div>
@@ -2775,3 +2513,10 @@ const AdmintaskPage = () => {
 };
 
 export default AdmintaskPage;
+
+
+
+
+
+
+

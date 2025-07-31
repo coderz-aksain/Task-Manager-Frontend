@@ -139,6 +139,7 @@ const AdmintaskPage = () => {
 
   const [openDropdown, setOpenDropdown] = useState(null);
 
+  
   // Unseen comments state: { [taskId]: true }
   const [unseenComments, setUnseenComments] = useState(() => {
     try {
@@ -153,6 +154,22 @@ const AdmintaskPage = () => {
     setToast({ show: true, message, type });
     setTimeout(() => setToast({ show: false, message: "", type }), 3000);
   };
+
+  // Close dropdown if clicked outside
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target)
+      ) {
+        setOpenDropdown(null);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   // Helper to update unseen comments in localStorage
   const updateUnseenComments = (newState) => {
@@ -345,10 +362,11 @@ const AdmintaskPage = () => {
       assignedTo: prev.assignedTo.filter((emp) => emp.email !== email),
     }));
   };
-  const confirmDelete = (task) => {
-    setTaskToDelete(task);
-    setShowDeleteConfirm(true);
-  };
+const confirmDelete = (task) => {
+  setTaskToDelete(task);
+  setShowDeleteConfirm(true);
+  setOpenDropdown(null); // Close dropdown here as well
+};
 
   const handleAttachmentAdd = (e) => {
     const files = Array.from(e.target.files);
@@ -525,19 +543,20 @@ const AdmintaskPage = () => {
     }
   };
 
-  const handleEditTask = (task) => {
-    setFormData({
-      ...task,
-      dueDate: task.dueDate.split("/").reverse().join("-"),
-      assignedTo: task.assignedTo,
-      errors: {},
-      fileUrls: task.fileUrls.filter(
-        (url) => typeof url === "string" && url.startsWith("http")
-      ),
-    });
-    setEditId(task._id);
-    setIsModalOpen(true);
-  };
+const handleEditTask = (task) => {
+  setFormData({
+    ...task,
+    dueDate: task.dueDate.split("/").reverse().join("-"),
+    assignedTo: task.assignedTo,
+    errors: {},
+    fileUrls: task.fileUrls.filter(
+      (url) => typeof url === "string" && url.startsWith("http")
+    ),
+  });
+  setEditId(task._id);
+  setIsModalOpen(true);
+  setOpenDropdown(null); // Close dropdown after click
+};
 
   const handleDeleteTask = async (taskId) => {
     setIsLoading(true);
@@ -575,20 +594,20 @@ const AdmintaskPage = () => {
     }
   };
 
-  const handleViewTask = (task) => {
-    setViewTask({
-      ...task,
-      dueDate: task.dueDate.split("/").reverse().join("-"),
-    });
-    setIsViewModalOpen(true);
-    setActiveTab("all");
-    // Mark all comments as seen for this task
-    if (unseenComments[task._id]) {
-      const newUnseen = { ...unseenComments };
-      delete newUnseen[task._id];
-      updateUnseenComments(newUnseen);
-    }
-  };
+const handleViewTask = (task) => {
+  setViewTask({
+    ...task,
+    dueDate: task.dueDate.split("/").reverse().join("-"),
+  });
+  setIsViewModalOpen(true);
+  setActiveTab("all");
+  if (unseenComments[task._id]) {
+    const newUnseen = { ...unseenComments };
+    delete newUnseen[task._id];
+    updateUnseenComments(newUnseen);
+  }
+  setOpenDropdown(null); // Close dropdown upon action
+};
 
   const handleUpdateTaskStatus = async (taskId, status) => {
     setIsLoading(true);
@@ -739,17 +758,16 @@ const AdmintaskPage = () => {
   };
 
   // Remainder Email Modal handlers
-  const handleOpenRemainderEmailModal = (task) => {
-    setRemainderEmailTask(task);
-    setRemainderEmailBody(
-      `Hi,this is a reminder to complete the task before due tae which due on ${
-        task.dueDate ? new Date(task.dueDate).toLocaleDateString() : "N/A"
-      }${
-        task.dueTime !== "N/A" ? " at " + task.dueTime : ""
-      }.\n\nPlease ensure timely completion.`
-    );
-    setShowRemainderEmailModal(true);
-  };
+const handleOpenRemainderEmailModal = (task) => {
+  setRemainderEmailTask(task);
+  setRemainderEmailBody(
+    `Hi,this is a reminder to complete the task before due date which is on ${
+      task.dueDate ? new Date(task.dueDate).toLocaleDateString() : "N/A"
+    }${task.dueTime !== "N/A" ? " at " + task.dueTime : ""}.\n\nPlease ensure timely completion.`
+  );
+  setShowRemainderEmailModal(true);
+  setOpenDropdown(null); // Close dropdown after opening modal
+};
 
   const handleSendRemainderEmail = async () => {
     if (!remainderEmailTask) return;
@@ -789,7 +807,7 @@ const AdmintaskPage = () => {
       setIsSendingRemainderEmail(false);
     }
   };
-const dropdownRef = useRef(null);
+  const dropdownRef = useRef(null);
 
   const filteredTasks = tasks.filter((task) => {
     const displayStatus = getDisplayStatus(task);
@@ -922,21 +940,17 @@ const dropdownRef = useRef(null);
     XLSX.writeFile(wb, "tasks_export.xlsx");
   };
   useEffect(() => {
-  const handleClickOutside = (event) => {
-    if (
-      dropdownRef.current &&
-      !dropdownRef.current.contains(event.target)
-    ) {
-      setOpenDropdown(null);
-    }
-  };
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setOpenDropdown(null);
+      }
+    };
 
-  document.addEventListener("mousedown", handleClickOutside);
-  return () => {
-    document.removeEventListener("mousedown", handleClickOutside);
-  };
-}, []);
-
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-100">
@@ -1330,160 +1344,103 @@ const dropdownRef = useRef(null);
                                   <AlertCircle className="inline ml-2 text-red-600 w-4 h-4" />
                                 )}
                               </td>
-                              {/* <td className="py-4 px-2 sm:px-4 text-center">
-                                <div className="flex items-center justify-center space-x-2">
-                                  <>    <FaEllipsisH size={12} /></>
-                                  <button
-                                    onClick={() => handleViewTask(task)}
-                                    className="p-2 text-blue-600 hover:bg-blue-50 rounded relative"
-                                    title="View Details"
-                                    disabled={isLoading}
-                                  >
-                                    <Eye className="w-4 h-4" />
-                                    {unseenComments[task._id] &&
-                                      unseenComments[task._id].length > 0 && (
-                                        <span className="absolute -top-1 -right-1">
-                                          <MessageCircle
-                                            className="w-4 h-4 text-orange-500 animate-bounce"
-                                            title="New comment"
-                                          />
-                                        </span>
-                                      )}
-                                  </button>
-                                  <button
-                                    onClick={() => handleEditTask(task)}
-                                    className="p-2 text-green-600 hover:bg-green-50 rounded"
-                                    title="Edit Task"
-                                    disabled={isLoading}
-                                  >
-                                    <Edit className="w-4 h-4" />
-                                  </button>
-                                  <button
-                                    onClick={() => confirmDelete(task)}
-                                    className="p-2 text-red-600 hover:bg-red-50 rounded"
-                                    title="Delete Task"
-                                    disabled={isLoading}
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </button>
+                        
+                              {/* <td className="py-4 px-2 sm:px-4 text-center relative">
+                                <div className="relative inline-block text-left">
                                   <button
                                     onClick={() =>
-                                      handleOpenRemainderEmailModal(task)
+                                      setOpenDropdown((prev) =>
+                                        prev === task._id ? null : task._id
+                                      )
                                     }
-                                    className="p-2 text-purple-600 hover:bg-purple-50 rounded"
-                                    title="Send Remainder Email"
+                                    className="p-2 text-blue-600 hover:bg-gray-100 rounded"
+                                    title="Actions"
                                     disabled={isLoading}
                                   >
-                                    <Mail className="w-4 h-4" />
+                                    <FaEllipsisH size={14} />
                                   </button>
+
+                                  {openDropdown === task._id && (
+                                    <div className="absolute right-0 z-20 mt-2 w-44 bg-white border border-gray-200 rounded-lg shadow-lg">
+                                      <button
+                                        onClick={() => handleViewTask(task)}
+                                        className="w-full px-4 py-2 text-left text-blue-600 hover:bg-blue-50 text-sm flex items-center gap-2"
+                                      >
+                                        <Eye className="w-4 h-4" /> View Details
+                                      </button>
+                                      <button
+                                        onClick={() => handleEditTask(task)}
+                                        className="w-full px-4 py-2 text-left text-green-600 hover:bg-green-50 text-sm flex items-center gap-2"
+                                      >
+                                        <Edit className="w-4 h-4" /> Edit Task
+                                      </button>
+                                      <button
+                                        onClick={() => confirmDelete(task)}
+                                        className="w-full px-4 py-2 text-left text-red-600 hover:bg-red-50 text-sm flex items-center gap-2"
+                                      >
+                                        <Trash2 className="w-4 h-4" /> Delete
+                                        Task
+                                      </button>
+                                      <button
+                                        onClick={() =>
+                                          handleOpenRemainderEmailModal(task)
+                                        }
+                                        className="w-full px-4 py-2 text-left text-purple-600 hover:bg-purple-50 text-sm flex items-center gap-2"
+                                      >
+                                        <Mail className="w-4 h-4" /> Send
+                                        Reminder
+                                      </button>
+                                    </div>
+                                  )}
                                 </div>
                               </td> */}
 
-                              <td className="py-4 px-2 sm:px-4 text-center relative">
-  <div className="relative inline-block text-left">
-    <button
-      onClick={() =>
-        setOpenDropdown((prev) => (prev === task._id ? null : task._id))
-      }
-      className="p-2 text-blue-600 hover:bg-gray-100 rounded"
-      title="Actions"
-      disabled={isLoading}
-    >
-      <FaEllipsisH size={14} />
-    </button>
 
-    {openDropdown === task._id && (
-      <div className="absolute right-0 z-20 mt-2 w-44 bg-white border border-gray-200 rounded-lg shadow-lg">
+                                  {/* NEW TD */}
+
+       <td className="py-4 px-2 sm:px-4 text-center relative">
+      <div className="relative inline-block text-left" >
         <button
-          onClick={() => handleViewTask(task)}
-          className="w-full px-4 py-2 text-left text-blue-600 hover:bg-blue-50 text-sm flex items-center gap-2"
+          onClick={() =>
+            setOpenDropdown((prev) => (prev === task._id ? null : task._id))
+          }
+          className="p-2 text-blue-600 hover:bg-gray-100 rounded"
+          title="Actions"
+          disabled={isLoading}
         >
-          <Eye className="w-4 h-4" /> View Details
+          <FaEllipsisH size={14} />
         </button>
-        <button
-          onClick={() => handleEditTask(task)}
-          className="w-full px-4 py-2 text-left text-green-600 hover:bg-green-50 text-sm flex items-center gap-2"
-        >
-          <Edit className="w-4 h-4" /> Edit Task
-        </button>
-        <button
-          onClick={() => confirmDelete(task)}
-          className="w-full px-4 py-2 text-left text-red-600 hover:bg-red-50 text-sm flex items-center gap-2"
-        >
-          <Trash2 className="w-4 h-4" /> Delete Task
-        </button>
-        <button
-          onClick={() => handleOpenRemainderEmailModal(task)}
-          className="w-full px-4 py-2 text-left text-purple-600 hover:bg-purple-50 text-sm flex items-center gap-2"
-        >
-          <Mail className="w-4 h-4" /> Send Reminder
-        </button>
+
+        {openDropdown === task._id && (
+          <div className="absolute right-0 z-20 mt-2 w-44 bg-white border border-gray-200 rounded-lg shadow-lg">
+            <button
+              onClick={() => handleViewTask(task)}
+              className="w-full px-4 py-2 text-left text-blue-600 hover:bg-blue-50 text-sm flex items-center gap-2"
+            >
+              <Eye className="w-4 h-4" /> View Details
+            </button>
+            <button
+              onClick={() => handleEditTask(task)}
+              className="w-full px-4 py-2 text-left text-green-600 hover:bg-green-50 text-sm flex items-center gap-2"
+            >
+              <Edit className="w-4 h-4" /> Edit Task
+            </button>
+            <button
+              onClick={() => confirmDelete(task)}
+              className="w-full px-4 py-2 text-left text-red-600 hover:bg-red-50 text-sm flex items-center gap-2"
+            >
+              <Trash2 className="w-4 h-4" /> Delete Task
+            </button>
+            <button
+              onClick={() => handleOpenRemainderEmailModal(task)}
+              className="w-full px-4 py-2 text-left text-purple-600 hover:bg-purple-50 text-sm flex items-center gap-2"
+            >
+              <Mail className="w-4 h-4" /> Send Reminder
+            </button>
+          </div>
+        )}
       </div>
-    )}
-  </div>
-</td>
-
-
-{/* <td className="py-4 px-2 sm:px-4 text-center relative">
-  <div
-    className="relative inline-block text-left"
-    ref={dropdownRef}
-  >
-    <button
-      onClick={() =>
-        setOpenDropdown((prev) => (prev === task._id ? null : task._id))
-      }
-      className="p-2 text-gray-600 hover:bg-gray-100 rounded"
-      title="Actions"
-      disabled={isLoading}
-    >
-      <FaEllipsisH size={14} />
-    </button>
-
-    {openDropdown === task._id && (
-      <div className="absolute right-0 z-20 mt-2 w-44 bg-white border border-gray-200 rounded-lg shadow-lg">
-        <button
-          onClick={() => {
-            handleViewTask(task);
-            setOpenDropdown(null);
-          }}
-          className="w-full px-4 py-2 text-left text-blue-600 hover:bg-blue-50 text-sm flex items-center gap-2"
-        >
-          <Eye className="w-4 h-4" /> View Details
-        </button>
-        <button
-          onClick={() => {
-            handleEditTask(task);
-            setOpenDropdown(null);
-          }}
-          className="w-full px-4 py-2 text-left text-green-600 hover:bg-green-50 text-sm flex items-center gap-2"
-        >
-          <Edit className="w-4 h-4" /> Edit Task
-        </button>
-        <button
-          onClick={() => {
-            confirmDelete(task);
-            setOpenDropdown(null);
-          }}
-          className="w-full px-4 py-2 text-left text-red-600 hover:bg-red-50 text-sm flex items-center gap-2"
-        >
-          <Trash2 className="w-4 h-4" /> Delete Task
-        </button>
-        <button
-          onClick={() => {
-            handleOpenRemainderEmailModal(task);
-            setOpenDropdown(null);
-          }}
-          className="w-full px-4 py-2 text-left text-purple-600 hover:bg-purple-50 text-sm flex items-center gap-2"
-        >
-          <Mail className="w-4 h-4" /> Send Reminder
-        </button>
-      </div>
-    )}
-  </div>
-</td> */}
-
-
+    </td>
                             </tr>
                           ))}
                         </tbody>
@@ -1683,28 +1640,39 @@ const dropdownRef = useRef(null);
                 )}
 
                 {/* Modal: Create/Edit Task */}
+
+                {/* NEW MODAL  */}
+
                 {(isModalOpen || isEditModalOpen) && (
-                  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
-                    <div className="bg-white rounded-lg shadow-xl w-full max-w-lg sm:max-w-2xl md:max-w-3xl lg:max-w-4xl p-2 sm:p-4 md:p-6 max-h-[90vh] overflow-y-auto">
-                      <div className="flex items-center justify-between mb-6">
-                        <h2 className="text-lg sm:text-xl font-semibold text-gray-900">
-                          {editId ? "Edit Task" : "Create New Task"}
-                        </h2>
-                        <button
-                          onClick={() => {
-                            setIsModalOpen(false);
-                            setIsEditModalOpen(false);
-                            setFormData(initialForm);
-                            setEditId(null);
-                            setSelectedFiles([]);
-                            setEmployeeSearchTerm("");
-                          }}
-                          className="text-gray-500 hover:text-gray-700"
-                          disabled={isLoading}
-                        >
-                          <X className="w-5 h-5" />
-                        </button>
-                      </div>
+                  <div
+                    className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4"
+                    onClick={() => {
+                      setIsModalOpen(false);
+                      setIsEditModalOpen(false);
+                      setFormData(initialForm);
+                      setEditId(null);
+                      setSelectedFiles([]);
+                      setEmployeeSearchTerm("");
+                    }}
+                  >
+                    <div
+                      className="bg-white rounded-lg shadow-xl w-full max-w-5xl p-4 max-h-[90vh] overflow-y-auto relative"
+                      onClick={(e) => e.stopPropagation()} // <-- Add this!
+                    >
+                      {/* Sticky Close Button */}
+                      <button
+                        onClick={() => {
+                          setIsModalOpen(false);
+                          setIsEditModalOpen(false);
+                          setFormData(initialForm);
+                          setEditId(null);
+                          setSelectedFiles([]);
+                          setEmployeeSearchTerm("");
+                        }}
+                        className="text-gray-500 hover:text-gray-700 absolute top-2 right-2 z-50"
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
 
                       <form
                         onSubmit={(e) =>
@@ -2022,14 +1990,33 @@ const dropdownRef = useRef(null);
                           </button>
                         </div>
                       </form>
+                      {/* Modal content */}
                     </div>
                   </div>
                 )}
 
                 {/* Modal: View Task */}
                 {isViewModalOpen && viewTask && (
-                  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
-                    <div className="bg-white rounded-lg shadow-xl w-full max-w-lg sm:max-w-2xl md:max-w-3xl lg:max-w-6xl p-2 sm:p-4 md:p-6 max-h-[90vh] overflow-y-auto">
+                  <div
+                    className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4"
+                    onClick={() => setIsViewModalOpen(false)} // Close when clicking outside
+                    aria-modal="true"
+                    role="dialog"
+                  >
+                    <div
+                      className="bg-white rounded-lg shadow-xl w-full max-w-lg sm:max-w-2xl md:max-w-3xl lg:max-w-6xl p-2 sm:p-4 md:p-6 max-h-[90vh] overflow-y-auto relative"
+                      onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside
+                    >
+                      {/* Sticky Close Button */}
+                      <button
+                        onClick={() => setIsViewModalOpen(false)}
+                        disabled={isLoading}
+                        className="text-gray-500 hover:text-black absolute top-2 right-2 z-50"
+                        aria-label="Close modal"
+                      >
+                        <X className="w-6 h-6" />
+                      </button>
+
                       <div className="flex justify-between items-start mb-6">
                         <div className="flex items-center space-x-2">
                           <h2 className="text-lg sm:text-xl font-semibold">
@@ -2039,12 +2026,7 @@ const dropdownRef = useRef(null);
                             <AlertCircle className="text-red-500 w-5 h-5" />
                           )}
                         </div>
-                        <button
-                          onClick={() => setIsViewModalOpen(false)}
-                          disabled={isLoading}
-                        >
-                          <X className="w-6 h-6 text-gray-500 hover:text-black" />
-                        </button>
+                        {/* The close button above replaces the original */}
                       </div>
 
                       <div className="mb-6">
@@ -2107,7 +2089,7 @@ const dropdownRef = useRef(null);
                             {Array.isArray(viewTask.assignedTo) &&
                             viewTask.assignedTo.length > 0
                               ? viewTask.assignedTo
-                                  .map((emp) => `${emp.name} `)
+                                  .map((emp) => emp.name)
                                   .join(", ")
                               : "Unassigned"}
                           </p>
@@ -2156,37 +2138,13 @@ const dropdownRef = useRef(null);
                           >
                             All Attachments
                           </button>
-                          {/* <button
-                          onClick={() => setActiveTab("recent")}
-                          className={`px-4 py-2 rounded-t-md text-sm ${
-                            activeTab === "recent"
-                              ? "bg-blue-600 text-white"
-                              : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                          }`}
-                          disabled={isLoading}
-                        >
-                          Recent Attachments
-                        </button> */}
+                          {/* You can add other tabs if needed */}
                         </div>
                         <div className="p-4 bg-gray-50 rounded-b-md">
                           {activeTab === "all" &&
                           viewTask.fileUrls?.length > 0 ? (
                             <div className="flex flex-wrap gap-2">
                               {viewTask.fileUrls.map((att, idx) => (
-                                <a
-                                  key={idx}
-                                  href={att}
-                                  download
-                                  className="px-3 py-1 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700"
-                                >
-                                  {att.split("/").pop()}
-                                </a>
-                              ))}
-                            </div>
-                          ) : activeTab === "recent" &&
-                            viewTask.fileUrls?.length > 0 ? (
-                            <div className="flex flex-wrap gap-2">
-                              {viewTask.fileUrls.slice(-2).map((att, idx) => (
                                 <a
                                   key={idx}
                                   href={att}
@@ -2235,6 +2193,7 @@ const dropdownRef = useRef(null);
                             type="submit"
                             className="px-2 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
                             disabled={isLoading}
+                            aria-label="Submit comment"
                           >
                             <Send className="w-5 h-5" />
                           </button>
@@ -2374,22 +2333,36 @@ const dropdownRef = useRef(null);
 
                 {/* Modal: Confirm Delete */}
                 {showDeleteConfirm && taskToDelete && (
-                  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
-                    <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-2 sm:p-4 md:p-6">
+                  <div
+                    className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4"
+                    onClick={() => {
+                      setShowDeleteConfirm(false);
+                      setTaskToDelete(null);
+                    }}
+                    aria-modal="true"
+                    role="dialog"
+                  >
+                    <div
+                      className="bg-white rounded-lg shadow-xl w-full max-w-md p-2 sm:p-4 md:p-6 relative"
+                      onClick={(e) => e.stopPropagation()} // Stop propagation to prevent overlay close
+                    >
+                      {/* Sticky Close Button */}
+                      <button
+                        onClick={() => {
+                          setShowDeleteConfirm(false);
+                          setTaskToDelete(null);
+                        }}
+                        className="text-gray-500 hover:text-gray-700 absolute top-2 right-2 z-50"
+                        disabled={isLoading}
+                        aria-label="Close modal"
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
+
                       <div className="flex items-center justify-between mb-4">
                         <h2 className="text-lg font-semibold text-gray-900">
                           Confirm Deletion
                         </h2>
-                        <button
-                          onClick={() => {
-                            setShowDeleteConfirm(false);
-                            setTaskToDelete(null);
-                          }}
-                          className="text-gray-500 hover:text-gray-700"
-                          disabled={isLoading}
-                        >
-                          <X className="w-5 h-5" />
-                        </button>
                       </div>
                       <p className="text-gray-700 mb-4 text-sm">
                         Are you sure you want to delete the task "
@@ -2421,24 +2394,40 @@ const dropdownRef = useRef(null);
 
                 {/* Modal: Remainder Email */}
                 {showRemainderEmailModal && remainderEmailTask && (
-                  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
-                    <div className="bg-white rounded-lg shadow-xl w-full max-w-lg p-2 sm:p-6">
+                  <div
+                    className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4"
+                    onClick={() => {
+                      setShowRemainderEmailModal(false);
+                      setRemainderEmailTask(null);
+                      setRemainderEmailBody("");
+                    }}
+                    aria-modal="true"
+                    role="dialog"
+                  >
+                    <div
+                      className="bg-white rounded-lg shadow-xl w-full max-w-lg p-2 sm:p-6 relative"
+                      onClick={(e) => e.stopPropagation()} // Stop propagation to prevent overlay close
+                    >
+                      {/* Sticky Close Button */}
+                      <button
+                        onClick={() => {
+                          setShowRemainderEmailModal(false);
+                          setRemainderEmailTask(null);
+                          setRemainderEmailBody("");
+                        }}
+                        className="text-gray-500 hover:text-gray-700 absolute top-2 right-2 z-50"
+                        disabled={isSendingRemainderEmail}
+                        aria-label="Close modal"
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
+
                       <div className="flex items-center justify-between mb-4">
                         <h2 className="text-lg font-semibold text-gray-900">
-                          Send Remainder Email
+                          Send Reminder Email
                         </h2>
-                        <button
-                          onClick={() => {
-                            setShowRemainderEmailModal(false);
-                            setRemainderEmailTask(null);
-                            setRemainderEmailBody("");
-                          }}
-                          className="text-gray-500 hover:text-gray-700"
-                          disabled={isSendingRemainderEmail}
-                        >
-                          <X className="w-5 h-5" />
-                        </button>
                       </div>
+
                       <div className="mb-4">
                         <div className="mb-2 text-sm text-gray-700">
                           <span className="font-semibold">To:</span>{" "}
@@ -2461,6 +2450,7 @@ const dropdownRef = useRef(null);
                             remainderEmailTask.dueTime}
                         </div>
                       </div>
+
                       <div className="mb-4">
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           Email Body
@@ -2475,6 +2465,7 @@ const dropdownRef = useRef(null);
                           disabled={isSendingRemainderEmail}
                         />
                       </div>
+
                       <div className="flex justify-end space-x-4">
                         <button
                           onClick={() => {
@@ -2491,6 +2482,7 @@ const dropdownRef = useRef(null);
                           onClick={handleSendRemainderEmail}
                           className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm flex items-center"
                           disabled={isSendingRemainderEmail}
+                          aria-label="Send reminder email"
                         >
                           {isSendingRemainderEmail ? (
                             <Loader2 className="w-4 h-4 animate-spin mr-2" />
@@ -2513,10 +2505,3 @@ const dropdownRef = useRef(null);
 };
 
 export default AdmintaskPage;
-
-
-
-
-
-
-

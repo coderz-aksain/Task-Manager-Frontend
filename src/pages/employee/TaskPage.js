@@ -1695,7 +1695,6 @@
 
 // export default TaskPage;
 
-
 // import React, { useState, useEffect } from "react";
 // import {
 //   Search,
@@ -3363,7 +3362,6 @@
 // };
 
 // export default TaskPage;
-
 
 // import React, { useState, useEffect } from "react";
 // import {
@@ -5057,10 +5055,6 @@
 
 // export default TaskPage;
 
-
-
-
-
 import React, { useState, useEffect } from "react";
 import {
   Search,
@@ -5201,7 +5195,9 @@ const TaskPage = () => {
               .map((task) => {
                 const assignedTo = Array.isArray(task.assignedTo)
                   ? task.assignedTo.map((email) => {
-                      const employee = employees.find((emp) => emp.email === email);
+                      const employee = employees.find(
+                        (emp) => emp.email === email
+                      );
                       return {
                         email: email || "",
                         name: employee ? employee.name : email || "Unknown",
@@ -5276,7 +5272,11 @@ const TaskPage = () => {
         ...prev,
         assignedTo: [
           ...prev.assignedTo,
-          { email: employee.email, name: employee.name, avatar: employee.avatar },
+          {
+            email: employee.email,
+            name: employee.name,
+            avatar: employee.avatar,
+          },
         ],
         errors: { ...prev.errors, assignedTo: "" },
       }));
@@ -5406,7 +5406,8 @@ const TaskPage = () => {
                       email ||
                       "Unknown",
                     avatar:
-                      employees.find((emp) => emp.email === email)?.avatar || "",
+                      employees.find((emp) => emp.email === email)?.avatar ||
+                      "",
                   })),
                 }
               : task
@@ -5514,7 +5515,7 @@ const TaskPage = () => {
 
   const handleAddComment = async (e, commentText = null) => {
     if (e) e.preventDefault();
-    const text = commentText || (e?.target?.comment?.value?.trim() || "");
+    const text = commentText || e?.target?.comment?.value?.trim() || "";
     if (!text) return;
 
     setIsLoading(true);
@@ -5585,7 +5586,8 @@ const TaskPage = () => {
       (typeof task.description === "string"
         ? task.description.toLowerCase().includes(searchTerm.toLowerCase())
         : false);
-    const matchesStatus = filterStatus === "all" || task.status === filterStatus;
+    const matchesStatus =
+      filterStatus === "all" || task.status === filterStatus;
     const matchesPriority =
       filterPriority === "all" || task.priority === filterPriority;
     const matchesTaskType =
@@ -5705,14 +5707,14 @@ const TaskPage = () => {
                 {error}
               </div>
             )}
-          {toast && (
-  <div 
-    className="fixed top-4 right-4 z-60 px-4 py-2 rounded-md shadow-lg max-w-md w-56 text-sm bg-blue-600 text-white"
-    style={{ zIndex: 60 }} // Ensure it stays on top
-  >
-    {toast.message}
-  </div>
-)}
+            {toast && (
+              <div
+                className="fixed top-4 right-4 z-60 px-4 py-2 rounded-md shadow-lg max-w-md w-56 text-sm bg-blue-600 text-white"
+                style={{ zIndex: 60 }} // Ensure it stays on top
+              >
+                {toast.message}
+              </div>
+            )}
             <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 h-[850px]">
               <div className="mb-6">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-4">
@@ -5728,7 +5730,9 @@ const TaskPage = () => {
                           setFormData({
                             ...initialForm,
                             taskType:
-                              filterTaskType === "all" ? "General" : filterTaskType,
+                              filterTaskType === "all"
+                                ? "General"
+                                : filterTaskType,
                           });
                         }}
                         className="p-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center justify-center text-sm sm:text-base w-10 h-10 sm:w-10 sm:h-10"
@@ -5939,107 +5943,137 @@ const TaskPage = () => {
                   </tbody>
                 </table>
               </div> */}
-<div className="hidden lg:block overflow-x-auto">
-  <table className="w-full text-sm">
-    <thead className="sticky top-0 bg-white z-10 border-b border-gray-200">
-      <tr>
-        <th className="text-left py-3 px-2 sm:px-4 font-medium text-gray-700">Task ID</th>
-        <th className="text-left py-3 px-2 sm:px-4 font-medium text-gray-700">Task Name</th>
-        <th className="text-left py-3 px-2 sm:px-4 font-medium text-gray-700">Task Type</th>
-        <th className="text-left py-3 px-2 sm:px-4 font-medium text-gray-700">Priority</th>
-        <th className="text-left py-3 px-2 sm:px-4 font-medium text-gray-700">Status</th>
-        <th className="text-left py-3 px-2 sm:px-4 font-medium text-gray-700">Assigned By</th>
-        <th className="text-left py-3 px-2 sm:px-4 font-medium text-gray-700">Assigned Date</th>
-        <th className="text-left py-3 px-2 sm:px-4 font-medium text-gray-700">Due Date</th>
-        <th className="text-left py-3 px-2 sm:px-4 font-medium text-gray-700">Actions</th>
-      </tr>
-    </thead>
-    <tbody>
-      {filteredTasks.map((task) => (
-        <tr
-          key={task._id}
-          className={`border-b border-gray-100 hover:bg-gray-50 ${
-            isOverdue(task.dueDate, task.status) ? "bg-red-50" : ""
-          }`}
-        >
-          <td className="py-3 px-2 sm:px-4 text-gray-900">{task.taskId}</td>
-          <td className="py-3 px-2 sm:px-4">
-            <div className="font-medium text-gray-900">{task.taskName}</div>
-          </td>
-          <td className="py-3 px-2 sm:px-4">
-            <span
-              className={`px-2 py-1 rounded-full text-xs font-medium ${getTaskTypeColor(
-                task.taskType
-              )}`}
-            >
-              {task.taskType}
-            </span>
-          </td>
-          <td className="py-3 px-2 sm:px-4">
-            <span
-              className={`px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(
-                task.priority
-              )}`}
-            >
-              {task.priority}
-            </span>
-          </td>
-          <td className="py-3 px-2 sm:px-4">
-            <span
-              className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
-                task.status
-              )}`}
-            >
-              {task.status}
-            </span>
-          </td>
-          <td className="py-3 px-2 sm:px-4 text-gray-600">
-            <div className="relative group">
-              <div
-                className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 text-sm font-medium"
-                title={task.assignedBy}
-              >
-                {getInitials(task.assignedBy)}
+              <div className="hidden lg:block overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="sticky top-0 bg-white z-10 border-b border-gray-200">
+                    <tr>
+                      <th className="text-left py-3 px-2 sm:px-4 font-medium text-gray-700">
+                        Task ID
+                      </th>
+                      <th className="text-left py-3 px-2 sm:px-4 font-medium text-gray-700">
+                        Task Name
+                      </th>
+                      <th className="text-left py-3 px-2 sm:px-4 font-medium text-gray-700">
+                        Task Type
+                      </th>
+                      <th className="text-left py-3 px-2 sm:px-4 font-medium text-gray-700">
+                        Priority
+                      </th>
+                      <th className="text-left py-3 px-2 sm:px-4 font-medium text-gray-700">
+                        Status
+                      </th>
+                      <th className="text-left py-3 px-2 sm:px-4 font-medium text-gray-700">
+                        Assigned By
+                      </th>
+                      <th className="text-left py-3 px-2 sm:px-4 font-medium text-gray-700">
+                        Assigned Date
+                      </th>
+                      <th className="text-left py-3 px-2 sm:px-4 font-medium text-gray-700">
+                        Due Date
+                      </th>
+                      <th className="text-left py-3 px-2 sm:px-4 font-medium text-gray-700">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredTasks.map((task) => (
+                      <tr
+                        key={task._id}
+                        className={`border-b border-gray-100 hover:bg-gray-50 ${
+                          isOverdue(task.dueDate, task.status)
+                            ? "bg-red-50"
+                            : ""
+                        }`}
+                      >
+                        <td className="py-3 px-2 sm:px-4 text-gray-900">
+                          {task.taskId}
+                        </td>
+                        <td className="py-3 px-2 sm:px-4">
+                          <div className="font-medium text-gray-900">
+                            {task.taskName}
+                          </div>
+                        </td>
+                        <td className="py-3 px-2 sm:px-4">
+                          <span
+                            className={`px-2 py-1 rounded-full text-xs font-medium ${getTaskTypeColor(
+                              task.taskType
+                            )}`}
+                          >
+                            {task.taskType}
+                          </span>
+                        </td>
+                        <td className="py-3 px-2 sm:px-4">
+                          <span
+                            className={`px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(
+                              task.priority
+                            )}`}
+                          >
+                            {task.priority}
+                          </span>
+                        </td>
+                        <td className="py-3 px-2 sm:px-4">
+                          <span
+                            className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
+                              task.status
+                            )}`}
+                          >
+                            {task.status}
+                          </span>
+                        </td>
+                        <td className="py-3 px-2 sm:px-4 text-gray-600">
+                          <div className="relative group">
+                            <div
+                              className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 text-sm font-medium"
+                              title={task.assignedBy}
+                            >
+                              {getInitials(task.assignedBy)}
+                            </div>
+                            <span className="absolute left-0 top-10 bg-gray-800 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                              {task.assignedBy}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="py-3 px-2 sm:px-4 text-gray-600">
+                          {task.assignedDateTime
+                            ? new Date(
+                                task.assignedDateTime
+                              ).toLocaleDateString()
+                            : "N/A"}
+                        </td>
+                        <td className="py-3 px-2 sm:px-4 text-gray-600">
+                          {task.dueDate
+                            ? new Date(task.dueDate).toLocaleDateString()
+                            : "N/A"}
+                          {task.dueTime !== "N/A" && ` ${task.dueTime}`}
+                          {isOverdue(task.dueDate, task.status) && (
+                            <AlertCircle className="inline ml-2 text-red-600 w-4 h-4" />
+                          )}
+                        </td>
+                        <td className="py-3 px-2 sm:px-4">
+                          <div className="flex items-center space-x-1">
+                            <button
+                              onClick={() => handleViewTask(task)}
+                              className="p-1 text-blue-600 hover:bg-blue-50 rounded"
+                              title="View Details"
+                              disabled={isLoading}
+                            >
+                              <Eye className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-              <span className="absolute left-0 top-10 bg-gray-800 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                {task.assignedBy}
-              </span>
-            </div>
-          </td>
-          <td className="py-3 px-2 sm:px-4 text-gray-600">
-            {task.assignedDateTime
-              ? new Date(task.assignedDateTime).toLocaleDateString()
-              : "N/A"}
-          </td>
-          <td className="py-3 px-2 sm:px-4 text-gray-600">
-            {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : "N/A"}
-            {task.dueTime !== "N/A" && ` ${task.dueTime}`}
-            {isOverdue(task.dueDate, task.status) && (
-              <AlertCircle className="inline ml-2 text-red-600 w-4 h-4" />
-            )}
-          </td>
-          <td className="py-3 px-2 sm:px-4">
-            <div className="flex items-center space-x-1">
-              <button
-                onClick={() => handleViewTask(task)}
-                className="p-1 text-blue-600 hover:bg-blue-50 rounded"
-                title="View Details"
-                disabled={isLoading}
-              >
-                <Eye className="w-4 h-4" />
-              </button>
-            </div>
-          </td>
-        </tr>
-      ))}
-    </tbody>
-  </table>
-</div>
 
               <div className="lg:hidden grid gap-4">
                 {filteredTasks.length === 0 ? (
                   <div className="text-center py-12 text-gray-500">
-                    <div className="mb-4">No tasks found matching your criteria</div>
+                    <div className="mb-4">
+                      No tasks found matching your criteria
+                    </div>
                     <div className="text-sm text-gray-400">
                       Try adjusting your search or filters
                     </div>
@@ -6078,7 +6112,9 @@ const TaskPage = () => {
                         <div>
                           <span className="font-semibold">Assigned Date:</span>{" "}
                           {task.assignedDateTime
-                            ? new Date(task.assignedDateTime).toLocaleDateString()
+                            ? new Date(
+                                task.assignedDateTime
+                              ).toLocaleDateString()
                             : "N/A"}
                         </div>
                         <div>
@@ -6104,7 +6140,10 @@ const TaskPage = () => {
                         <div>
                           <span className="font-semibold">Assigned By:</span>{" "}
                           <div className="relative group inline-block">
-                            <span className="inline-flex w-6 h-6 bg-blue-100 rounded-full items-center justify-center text-blue-600 text-xs font-medium" title={task.assignedBy}>
+                            <span
+                              className="inline-flex w-6 h-6 bg-blue-100 rounded-full items-center justify-center text-blue-600 text-xs font-medium"
+                              title={task.assignedBy}
+                            >
                               {getInitials(task.assignedBy)}
                             </span>
                             <span className="absolute left-0 top-8 bg-gray-800 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
@@ -6207,7 +6246,9 @@ const TaskPage = () => {
                     </div>
 
                     <form
-                      onSubmit={(e) => handleSubmit(e, isEditModalOpen && false)}
+                      onSubmit={(e) =>
+                        handleSubmit(e, isEditModalOpen && false)
+                      }
                       className="space-y-6"
                     >
                       <div>
@@ -6253,7 +6294,9 @@ const TaskPage = () => {
                         <input
                           type="text"
                           value={employeeSearchTerm}
-                          onChange={(e) => setEmployeeSearchTerm(e.target.value)}
+                          onChange={(e) =>
+                            setEmployeeSearchTerm(e.target.value)
+                          }
                           onFocus={() => setShowEmployeeDropdown(true)}
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                           placeholder="Search employee by name or department"
@@ -6568,7 +6611,9 @@ const TaskPage = () => {
                         </p>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-500 mb-2">Assigned To</p>
+                        <p className="text-sm text-gray-500 mb-2">
+                          Assigned To
+                        </p>
                         <div className="flex flex-wrap gap-2">
                           {Array.isArray(viewTask.assignedTo) &&
                           viewTask.assignedTo.length > 0 ? (
@@ -6581,17 +6626,25 @@ const TaskPage = () => {
                               </span>
                             ))
                           ) : (
-                            <span className="text-sm text-gray-800">Unassigned</span>
+                            <span className="text-sm text-gray-800">
+                              Unassigned
+                            </span>
                           )}
                         </div>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-500 mb-2">Assigned By</p>
-                        <span className="text-sm text-gray-800">{viewTask.assignedBy}</span>
+                        <p className="text-sm text-gray-500 mb-2">
+                          Assigned By
+                        </p>
+                        <span className="text-sm text-gray-800">
+                          {viewTask.assignedBy}
+                        </span>
                       </div>
                       <div>
                         <p className="text-sm text-gray-500 mb-2">Task ID</p>
-                        <p className="text-sm text-gray-800">{viewTask.taskId}</p>
+                        <p className="text-sm text-gray-800">
+                          {viewTask.taskId}
+                        </p>
                       </div>
                       <div>
                         <p className="text-sm text-gray-500 mb-2">
@@ -6599,7 +6652,9 @@ const TaskPage = () => {
                         </p>
                         <p className="text-sm text-gray-800">
                           {viewTask.assignedDateTime
-                            ? new Date(viewTask.assignedDateTime).toLocaleDateString()
+                            ? new Date(
+                                viewTask.assignedDateTime
+                              ).toLocaleDateString()
                             : "N/A"}
                         </p>
                       </div>
@@ -6632,7 +6687,8 @@ const TaskPage = () => {
                         </button> */}
                       </div>
                       <div className="p-4 bg-gray-50 rounded-b-md">
-                        {activeTab === "all" && viewTask.fileUrls?.length > 0 ? (
+                        {activeTab === "all" &&
+                        viewTask.fileUrls?.length > 0 ? (
                           <div className="flex flex-wrap gap-2">
                             {viewTask.fileUrls.map((att, idx) => (
                               <a
@@ -6645,7 +6701,8 @@ const TaskPage = () => {
                               </a>
                             ))}
                           </div>
-                        ) : activeTab === "recent" && viewTask.fileUrls?.length > 0 ? (
+                        ) : activeTab === "recent" &&
+                          viewTask.fileUrls?.length > 0 ? (
                           <div className="flex flex-wrap gap-2">
                             {viewTask.fileUrls.slice(-2).map((att, idx) => (
                               <a
@@ -6659,7 +6716,9 @@ const TaskPage = () => {
                             ))}
                           </div>
                         ) : (
-                          <p className="text-sm text-gray-400">No attachments</p>
+                          <p className="text-sm text-gray-400">
+                            No attachments
+                          </p>
                         )}
                       </div>
                     </div>
@@ -6677,7 +6736,12 @@ const TaskPage = () => {
                       </label>
                       <select
                         value={viewTask.status}
-                        onChange={(e) => handleUpdateTaskStatus(viewTask.taskId, e.target.value)}
+                        onChange={(e) =>
+                          handleUpdateTaskStatus(
+                            viewTask.taskId,
+                            e.target.value
+                          )
+                        }
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                         disabled={isLoading}
                       >
@@ -6691,7 +6755,10 @@ const TaskPage = () => {
 
                     <div className="mb-6">
                       <p className="text-sm text-gray-500 mb-2">Comments</p>
-                      <form onSubmit={handleAddComment} className="flex gap-2 mb-4">
+                      <form
+                        onSubmit={handleAddComment}
+                        className="flex gap-2 mb-4"
+                      >
                         <textarea
                           name="comment"
                           className="w-full p-2 border rounded bg-gray-50 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -6717,9 +6784,13 @@ const TaskPage = () => {
                         {viewTask.comments.length > 0 ? (
                           [...viewTask.comments]
                             .sort(
-                              (a, b) => new Date(b.timestamp) - new Date(a.timestamp)
+                              (a, b) =>
+                                new Date(b.timestamp) - new Date(a.timestamp)
                             )
-                            .slice(0, showFullComments ? viewTask.comments.length : 2)
+                            .slice(
+                              0,
+                              showFullComments ? viewTask.comments.length : 2
+                            )
                             .map((comment, index) => (
                               <div
                                 key={index}
@@ -6730,10 +6801,13 @@ const TaskPage = () => {
                                 <div className="flex items-start gap-2">
                                   <img
                                     src={comment.profileImage}
-                                    alt={`${comment.userName || comment.user} avatar`}
+                                    alt={`${
+                                      comment.userName || comment.user
+                                    } avatar`}
                                     className="w-8 h-8 rounded-full object-cover"
                                     onError={(e) => {
-                                      e.target.src = "https://via.placeholder.com/32";
+                                      e.target.src =
+                                        "https://via.placeholder.com/32";
                                     }}
                                   />
                                   <div>
@@ -6741,19 +6815,28 @@ const TaskPage = () => {
                                       {comment.message || "No message"}
                                     </p>
                                     <p className="text-xs text-gray-500 mt-1">
-                                      {comment.userName || comment.user || "Unknown User"}{" "}
-                                      • {new Date(comment.timestamp).toLocaleString()}
+                                      {comment.userName ||
+                                        comment.user ||
+                                        "Unknown User"}{" "}
+                                      •{" "}
+                                      {new Date(
+                                        comment.timestamp
+                                      ).toLocaleString()}
                                     </p>
                                   </div>
                                 </div>
                               </div>
                             ))
                         ) : (
-                          <p className="text-gray-400 text-sm">No comments yet.</p>
+                          <p className="text-gray-400 text-sm">
+                            No comments yet.
+                          </p>
                         )}
                         {viewTask.comments.length > 2 && (
                           <button
-                            onClick={() => setShowFullComments(!showFullComments)}
+                            onClick={() =>
+                              setShowFullComments(!showFullComments)
+                            }
                             className="mt-2 text-blue-600 text-sm hover:underline"
                             disabled={isLoading}
                           >
@@ -6766,9 +6849,13 @@ const TaskPage = () => {
                     <div>
                       <p className="text-sm text-gray-500 mb-2">Activity Log</p>
                       <div className="bg-gray-50 p-3 rounded text-sm">
-                        {viewTask.activityLogs && viewTask.activityLogs.length > 0 ? (
+                        {viewTask.activityLogs &&
+                        viewTask.activityLogs.length > 0 ? (
                           viewTask.activityLogs
-                            .slice(0, showFullLog ? viewTask.activityLogs.length : 1)
+                            .slice(
+                              0,
+                              showFullLog ? viewTask.activityLogs.length : 1
+                            )
                             .map((log, index) => (
                               <div key={index} className="mb-2 last:mb-0">
                                 <p className="text-gray-700">
@@ -6776,7 +6863,9 @@ const TaskPage = () => {
                                 </p>
                                 <p className="text-xs text-gray-400">
                                   {log.user || "Unknown User"} •{" "}
-                                  {new Date(log.timestamp || Date.now()).toLocaleString()}
+                                  {new Date(
+                                    log.timestamp || Date.now()
+                                  ).toLocaleString()}
                                 </p>
                               </div>
                             ))

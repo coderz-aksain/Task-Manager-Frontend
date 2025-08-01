@@ -92,39 +92,61 @@
 
 
 
-import React, { useEffect, useState } from 'react';
+// import React from 'react';
+// import { BrowserRouter } from 'react-router-dom';
+// import { AppProvider } from './contexts/AppContext';
+// // import { useToast, ToastContainer } from './hooks/useToast';
+// import AppRoutes from './routes';
+// import { ToastContainer, toast } from 'react-toastify';
+// import 'react-toastify/dist/ReactToastify.css';
+
+// function AppContent() {
+//   const { toasts, removeToast } = useToast();
+
+//   return (
+//     <>
+//       <BrowserRouter>
+//         <AppRoutes />
+//       </BrowserRouter>
+//       <ToastContainer toasts={toasts} removeToast={removeToast} />
+//     </>
+//   );
+// }
+
+// function App() {
+//   return (
+//     <AppProvider>
+//       <AppContent />
+//     </AppProvider>
+//   );
+// }
+
+// export default App;
+
+import React from 'react';
 import { BrowserRouter } from 'react-router-dom';
+import { AppProvider } from './contexts/AppContext';
 import AppRoutes from './routes';
-import DashboardDemo from './pages/DashboardDemo';
+
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+
+function AppContent() {
+  return (
+    <>
+      <BrowserRouter>
+        <AppRoutes />
+      </BrowserRouter>
+      <ToastContainer position="top-right" autoClose={3000} />
+    </>
+  );
+}
 
 function App() {
-  const [isVerified, setIsVerified] = useState(false);
-  const [showDemo, setShowDemo] = useState(false);
-
-  useEffect(() => {
-    // No token verification, just set isVerified to true immediately
-    setIsVerified(true);
-    
-    // Check if we should show the demo (you can remove this logic)
-    const urlParams = new URLSearchParams(window.location.search);
-    setShowDemo(urlParams.get('demo') === 'true');
-  }, []);
-
-  // Show demo dashboard if demo=true in URL
-  if (showDemo) {
-    return (
-      <BrowserRouter>
-        <DashboardDemo />
-      </BrowserRouter>
-    );
-  }
-
   return (
-    <div className="App">
-      <BrowserRouter>
-        <AppRoutes isVerified={isVerified} />
-      </BrowserRouter>
-    </div>
+    <AppProvider>
+      <AppContent />
+    </AppProvider>
   );
 }
 

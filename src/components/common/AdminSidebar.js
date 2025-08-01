@@ -122,11 +122,13 @@
 // export default AdminSidebar;
 
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useAppContext } from '../../contexts/AppContext';
 import { Users, CheckSquare, Plus, User, LogOut, X, Menu, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const AdminSidebar = ({ isOpen, toggleSidebar }) => {
+  const { actions } = useAppContext();
   const [activeItem, setActiveItem] = useState('Employee List');
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(false);
   const navigate = useNavigate();
@@ -135,11 +137,11 @@ const AdminSidebar = ({ isOpen, toggleSidebar }) => {
   const menuItems = [
     { name: 'Employee List', icon: Users, path: '/admin/employeelist', tooltip: 'View employee list' },
     { name: 'All Tasks', icon: CheckSquare, path: '/admin/tasks', tooltip: 'View all tasks' },
-    // { name: 'Add Tasks', icon: Plus, path: '/admin/createtasks', tooltip: 'Create new tasks' },
+    { name: 'Add Tasks', icon: Plus, path: '/admin/createtasks', tooltip: 'Create new tasks' },
     { name: 'Profile', icon: User, path: '/admin/profile', tooltip: 'Edit your profile' },
   ];
 
-  useEffect(() => {
+  React.useEffect(() => {
     const currentItem = menuItems.find(item => item.path === location.pathname);
     setActiveItem(currentItem ? currentItem.name : 'Employee List');
   }, [location.pathname]);
@@ -151,9 +153,8 @@ const AdminSidebar = ({ isOpen, toggleSidebar }) => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
+    actions.logout();
     navigate('/');
-    window.location.reload();
   };
 
   return (

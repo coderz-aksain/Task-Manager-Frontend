@@ -1,9 +1,23 @@
-export const verifyToken = async (token) => {
-  const response = await fetch("https://task-manager-backend-vqen.onrender.com/api/verify-token", {
-    method: "GET",
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  return response;
-};
+import axios from 'axios';
 
-// Add other API functions as needed (e.g., fetchTasks, createTask)
+export const verifyToken = async (token) => {
+  try {
+    const response = await axios.get("https://task-manager-backend-vqen.onrender.com/api/verify-token", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    return {
+      ok: true,
+      status: response.status,
+      json: () => Promise.resolve(response.data),
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      status: error.response?.status || 500,
+      json: () => Promise.resolve({ error: error.message }),
+    };
+  }
+};

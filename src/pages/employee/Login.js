@@ -1,13 +1,21 @@
+
+
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAppContext } from "../../contexts/AppContext";
+import { useToast } from "../../hooks/useToast";
+import ApiService from "../../services/api";
 import Header from "../../components/common/Header";
 import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
 import Input from "../../components/ui/Input";
+import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import LoginpagaImagemain from "../../assets/images/loginpageimagemain.jpg";
 import { Eye, EyeOff, Mail, Lock, Key } from "lucide-react";
 
 const Login = () => {
+  const { actions } = useAppContext();
+  const { success, error: showError } = useToast();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [otp, setOtp] = useState("");
@@ -19,37 +27,36 @@ const Login = () => {
   const [otpRequested, setOtpRequested] = useState(false);
   const [otpMessage, setOtpMessage] = useState("");
   const [resendCooldown, setResendCooldown] = useState(0);
-  const [errorMessage, setErrorMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+
   const headingRef = useRef(null);
   const navigate = useNavigate();
-
-  const BASE_URL = "https://task-manager-backend-vqen.onrender.com/api";
 
   const handlePasswordSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setErrorMessage("");
-    console.log("API Call: /signin (password)", { email, method: "password" });
+
     try {
-      const response = await fetch(`${BASE_URL}/signin`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, method: "password" }),
+      console.log("API Call: Login with Password", { email, password, method: "password" });
+      const data = await ApiService.login({
+        email,
+        password,
+        method: "password",
       });
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error("API Error: /signin", errorData);
-        throw new Error(errorData.message || `HTTP ${response.status}`);
-      }
-      const data = await response.json();
-      console.log("API Response: /signin (password)", data);
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("role", data.role);
+      console.log("API Response: Login with Password", data);
+
+      actions.loginSuccess({
+        user: { id: data.id || email, email, role: data.role }, // Construct user if missing
+        token: data.token,
+        role: data.role,
+      });
+
+      success("Login successful!");
       navigate(data.role === "admin" ? "/admin/tasks" : "/employee/tasks");
     } catch (err) {
-      setErrorMessage(err.message || "Login failed");
-      setTimeout(() => setErrorMessage(""), 2000);
+      console.error("API Error: Login with Password", err.message || "Login failed");
+      showError(err.message || "Login failed");
     } finally {
       setLoading(false);
     }
@@ -58,28 +65,19 @@ const Login = () => {
   const handleOtpRequest = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setErrorMessage("");
-    console.log("API Call: /request-otp", { email });
+
     try {
-      const response = await fetch(`${BASE_URL}/request-otp`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error("API Error: /request-otp", errorData);
-        throw new Error(errorData.message || `HTTP ${response.status}`);
-      }
-      const data = await response.json();
-      console.log("API Response: /request-otp", data);
+      console.log("API Call: Request OTP", { email });
+      await ApiService.requestOtp(email);
+      console.log("API Response: Request OTP", "OTP sent successfully");
+
       setOtpRequested(true);
       setOtpMessage("OTP sent to your registered email!");
       setResendCooldown(30);
       setTimeout(() => setOtpMessage(""), 3000);
     } catch (err) {
-      setErrorMessage(err.message || "Failed to send OTP");
-      setTimeout(() => setErrorMessage(""), 2000);
+      console.error("API Error: Request OTP", err.message || "Failed to send OTP");
+      showError(err.message || "Failed to send OTP");
     } finally {
       setLoading(false);
     }
@@ -88,27 +86,23 @@ const Login = () => {
   const handleOtpSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setErrorMessage("");
-    console.log("API Call: /signin (otp)", { email, otp, method: "otp" });
+
     try {
-      const response = await fetch(`${BASE_URL}/signin`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, otp, method: "otp" }),
+      console.log("API Call: Login with OTP", { email, otp, method: "otp" });
+      const data = await ApiService.login({ email, otp, method: "otp" });
+      console.log("API Response: Login with OTP", data);
+
+      actions.loginSuccess({
+        user: { id: data.id || email, email, role: data.role }, // Construct user if missing
+        token: data.token,
+        role: data.role,
       });
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error("API Error: /signin (otp)", errorData);
-        throw new Error(errorData.message || `HTTP ${response.status}`);
-      }
-      const data = await response.json();
-      console.log("API Response: /signin (otp)", data);
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("role", data.role);
+
+      success("Login successful!");
       navigate(data.role === "admin" ? "/admin/tasks" : "/employee/tasks");
     } catch (err) {
-      setErrorMessage(err.message || "Invalid OTP");
-      setTimeout(() => setErrorMessage(""), 2000);
+      console.error("API Error: Login with OTP", err.message || "Invalid OTP");
+      showError(err.message || "Invalid OTP");
     } finally {
       setLoading(false);
     }
@@ -117,28 +111,19 @@ const Login = () => {
   const handleResendOtp = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setErrorMessage("");
-    console.log("API Call: /request-otp (resend)", { email });
+
     try {
-      const response = await fetch(`${BASE_URL}/request-otp`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error("API Error: /request-otp (resend)", errorData);
-        throw new Error(errorData.message || `HTTP ${response.status}`);
-      }
-      const data = await response.json();
-      console.log("API Response: /request-otp (resend)", data);
+      console.log("API Call: Resend OTP", { email });
+      await ApiService.requestOtp(email);
+      console.log("API Response: Resend OTP", "OTP resent successfully");
+
       setOtpMessage("OTP resent to your registered email!");
       setResendCooldown(30);
       setOtp("");
       setTimeout(() => setOtpMessage(""), 3000);
     } catch (err) {
-      setErrorMessage(err.message || "Failed to resend OTP");
-      setTimeout(() => setErrorMessage(""), 2000);
+      console.error("API Error: Resend OTP", err.message || "Failed to resend OTP");
+      showError(err.message || "Failed to resend OTP");
     } finally {
       setLoading(false);
     }
@@ -147,30 +132,22 @@ const Login = () => {
   const handleForgotSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setErrorMessage("");
-    console.log("API Call: /forgot-password", { forgotEmail });
+
     try {
-      const response = await fetch(`${BASE_URL}/forgot-password`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: forgotEmail }),
-      });
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error("API Error: /forgot-password", errorData);
-        throw new Error(errorData.message || `HTTP ${response.status}`);
-      }
-      const data = await response.json();
-      console.log("API Response: /forgot-password", data);
+      console.log("API Call: Forgot Password", { forgotEmail });
+      await ApiService.forgotPassword(forgotEmail);
+      console.log("API Response: Forgot Password", "Reset instructions sent");
+
       setForgotSubmitted(true);
+      success("Password reset instructions sent to your email!");
       setTimeout(() => {
         setShowForgotModal(false);
         setForgotSubmitted(false);
         setForgotEmail("");
       }, 2000);
     } catch (err) {
-      setErrorMessage(err.message || "Failed to send reset instructions");
-      setTimeout(() => setErrorMessage(""), 2000);
+      console.error("API Error: Forgot Password", err.message || "Failed to send reset instructions");
+      showError(err.message || "Failed to send reset instructions");
     } finally {
       setLoading(false);
     }
@@ -233,7 +210,10 @@ const Login = () => {
               </div>
 
               {isOtpLogin ? (
-                <form className="space-y-6" onSubmit={otpRequested ? handleOtpSubmit : handleOtpRequest}>
+                <form
+                  className="space-y-6"
+                  onSubmit={otpRequested ? handleOtpSubmit : handleOtpRequest}
+                >
                   <Input
                     label="Email"
                     type="email"
@@ -292,7 +272,9 @@ const Login = () => {
                         onClick={handleResendOtp}
                         disabled={resendCooldown > 0 || loading}
                       >
-                        {resendCooldown > 0 ? `Resend OTP in ${resendCooldown}s` : "Resend OTP"}
+                        {resendCooldown > 0
+                          ? `Resend OTP in ${resendCooldown}s`
+                          : "Resend OTP"}
                       </Button>
                     </div>
                   )}
@@ -310,7 +292,10 @@ const Login = () => {
                   />
 
                   <div className="relative group">
-                    <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+                    <label
+                      htmlFor="password"
+                      className="block text-sm font-medium text-gray-700 mb-2"
+                    >
                       Password
                     </label>
                     <div className="relative">
@@ -331,7 +316,11 @@ const Login = () => {
                         onClick={() => setShowPassword(!showPassword)}
                         className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 focus:outline-none"
                       >
-                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        {showPassword ? (
+                          <EyeOff className="w-4 h-4" />
+                        ) : (
+                          <Eye className="w-4 h-4" />
+                        )}
                       </button>
                     </div>
                   </div>
@@ -355,15 +344,9 @@ const Login = () => {
                     </Button>
                   </div>
 
-                  {errorMessage && (
-                    <p className="text-red-600 text-sm text-center">
-                      {errorMessage}
-                    </p>
-                  )}
-
                   {loading && (
                     <div className="flex justify-center">
-                      <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-600"></div>
+                      <LoadingSpinner size="md" />
                     </div>
                   )}
 
@@ -391,7 +374,6 @@ const Login = () => {
                       setOtp("");
                       setResendCooldown(0);
                       setOtpMessage("");
-                      setErrorMessage("");
                     }}
                   >
                     Back to Password Login
@@ -416,7 +398,9 @@ const Login = () => {
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
             <Card className="w-full max-w-sm p-8 relative">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold text-gray-900">Forgot Password</h2>
+                <h2 className="text-2xl font-bold text-gray-900">
+                  Forgot Password
+                </h2>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -435,19 +419,9 @@ const Login = () => {
                   icon={Mail}
                   required
                 />
-                <Button
-                  type="submit"
-                  className="w-full"
-                  disabled={forgotSubmitted || loading}
-                  loading={loading}
-                >
-                  {forgotSubmitted ? "Submitted!" : "Submit"}
+                <Button type="submit" className="w-full" disabled={loading}>
+                  {loading ? <LoadingSpinner size="sm" /> : "Submit"}
                 </Button>
-                {forgotSubmitted && (
-                  <p className="text-green-600 text-sm text-center mt-4">
-                    If this email is registered, you'll receive reset instructions.
-                  </p>
-                )}
               </form>
             </Card>
           </div>

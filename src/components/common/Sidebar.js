@@ -651,8 +651,9 @@
 
 // export default Sidebar;
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
+import { useAppContext } from "../../contexts/AppContext";
 import {
   Calendar,
   CheckSquare,
@@ -665,6 +666,7 @@ import {
 } from "lucide-react";
 
 const Sidebar = ({ isOpen, toggleSidebar }) => {
+  const { actions } = useAppContext();
   const [activeItem, setActiveItem] = useState("");
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(false);
 
@@ -686,7 +688,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
     },
   ];
 
-  useEffect(() => {
+  React.useEffect(() => {
     const currentItem = menuItems.find(
       (item) => item.path === location.pathname
     );
@@ -699,20 +701,12 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
+    actions.logout();
     navigate("/");
-    window.location.reload();
   };
 
   return (
     <>
-      {/* Hamburger on mobile */}
-      {/* <div className="lg:hidden fixed top-4 left-4 z-50">
-        <button onClick={toggleSidebar}>
-          <Menu className="h-6 w-6 text-gray-800" />
-        </button>
-      </div> */}
-
       {/* Mobile overlay */}
       {isOpen && (
         <div

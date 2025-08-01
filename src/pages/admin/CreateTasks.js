@@ -26,6 +26,7 @@ function CreateTasks({ onSubmit, editTask, onCancel }) {
   const [showToast, setShowToast] = useState(false); // Custom toast state
   const [dropActive, setDropActive] = useState(false); // Dropzone highlight state
   const token = localStorage.getItem('token') || '';
+  console.log('Token:', token);
   const navigate = useNavigate();
 
   useEffect(() => {

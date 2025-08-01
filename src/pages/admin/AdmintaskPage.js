@@ -136,10 +136,8 @@ const AdmintaskPage = () => {
     message: "",
     type: "success",
   });
-
   const [openDropdown, setOpenDropdown] = useState(null);
 
-  
   // Unseen comments state: { [taskId]: true }
   const [unseenComments, setUnseenComments] = useState(() => {
     try {
@@ -158,10 +156,7 @@ const AdmintaskPage = () => {
   // Close dropdown if clicked outside
   useEffect(() => {
     function handleClickOutside(event) {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target)
-      ) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setOpenDropdown(null);
       }
     }
@@ -228,6 +223,7 @@ const AdmintaskPage = () => {
           throw new Error(`Failed to fetch employees: ${response.statusText}`);
         }
         const data = await response.json();
+        console.log("Fetched employees:", data);
         const validEmployees = Array.isArray(data)
           ? data.map((emp) => ({
               id: emp.id || emp._id || "",
@@ -261,6 +257,7 @@ const AdmintaskPage = () => {
           throw new Error(`Failed to fetch tasks: ${response.statusText}`);
         }
         const data = await response.json();
+        console.log("Fetched tasks:", data);
         const validTasks = Array.isArray(data)
           ? data
               .map((task) => {
@@ -362,11 +359,11 @@ const AdmintaskPage = () => {
       assignedTo: prev.assignedTo.filter((emp) => emp.email !== email),
     }));
   };
-const confirmDelete = (task) => {
-  setTaskToDelete(task);
-  setShowDeleteConfirm(true);
-  setOpenDropdown(null); // Close dropdown here as well
-};
+  const confirmDelete = (task) => {
+    setTaskToDelete(task);
+    setShowDeleteConfirm(true);
+    setOpenDropdown(null); // Close dropdown here as well
+  };
 
   const handleAttachmentAdd = (e) => {
     const files = Array.from(e.target.files);
@@ -543,20 +540,20 @@ const confirmDelete = (task) => {
     }
   };
 
-const handleEditTask = (task) => {
-  setFormData({
-    ...task,
-    dueDate: task.dueDate.split("/").reverse().join("-"),
-    assignedTo: task.assignedTo,
-    errors: {},
-    fileUrls: task.fileUrls.filter(
-      (url) => typeof url === "string" && url.startsWith("http")
-    ),
-  });
-  setEditId(task._id);
-  setIsModalOpen(true);
-  setOpenDropdown(null); // Close dropdown after click
-};
+  const handleEditTask = (task) => {
+    setFormData({
+      ...task,
+      dueDate: task.dueDate.split("/").reverse().join("-"),
+      assignedTo: task.assignedTo,
+      errors: {},
+      fileUrls: task.fileUrls.filter(
+        (url) => typeof url === "string" && url.startsWith("http")
+      ),
+    });
+    setEditId(task._id);
+    setIsModalOpen(true);
+    setOpenDropdown(null); // Close dropdown after click
+  };
 
   const handleDeleteTask = async (taskId) => {
     setIsLoading(true);
@@ -594,20 +591,20 @@ const handleEditTask = (task) => {
     }
   };
 
-const handleViewTask = (task) => {
-  setViewTask({
-    ...task,
-    dueDate: task.dueDate.split("/").reverse().join("-"),
-  });
-  setIsViewModalOpen(true);
-  setActiveTab("all");
-  if (unseenComments[task._id]) {
-    const newUnseen = { ...unseenComments };
-    delete newUnseen[task._id];
-    updateUnseenComments(newUnseen);
-  }
-  setOpenDropdown(null); // Close dropdown upon action
-};
+  const handleViewTask = (task) => {
+    setViewTask({
+      ...task,
+      dueDate: task.dueDate.split("/").reverse().join("-"),
+    });
+    setIsViewModalOpen(true);
+    setActiveTab("all");
+    if (unseenComments[task._id]) {
+      const newUnseen = { ...unseenComments };
+      delete newUnseen[task._id];
+      updateUnseenComments(newUnseen);
+    }
+    setOpenDropdown(null); // Close dropdown upon action
+  };
 
   const handleUpdateTaskStatus = async (taskId, status) => {
     setIsLoading(true);
@@ -758,16 +755,18 @@ const handleViewTask = (task) => {
   };
 
   // Remainder Email Modal handlers
-const handleOpenRemainderEmailModal = (task) => {
-  setRemainderEmailTask(task);
-  setRemainderEmailBody(
-    `Hi,this is a reminder to complete the task before due date which is on ${
-      task.dueDate ? new Date(task.dueDate).toLocaleDateString() : "N/A"
-    }${task.dueTime !== "N/A" ? " at " + task.dueTime : ""}.\n\nPlease ensure timely completion.`
-  );
-  setShowRemainderEmailModal(true);
-  setOpenDropdown(null); // Close dropdown after opening modal
-};
+  const handleOpenRemainderEmailModal = (task) => {
+    setRemainderEmailTask(task);
+    setRemainderEmailBody(
+      `Hi,this is a reminder to complete the task before due date which is on ${
+        task.dueDate ? new Date(task.dueDate).toLocaleDateString() : "N/A"
+      }${
+        task.dueTime !== "N/A" ? " at " + task.dueTime : ""
+      }.\n\nPlease ensure timely completion.`
+    );
+    setShowRemainderEmailModal(true);
+    setOpenDropdown(null); // Close dropdown after opening modal
+  };
 
   const handleSendRemainderEmail = async () => {
     if (!remainderEmailTask) return;
@@ -952,35 +951,19 @@ const handleOpenRemainderEmailModal = (task) => {
     };
   }, []);
 
+  const toggleSidebar = () => {
+    setShowSidebar((prev) => !prev);
+  };
+
   return (
-    <div className="flex flex-col min-h-screen bg-gray-100">
-      {/* Toast */}
-      {toast.show && (
-        <div
-          className={`fixed top-4 right-2 left-2 sm:right-6 sm:left-auto z-[9999] px-4 py-3 rounded shadow-lg transition-all duration-300 ${
-            toast.type === "success"
-              ? "bg-green-500 text-white"
-              : toast.type === "error"
-              ? "bg-red-500 text-white"
-              : "bg-gray-700 text-white"
-          }`}
-          style={{ minWidth: 220, maxWidth: 400, margin: "0 auto" }}
-        >
-          {toast.message}
-        </div>
-      )}
-      <div className="flex flex-1">
-        <div className="sticky top-0 h-screen z-40 hidden md:block">
-          <AdminSidebar
-            isOpen={showSidebar}
-            toggleSidebar={() => setShowSidebar((prev) => !prev)}
-          />
-        </div>
+  <div className="flex min-h-screen bg-gray-100 relative">
+      
+       <div className="sticky top-0 h-screen z-40">
+         <AdminSidebar isOpen={showSidebar} toggleSidebar={toggleSidebar} />
+       </div>
         <div className="flex-1 flex flex-col">
-          <Header
-            isLoggedIn={!!token}
-            onToggleSidebar={() => setShowSidebar((prev) => !prev)}
-          />
+          <Header isLoggedIn={!!token} onToggleSidebar={toggleSidebar} />
+
           <main className="flex-1 p-2 sm:p-4 md:p-6 overflow-auto">
             <div className="max-w-8xl mx-auto">
               {error && (
@@ -1301,12 +1284,25 @@ const handleOpenRemainderEmailModal = (task) => {
                                         key={emp.email}
                                         className="relative group"
                                       >
-                                        <span
-                                          className="inline-flex w-6 h-6 bg-blue-100 rounded-full items-center justify-center text-blue-600 text-xs font-medium"
-                                          title={emp.name}
-                                        >
-                                          {getInitials(emp.name)}
-                                        </span>
+                                        <div className="relative group">
+                                          {emp.avatar ? (
+                                            <img
+                                              src={emp.avatar}
+                                              alt={emp.name || emp.email}
+                                              className="inline-block w-7 h-7 rounded-full border border-gray-300"
+                                            />
+                                          ) : (
+                                            <span className="inline-flex w-7 h-7 bg-gray-200 rounded-full items-center justify-center text-gray-600 text-xs font-medium">
+                                              {getInitials(
+                                                emp.name || emp.email
+                                              )}
+                                            </span>
+                                          )}
+                                          <span className="absolute left-1/2 transform -translate-x-1/2 top-8 bg-gray-800 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none whitespace-nowrap">
+                                            {emp.name || emp.email}
+                                          </span>
+                                        </div>
+
                                         <span className="absolute left-1/2 transform -translate-x-1/2 top-8 bg-gray-800 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                                           {emp.name}
                                         </span>
@@ -1344,7 +1340,7 @@ const handleOpenRemainderEmailModal = (task) => {
                                   <AlertCircle className="inline ml-2 text-red-600 w-4 h-4" />
                                 )}
                               </td>
-                        
+
                               {/* <td className="py-4 px-2 sm:px-4 text-center relative">
                                 <div className="relative inline-block text-left">
                                   <button
@@ -1395,52 +1391,57 @@ const handleOpenRemainderEmailModal = (task) => {
                                 </div>
                               </td> */}
 
+                              {/* NEW TD */}
 
-                                  {/* NEW TD */}
+                              <td className="py-4 px-2 sm:px-4 text-center relative">
+                                <div className="relative inline-block text-left">
+                                  <button
+                                    onClick={() =>
+                                      setOpenDropdown((prev) =>
+                                        prev === task._id ? null : task._id
+                                      )
+                                    }
+                                    className="p-2 text-blue-600 hover:bg-gray-100 rounded"
+                                    title="Actions"
+                                    disabled={isLoading}
+                                  >
+                                    <FaEllipsisH size={14} />
+                                  </button>
 
-       <td className="py-4 px-2 sm:px-4 text-center relative">
-      <div className="relative inline-block text-left" >
-        <button
-          onClick={() =>
-            setOpenDropdown((prev) => (prev === task._id ? null : task._id))
-          }
-          className="p-2 text-blue-600 hover:bg-gray-100 rounded"
-          title="Actions"
-          disabled={isLoading}
-        >
-          <FaEllipsisH size={14} />
-        </button>
-
-        {openDropdown === task._id && (
-          <div className="absolute right-0 z-20 mt-2 w-44 bg-white border border-gray-200 rounded-lg shadow-lg">
-            <button
-              onClick={() => handleViewTask(task)}
-              className="w-full px-4 py-2 text-left text-blue-600 hover:bg-blue-50 text-sm flex items-center gap-2"
-            >
-              <Eye className="w-4 h-4" /> View Details
-            </button>
-            <button
-              onClick={() => handleEditTask(task)}
-              className="w-full px-4 py-2 text-left text-green-600 hover:bg-green-50 text-sm flex items-center gap-2"
-            >
-              <Edit className="w-4 h-4" /> Edit Task
-            </button>
-            <button
-              onClick={() => confirmDelete(task)}
-              className="w-full px-4 py-2 text-left text-red-600 hover:bg-red-50 text-sm flex items-center gap-2"
-            >
-              <Trash2 className="w-4 h-4" /> Delete Task
-            </button>
-            <button
-              onClick={() => handleOpenRemainderEmailModal(task)}
-              className="w-full px-4 py-2 text-left text-purple-600 hover:bg-purple-50 text-sm flex items-center gap-2"
-            >
-              <Mail className="w-4 h-4" /> Send Reminder
-            </button>
-          </div>
-        )}
-      </div>
-    </td>
+                                  {openDropdown === task._id && (
+                                    <div className="absolute right-0 z-20 mt-2 w-44 bg-white border border-gray-200 rounded-lg shadow-lg">
+                                      <button
+                                        onClick={() => handleViewTask(task)}
+                                        className="w-full px-4 py-2 text-left text-blue-600 hover:bg-blue-50 text-sm flex items-center gap-2"
+                                      >
+                                        <Eye className="w-4 h-4" /> View Details
+                                      </button>
+                                      <button
+                                        onClick={() => handleEditTask(task)}
+                                        className="w-full px-4 py-2 text-left text-green-600 hover:bg-green-50 text-sm flex items-center gap-2"
+                                      >
+                                        <Edit className="w-4 h-4" /> Edit Task
+                                      </button>
+                                      <button
+                                        onClick={() => confirmDelete(task)}
+                                        className="w-full px-4 py-2 text-left text-red-600 hover:bg-red-50 text-sm flex items-center gap-2"
+                                      >
+                                        <Trash2 className="w-4 h-4" /> Delete
+                                        Task
+                                      </button>
+                                      <button
+                                        onClick={() =>
+                                          handleOpenRemainderEmailModal(task)
+                                        }
+                                        className="w-full px-4 py-2 text-left text-purple-600 hover:bg-purple-50 text-sm flex items-center gap-2"
+                                      >
+                                        <Mail className="w-4 h-4" /> Send
+                                        Reminder
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+                              </td>
                             </tr>
                           ))}
                         </tbody>
@@ -1575,12 +1576,23 @@ const handleOpenRemainderEmailModal = (task) => {
                                     key={emp.email}
                                     className="relative group"
                                   >
-                                    <span
-                                      className="inline-flex w-6 h-6 bg-blue-100 rounded-full items-center justify-center text-blue-600 text-xs font-medium"
-                                      title={emp.name}
-                                    >
-                                      {getInitials(emp.name)}
-                                    </span>
+                                    <div className="relative group">
+                                      {emp.avatar ? (
+                                        <img
+                                          src={emp.avatar}
+                                          alt={emp.name || emp.email}
+                                          className="inline-block w-7 h-7 rounded-full border border-gray-300"
+                                        />
+                                      ) : (
+                                        <span className="inline-flex w-7 h-7 bg-gray-200 rounded-full items-center justify-center text-gray-600 text-xs font-medium">
+                                          {getInitials(emp.name || emp.email)}
+                                        </span>
+                                      )}
+                                      <span className="absolute left-1/2 transform -translate-x-1/2 top-8 bg-gray-800 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none whitespace-nowrap">
+                                        {emp.name || emp.email}
+                                      </span>
+                                    </div>
+
                                     <span className="absolute left-1/2 transform -translate-x-1/2 top-8 bg-gray-800 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                                       {emp.name}
                                     </span>
@@ -2500,7 +2512,7 @@ const handleOpenRemainderEmailModal = (task) => {
           </main>
         </div>
       </div>
-    </div>
+
   );
 };
 

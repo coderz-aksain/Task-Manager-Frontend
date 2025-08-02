@@ -159,7 +159,7 @@ import EmployeeListPage from "./pages/admin/EmployeeListPage";
 import AdminProfile from "./pages/admin/AdminProfile";
 import CreateTasks from "./pages/admin/CreateTasks";
 import CreateTasksEmployee from "./pages/employee/CreateTasksEmployee";
-import ResetPassword from "../../frontend/src/pages/common/ResetPassword"; // Import the ResetPassword component
+import ResetPassword from "./pages/common/ResetPassword"; // Import the ResetPassword component
 import LoadingSpinner from "./components/ui/LoadingSpinner";
 
 // Protected Route Component

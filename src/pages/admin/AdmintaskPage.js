@@ -1312,7 +1312,7 @@ const AdmintaskPage = () => {
                                       <Mail className="w-4 h-4" /> Send
                                       Reminder
                                     </button>
-                                    <button
+                                    {/* <button
                                       onClick={() => handleViewTask(task)}
                                       className="w-full px-4 py-2 text-left text-orange-600 hover:bg-orange-50 text-sm flex items-center gap-2"
                                     >
@@ -1325,7 +1325,7 @@ const AdmintaskPage = () => {
                                         }`}
                                       />{" "}
                                       Comments
-                                    </button>
+                                    </button> */}
                                   </div>
                                 )}
                                 {/* Comment Indicator */}
@@ -1569,10 +1569,10 @@ const AdmintaskPage = () => {
               {sortedTasks.length === 0 && (
                 <div className="text-center py-12 hidden lg:block">
                   <div className="text-gray-500 mb-4">
-                    No tasks found matching your criteria
+                 Loading...
                   </div>
                   <div className="text-sm text-gray-400">
-                    Try adjusting your search or filters
+                   Hold tight, we're fetching your tasks!
                   </div>
                 </div>
               )}
@@ -2282,14 +2282,14 @@ const AdmintaskPage = () => {
                       </button>
 
                       <div className="flex items-center justify-between mb-4">
-                        <h2 className="text-lg font-semibold text-gray-900">
+                        <h1 className="text-lg font-semibold text-gray-900">
                           Confirm Deletion
-                        </h2>
+                        </h1>
                       </div>
                       <p className="text-gray-700 mb-4 text-sm">
-                        Are you sure you want to delete the task "
+                      <b className="text-lg">   Are you sure you want to delete the task ? "
                         {taskToDelete.taskName}" (Task ID: {taskToDelete.taskId}
-                        )? This action cannot be undone.
+                        )?  <span className="text-red-700"> <br className="mt-4"></br> This action cannot be undone.</span></b>
                       </p>
                       <div className="flex justify-end space-x-4">
                         <button

@@ -111,38 +111,212 @@ const EmployeeListPage = () => {
     }
   }, [token, email, navigate]);
 
+  // useEffect(() => {
+  //   const fetchEmployees = async () => {
+  //     if (!token) {
+  //       setError('No authentication token found. Please log in.');
+  //       setLoading(false);
+  //       navigate('/login');
+  //       return;
+  //     }
+  //     try {
+  //       setLoading(true);
+  //       const response = await axios.get(`${BASE_URL}/admin/allemployees`, {
+  //         headers: { Authorization: `Bearer ${token}` },
+  //       });
+  //       const employeesData = Array.isArray(response.data) ? response.data : response.data.employees || [];
+  //       setEmployees(employeesData);
+  //       setLoading(false);
+  //     } catch (err) {
+  //       if (err.response?.status === 401) {
+  //         setError('Session expired or unauthorized. Please log in again.');
+  //         localStorage.removeItem('token');
+  //         localStorage.removeItem('userEmail');
+  //         navigate('/login');
+  //       } else if (err.message.includes('Network Error')) {
+  //         setError('Failed to connect to the server. Please check your network or server configuration.');
+  //       } else {
+  //         setError(err.response?.data?.message || 'Failed to fetch employees');
+  //       }
+  //       setLoading(false);
+  //     }
+  //   };
+  //   fetchEmployees();
+  // }, [token, navigate]);
+
   useEffect(() => {
-    const fetchEmployees = async () => {
-      if (!token) {
-        setError('No authentication token found. Please log in.');
-        setLoading(false);
+  const fetchEmployees = async () => {
+    if (!token) {
+      setError('No authentication token found. Please log in.');
+      setLoading(false);
+      navigate('/login');
+      return;
+    }
+    try {
+      setLoading(true);
+      const response = await axios.get(`${BASE_URL}/admin/allemployees`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const employeesData = Array.isArray(response.data) ? response.data : response.data.employees || [];
+      setEmployees(employeesData.map(emp => ({
+        ...emp,
+        dateOfJoining: emp.dateOfJoining ? formatDate(emp.dateOfJoining) : '',
+        officialDateOfBirth: emp.officialDateOfBirth ? formatDate(emp.officialDateOfBirth) : '',
+        actualDateOfBirth: emp.actualDateOfBirth ? formatDate(emp.actualDateOfBirth) : '',
+        hireDate: emp.hireDate ? formatDate(emp.hireDate) : '',
+      })));
+      setLoading(false);
+    } catch (err) {
+      if (err.response?.status === 401) {
+        setError('Session expired or unauthorized. Please log in again.');
+        localStorage.removeItem('token');
+        localStorage.removeItem('userEmail');
         navigate('/login');
-        return;
+      } else if (err.message.includes('Network Error')) {
+        setError('Failed to connect to the server. Please check your network or server configuration.');
+      } else {
+        setError(err.response?.data?.message || 'Failed to fetch employees');
       }
-      try {
-        setLoading(true);
-        const response = await axios.get(`${BASE_URL}/admin/allemployees`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const employeesData = Array.isArray(response.data) ? response.data : response.data.employees || [];
-        setEmployees(employeesData);
-        setLoading(false);
-      } catch (err) {
-        if (err.response?.status === 401) {
-          setError('Session expired or unauthorized. Please log in again.');
-          localStorage.removeItem('token');
-          localStorage.removeItem('userEmail');
-          navigate('/login');
-        } else if (err.message.includes('Network Error')) {
-          setError('Failed to connect to the server. Please check your network or server configuration.');
-        } else {
-          setError(err.response?.data?.message || 'Failed to fetch employees');
+      setLoading(false);
+    }
+  };
+  fetchEmployees();
+}, [token, navigate]);
+
+const handleSaveEmployee = async () => {
+  if (!token) {
+    setError('No authentication token found. Please log in.');
+    navigate('/login');
+    return;
+  }
+  const requiredFields = ['firstName', 'lastName', 'email', 'department', 'position', 'dateOfJoining', 'manager', 'role'];
+  const missingFields = requiredFields.filter((field) => !modalEmployee[field]);
+  if (missingFields.length > 0) {
+    setError(`Missing required fields: ${missingFields.join(', ')}`);
+    return;
+  }
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(modalEmployee.email)) {
+    setError('Invalid email format.');
+    return;
+  }
+  const dateRegex = /^\d{2}\/[A-Za-z]+\/\d{4}$/;
+  const dateFields = ['dateOfJoining', 'officialDateOfBirth', 'actualDateOfBirth', 'hireDate'];
+  for (const field of dateFields) {
+    if (modalEmployee[field] && !dateRegex.test(modalEmployee[field])) {
+      setError(`Invalid date format for ${field}. Use DD/MMMM/YYYY (e.g., 01/January/2025).`);
+      return;
+    }
+  }
+  try {
+    setSaving(true);
+    let response;
+    const employeeData = new FormData();
+    Object.entries({
+      firstName: modalEmployee.firstName,
+      lastName: modalEmployee.lastName,
+      email: modalEmployee.email,
+      department: modalEmployee.department,
+      position: modalEmployee.position,
+      dateOfJoining: modalEmployee.dateOfJoining ? parseDate(modalEmployee.dateOfJoining) : undefined,
+      manager: modalEmployee.manager,
+      role: modalEmployee.role,
+      workLocation: modalEmployee.workLocation || undefined,
+      profileImage: modalEmployee.profileImage instanceof File ? modalEmployee.profileImage : undefined,
+      officialDateOfBirth: modalEmployee.officialDateOfBirth ? parseDate(modalEmployee.officialDateOfBirth) : undefined,
+      actualDateOfBirth: modalEmployee.actualDateOfBirth ? parseDate(modalEmployee.actualDateOfBirth) : undefined,
+      primaryPhoneNumber: modalEmployee.primaryPhoneNumber || undefined,
+      secondaryPhoneNumber: modalEmployee.secondaryPhoneNumber || undefined,
+      personalEmailId: modalEmployee.personalEmailId || undefined,
+      permanentResidentialAddress: modalEmployee.permanentResidentialAddress || undefined,
+      currentAddress: modalEmployee.currentAddress || undefined,
+      bankName: modalEmployee.bankName || undefined,
+      accountNumber: modalEmployee.accountNumber || undefined,
+      ifscCode: modalEmployee.ifscCode || undefined,
+      bankBranchName: modalEmployee.bankBranchName || undefined,
+      fathersName: modalEmployee.fathersName || undefined,
+      fathersContactNo: modalEmployee.fathersContactNo || undefined,
+      mothersName: modalEmployee.mothersName || undefined,
+      mothersContactNo: modalEmployee.mothersContactNo || undefined,
+      spouseName: modalEmployee.spouseName || undefined,
+      spouseContactNo: modalEmployee.spouseContactNo || undefined,
+      siblings: modalEmployee.siblings || undefined,
+      bloodGroup: modalEmployee.bloodGroup || undefined,
+      hasMedicalInsurance: modalEmployee.hasMedicalInsurance || undefined,
+      hireDate: modalEmployee.hireDate ? parseDate(modalEmployee.hireDate) : undefined,
+      emergencyContact: modalEmployee.emergencyContact || undefined,
+      aadharFront: modalEmployee.aadharFront instanceof File ? modalEmployee.aadharFront : undefined,
+      aadharBack: modalEmployee.aadharBack instanceof File ? modalEmployee.aadharBack : undefined,
+      bankPassbook: modalEmployee.bankPassbook instanceof File ? modalEmployee.bankPassbook : undefined,
+      panCard: modalEmployee.panCard instanceof File ? modalEmployee.panCard : undefined,
+    }).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        employeeData.append(key, value);
+      }
+    });
+    if (modalType === 'add') {
+      response = await axios.post(`${BASE_URL}/admin/addemployees`, employeeData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      setEmployees((prev) => [
+        ...prev,
+        {
+          ...response.data.user,
+          dateOfJoining: response.data.user.dateOfJoining ? formatDate(response.data.user.dateOfJoining) : '',
+          officialDateOfBirth: response.data.user.officialDateOfBirth ? formatDate(response.data.user.officialDateOfBirth) : '',
+          actualDateOfBirth: response.data.user.actualDateOfBirth ? formatDate(response.data.user.actualDateOfBirth) : '',
+          hireDate: response.data.user.hireDate ? formatDate(response.data.user.hireDate) : '',
+        },
+      ]);
+    } else {
+      response = await axios.put(
+        `${BASE_URL}/admin/editemployees/${modalEmployee._id}`,
+        employeeData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'multipart/form-data',
+          },
         }
-        setLoading(false);
-      }
-    };
-    fetchEmployees();
-  }, [token, navigate]);
+      );
+      setEmployees((prev) =>
+        prev.map((emp, idx) =>
+          idx === modalIndex ? {
+            ...response.data.employee,
+            dateOfJoining: response.data.employee.dateOfJoining ? formatDate(response.data.employee.dateOfJoining) : '',
+            officialDateOfBirth: response.data.employee.officialDateOfBirth ? formatDate(response.data.employee.officialDateOfBirth) : '',
+            actualDateOfBirth: response.data.employee.actualDateOfBirth ? formatDate(response.data.employee.actualDateOfBirth) : '',
+            hireDate: response.data.employee.hireDate ? formatDate(response.data.employee.hireDate) : '',
+          } : emp
+        )
+      );
+    }
+    setModalOpen(false);
+    setModalEmployee(initialEmployee);
+    setModalIndex(null);
+    setIsEditing(false);
+    setError(null);
+    setSaving(false);
+  } catch (err) {
+    setSaving(false);
+    if (err.response?.status === 401) {
+      setError('Session expired or unauthorized. Please log in again.');
+      localStorage.removeItem('token');
+      localStorage.removeItem('userEmail');
+      navigate('/login');
+    } else if (err.response?.status === 403) {
+      setError('Unauthorized: Admin access required.');
+    } else if (err.response?.status === 400) {
+      setError(err.response.data.message || 'Invalid input data. Please check the provided fields.');
+    } else {
+      setError(err.response?.data?.message || `Failed to ${modalType === 'add' ? 'add' : 'edit'} employee`);
+    }
+  }
+};
+
 
   const openModal = (type, employee = initialEmployee, index = null) => {
     setModalType(type);
@@ -194,124 +368,124 @@ const EmployeeListPage = () => {
     }
   };
 
-  const handleSaveEmployee = async () => {
-    if (!token) {
-      setError('No authentication token found. Please log in.');
-      navigate('/login');
-      return;
-    }
-    const requiredFields = ['firstName', 'lastName', 'email', 'department', 'position', 'dateOfJoining', 'manager', 'role'];
-    const missingFields = requiredFields.filter((field) => !modalEmployee[field]);
-    if (missingFields.length > 0) {
-      setError(`Missing required fields: ${missingFields.join(', ')}`);
-      return;
-    }
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(modalEmployee.email)) {
-      setError('Invalid email format.');
-      return;
-    }
-    const dateRegex = /^\d{2}\/[A-Za-z]+\/\d{4}$/;
-    const dateFields = ['dateOfJoining', 'officialDateOfBirth', 'actualDateOfBirth', 'hireDate'];
-    for (const field of dateFields) {
-      if (modalEmployee[field] && !dateRegex.test(modalEmployee[field])) {
-        setError(`Invalid date format for ${field}. Use DD/MMMM/YYYY (e.g., 01/January/2025).`);
-        return;
-      }
-    }
-    try {
-      setSaving(true);
-      let response;
-      const employeeData = new FormData();
-      Object.entries({
-        firstName: modalEmployee.firstName,
-        lastName: modalEmployee.lastName,
-        email: modalEmployee.email,
-        department: modalEmployee.department,
-        position: modalEmployee.position,
-        dateOfJoining: modalEmployee.dateOfJoining ? parseDate(modalEmployee.dateOfJoining) : undefined,
-        manager: modalEmployee.manager,
-        role: modalEmployee.role,
-        workLocation: modalEmployee.workLocation || undefined,
-        profileImage: modalEmployee.profileImage instanceof File ? modalEmployee.profileImage : undefined,
-        officialDateOfBirth: modalEmployee.officialDateOfBirth ? parseDate(modalEmployee.officialDateOfBirth) : undefined,
-        actualDateOfBirth: modalEmployee.actualDateOfBirth ? parseDate(modalEmployee.actualDateOfBirth) : undefined,
-        primaryPhoneNumber: modalEmployee.primaryPhoneNumber || undefined,
-        secondaryPhoneNumber: modalEmployee.secondaryPhoneNumber || undefined,
-        personalEmailId: modalEmployee.personalEmailId || undefined,
-        permanentResidentialAddress: modalEmployee.permanentResidentialAddress || undefined,
-        currentAddress: modalEmployee.currentAddress || undefined,
-        bankName: modalEmployee.bankName || undefined,
-        accountNumber: modalEmployee.accountNumber || undefined,
-        ifscCode: modalEmployee.ifscCode || undefined,
-        bankBranchName: modalEmployee.bankBranchName || undefined,
-        fathersName: modalEmployee.fathersName || undefined,
-        fathersContactNo: modalEmployee.fathersContactNo || undefined,
-        mothersName: modalEmployee.mothersName || undefined,
-        mothersContactNo: modalEmployee.mothersContactNo || undefined,
-        spouseName: modalEmployee.spouseName || undefined,
-        spouseContactNo: modalEmployee.spouseContactNo || undefined,
-        siblings: modalEmployee.siblings || undefined,
-        bloodGroup: modalEmployee.bloodGroup || undefined,
-        hasMedicalInsurance: modalEmployee.hasMedicalInsurance || undefined,
-        hireDate: modalEmployee.hireDate ? parseDate(modalEmployee.hireDate) : undefined,
-        emergencyContact: modalEmployee.emergencyContact || undefined,
-        aadharFront: modalEmployee.aadharFront instanceof File ? modalEmployee.aadharFront : undefined,
-        aadharBack: modalEmployee.aadharBack instanceof File ? modalEmployee.aadharBack : undefined,
-        bankPassbook: modalEmployee.bankPassbook instanceof File ? modalEmployee.bankPassbook : undefined,
-        panCard: modalEmployee.panCard instanceof File ? modalEmployee.panCard : undefined,
-      }).forEach(([key, value]) => {
-        if (value !== undefined && value !== null && value !== '') {
-          employeeData.append(key, value);
-        }
-      });
-      if (modalType === 'add') {
-        response = await axios.post(`${BASE_URL}/admin/addemployees`, employeeData, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'multipart/form-data',
-          },
-        });
-        setEmployees((prev) => [...prev, response.data]);
-      } else {
-        response = await axios.put(
-          `${BASE_URL}/admin/editemployees/${modalEmployee._id}`,
-          employeeData,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              'Content-Type': 'multipart/form-data',
-            },
-          }
-        );
-        setEmployees((prev) =>
-          prev.map((emp, idx) =>
-            idx === modalIndex ? { ...response.data.employee, _id: modalEmployee._id } : emp
-          )
-        );
-      }
-      setModalOpen(false);
-      setModalEmployee(initialEmployee);
-      setModalIndex(null);
-      setIsEditing(false);
-      setError(null);
-      setSaving(false);
-    } catch (err) {
-      setSaving(false);
-      if (err.response?.status === 401) {
-        setError('Session expired or unauthorized. Please log in again.');
-        localStorage.removeItem('token');
-        localStorage.removeItem('userEmail');
-        navigate('/login');
-      } else if (err.response?.status === 403) {
-        setError('Unauthorized: Admin access required.');
-      } else if (err.response?.status === 400) {
-        setError(err.response.data.message || 'Invalid input data. Please check the provided fields.');
-      } else {
-        setError(err.response?.data?.message || `Failed to ${modalType === 'add' ? 'add' : 'edit'} employee`);
-      }
-    }
-  };
+  // const handleSaveEmployee = async () => {
+  //   if (!token) {
+  //     setError('No authentication token found. Please log in.');
+  //     navigate('/login');
+  //     return;
+  //   }
+  //   const requiredFields = ['firstName', 'lastName', 'email', 'department', 'position', 'dateOfJoining', 'manager', 'role'];
+  //   const missingFields = requiredFields.filter((field) => !modalEmployee[field]);
+  //   if (missingFields.length > 0) {
+  //     setError(`Missing required fields: ${missingFields.join(', ')}`);
+  //     return;
+  //   }
+  //   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  //   if (!emailRegex.test(modalEmployee.email)) {
+  //     setError('Invalid email format.');
+  //     return;
+  //   }
+  //   const dateRegex = /^\d{2}\/[A-Za-z]+\/\d{4}$/;
+  //   const dateFields = ['dateOfJoining', 'officialDateOfBirth', 'actualDateOfBirth', 'hireDate'];
+  //   for (const field of dateFields) {
+  //     if (modalEmployee[field] && !dateRegex.test(modalEmployee[field])) {
+  //       setError(`Invalid date format for ${field}. Use DD/MMMM/YYYY (e.g., 01/January/2025).`);
+  //       return;
+  //     }
+  //   }
+  //   try {
+  //     setSaving(true);
+  //     let response;
+  //     const employeeData = new FormData();
+  //     Object.entries({
+  //       firstName: modalEmployee.firstName,
+  //       lastName: modalEmployee.lastName,
+  //       email: modalEmployee.email,
+  //       department: modalEmployee.department,
+  //       position: modalEmployee.position,
+  //       dateOfJoining: modalEmployee.dateOfJoining ? parseDate(modalEmployee.dateOfJoining) : undefined,
+  //       manager: modalEmployee.manager,
+  //       role: modalEmployee.role,
+  //       workLocation: modalEmployee.workLocation || undefined,
+  //       profileImage: modalEmployee.profileImage instanceof File ? modalEmployee.profileImage : undefined,
+  //       officialDateOfBirth: modalEmployee.officialDateOfBirth ? parseDate(modalEmployee.officialDateOfBirth) : undefined,
+  //       actualDateOfBirth: modalEmployee.actualDateOfBirth ? parseDate(modalEmployee.actualDateOfBirth) : undefined,
+  //       primaryPhoneNumber: modalEmployee.primaryPhoneNumber || undefined,
+  //       secondaryPhoneNumber: modalEmployee.secondaryPhoneNumber || undefined,
+  //       personalEmailId: modalEmployee.personalEmailId || undefined,
+  //       permanentResidentialAddress: modalEmployee.permanentResidentialAddress || undefined,
+  //       currentAddress: modalEmployee.currentAddress || undefined,
+  //       bankName: modalEmployee.bankName || undefined,
+  //       accountNumber: modalEmployee.accountNumber || undefined,
+  //       ifscCode: modalEmployee.ifscCode || undefined,
+  //       bankBranchName: modalEmployee.bankBranchName || undefined,
+  //       fathersName: modalEmployee.fathersName || undefined,
+  //       fathersContactNo: modalEmployee.fathersContactNo || undefined,
+  //       mothersName: modalEmployee.mothersName || undefined,
+  //       mothersContactNo: modalEmployee.mothersContactNo || undefined,
+  //       spouseName: modalEmployee.spouseName || undefined,
+  //       spouseContactNo: modalEmployee.spouseContactNo || undefined,
+  //       siblings: modalEmployee.siblings || undefined,
+  //       bloodGroup: modalEmployee.bloodGroup || undefined,
+  //       hasMedicalInsurance: modalEmployee.hasMedicalInsurance || undefined,
+  //       hireDate: modalEmployee.hireDate ? parseDate(modalEmployee.hireDate) : undefined,
+  //       emergencyContact: modalEmployee.emergencyContact || undefined,
+  //       aadharFront: modalEmployee.aadharFront instanceof File ? modalEmployee.aadharFront : undefined,
+  //       aadharBack: modalEmployee.aadharBack instanceof File ? modalEmployee.aadharBack : undefined,
+  //       bankPassbook: modalEmployee.bankPassbook instanceof File ? modalEmployee.bankPassbook : undefined,
+  //       panCard: modalEmployee.panCard instanceof File ? modalEmployee.panCard : undefined,
+  //     }).forEach(([key, value]) => {
+  //       if (value !== undefined && value !== null && value !== '') {
+  //         employeeData.append(key, value);
+  //       }
+  //     });
+  //     if (modalType === 'add') {
+  //       response = await axios.post(`${BASE_URL}/admin/addemployees`, employeeData, {
+  //         headers: {
+  //           Authorization: `Bearer ${token}`,
+  //           'Content-Type': 'multipart/form-data',
+  //         },
+  //       });
+  //       setEmployees((prev) => [...prev, response.data]);
+  //     } else {
+  //       response = await axios.put(
+  //         `${BASE_URL}/admin/editemployees/${modalEmployee._id}`,
+  //         employeeData,
+  //         {
+  //           headers: {
+  //             Authorization: `Bearer ${token}`,
+  //             'Content-Type': 'multipart/form-data',
+  //           },
+  //         }
+  //       );
+  //       setEmployees((prev) =>
+  //         prev.map((emp, idx) =>
+  //           idx === modalIndex ? { ...response.data.employee, _id: modalEmployee._id } : emp
+  //         )
+  //       );
+  //     }
+  //     setModalOpen(false);
+  //     setModalEmployee(initialEmployee);
+  //     setModalIndex(null);
+  //     setIsEditing(false);
+  //     setError(null);
+  //     setSaving(false);
+  //   } catch (err) {
+  //     setSaving(false);
+  //     if (err.response?.status === 401) {
+  //       setError('Session expired or unauthorized. Please log in again.');
+  //       localStorage.removeItem('token');
+  //       localStorage.removeItem('userEmail');
+  //       navigate('/login');
+  //     } else if (err.response?.status === 403) {
+  //       setError('Unauthorized: Admin access required.');
+  //     } else if (err.response?.status === 400) {
+  //       setError(err.response.data.message || 'Invalid input data. Please check the provided fields.');
+  //     } else {
+  //       setError(err.response?.data?.message || `Failed to ${modalType === 'add' ? 'add' : 'edit'} employee`);
+  //     }
+  //   }
+  // };
 
   const handleDeleteEmployee = async () => {
     if (!token) {
@@ -684,278 +858,288 @@ const EmployeeListPage = () => {
           </div>
         </main>
 
-        {modalOpen && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-60 p-4 sm:p-6" onClick={() => setModalOpen(false)}>
-            <div className="bg-white rounded-xl shadow-xl w-full max-w-md sm:max-w-lg md:max-w-6xl max-h-[80vh] overflow-y-auto p-4 sm:p-6 relative " onClick={(e) => e.stopPropagation()}>
-              {saving && (
-                <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-10">
-                  <div className="flex items-center gap-2 text-blue-500">
-                    <FaSpinner className="animate-spin" size={24} />
-                    <span>Saving...</span>
-                  </div>
-                </div>
-              )}
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg sm:text-xl font-bold text-blue-700">
-                  {modalType === 'add' ? 'Add Employee' : isEditing ? 'Edit Employee' : 'Employee Details'}
-                </h2>
-                <div className="flex gap-2">
-                  {modalType !== 'add' && !isEditing && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        console.log('Edit button in modal clicked');
-                        setIsEditing(true);
-                      }}
-                      className="flex items-center gap-2 px-3 py-1 sm:px-4 sm:py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-md font-semibold text-sm touch-action-manipulation"
-                    >
-                      <FaPen size={12} /> Edit
-                    </button>
-                  )}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      console.log('Close modal button clicked');
-                      setModalOpen(false);
-                      setModalEmployee(initialEmployee);
-                      setModalIndex(null);
-                      setIsEditing(false);
-                      setError(null);
-                    }}
-                    className="text-blue-600 hover:text-blue-800 text-lg touch-action-manipulation"
-                  >
-                    <FaTimes size={16} />
-                  </button>
-                </div>
-              </div>
-              <div className="flex items-center gap-4 mb-6">
-                <div className="relative">
-                  <div className="w-16 h-16 sm:w-20 sm:h-20 bg-blue-100 rounded-full overflow-hidden flex items-center justify-center">
-                    {modalEmployee.profileImage ? (
-                      <a
-                        href={modalEmployee.profileImage instanceof File ? URL.createObjectURL(modalEmployee.profileImage) : modalEmployee.profileImage}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        <img
-                          src={modalEmployee.profileImage instanceof File ? URL.createObjectURL(modalEmployee.profileImage) : modalEmployee.profileImage}
-                          alt="Profile"
-                          className="w-full h-full object-cover"
-                        />
-                      </a>
-                    ) : (
-                      <FaUser size={32} className="text-blue-500" />
-                    )}
-                  </div>
-                  {isEditing && (
-                    <label className="absolute bottom-0 right-0 bg-blue-700 hover:bg-blue-800 text-white p-1 sm:p-2 rounded-full cursor-pointer transition-colors touch-action-manipulation">
-                      <FaCamera size={12} />
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleModalImage}
-                        className="hidden"
-                      />
-                    </label>
-                  )}
-                </div>
-                <div>
-                  <div className="font-semibold text-base sm:text-lg text-blue-700">
-                    {modalEmployee.firstName} {modalEmployee.lastName}
-                  </div>
-                  <div className="text-blue-600 text-xs sm:text-sm">{modalEmployee.position || 'N/A'}</div>
-                  <div className="text-blue-500 text-xs">{modalEmployee.department || 'N/A'}</div>
-                </div>
-              </div>
-              {modalType === 'add' ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {addFields.map((field) => (
-                    <div key={field.key}>
-                      <label className="block text-xs sm:text-sm font-medium text-blue-700 mb-1">
-                        {field.label}
-                        {field.required && '*'}
-                      </label>
-                      {field.type === 'select' ? (
-                        <select
-                          value={modalEmployee[field.key] || ''}
-                          onChange={(e) => handleModalChange(field.key, e.target.value)}
-                          className="w-full px-3 py-2 border border-blue-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 touch-action-manipulation"
-                        >
-                          {field.options.map((option) => (
-                            <option key={option} value={option}>
-                              {option.charAt(0).toUpperCase() + option.slice(1)}
-                            </option>
-                          ))}
-                        </select>
-                      ) : (
-                        <input
-                          type={field.type}
-                          value={modalEmployee[field.key] || ''}
-                          onChange={(e) => handleModalChange(field.key, e.target.value)}
-                          placeholder={field.placeholder || ''}
-                          className="w-full px-3 py-2 border border-blue-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 touch-action-manipulation"
-                        />
-                      )}
-                    </div>
+   {modalOpen && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-60 p-4 sm:p-6" onClick={() => setModalOpen(false)}>
+    <div className="bg-white rounded-xl shadow-xl w-full max-w-md sm:max-w-lg md:max-w-6xl max-h-[80vh] overflow-y-auto p-4 sm:p-6 relative" onClick={(e) => e.stopPropagation()}>
+      {saving && (
+        <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-10">
+          <div className="flex items-center gap-2 text-blue-500">
+            <FaSpinner className="animate-spin" size={24} />
+            <span>Saving...</span>
+          </div>
+        </div>
+      )}
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-lg sm:text-xl font-bold text-blue-700">
+          {modalType === 'add' ? 'Add Employee' : isEditing ? 'Edit Employee' : 'Employee Details'}
+        </h2>
+        <div className="flex gap-2">
+          {modalType !== 'add' && !isEditing && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                console.log('Edit button in modal clicked');
+                setIsEditing(true);
+              }}
+              className="flex items-center gap-2 px-3 py-1 sm:px-4 sm:py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-md font-semibold text-sm touch-action-manipulation"
+            >
+              <FaPen size={12} /> Edit
+            </button>
+          )}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              console.log('Close modal button clicked');
+              setModalOpen(false);
+              setModalEmployee(initialEmployee);
+              setModalIndex(null);
+              setIsEditing(false);
+              setError(null);
+            }}
+            className="text-blue-600 hover:text-blue-800 text-lg touch-action-manipulation"
+          >
+            <FaTimes size={16} />
+          </button>
+        </div>
+      </div>
+      <div className="flex items-center gap-4 mb-6">
+        <div className="relative">
+          <div className="w-16 h-16 sm:w-20 sm:h-20 bg-blue-100 rounded-full overflow-hidden flex items-center justify-center">
+            {modalEmployee.profileImage ? (
+              <a
+                href={modalEmployee.profileImage instanceof File ? URL.createObjectURL(modalEmployee.profileImage) : modalEmployee.profileImage}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <img
+                  src={modalEmployee.profileImage instanceof File ? URL.createObjectURL(modalEmployee.profileImage) : modalEmployee.profileImage}
+                  alt="Profile"
+                  className="w-full h-full object-cover"
+                />
+              </a>
+            ) : (
+              <FaUser size={32} className="text-blue-500" />
+            )}
+          </div>
+          {isEditing && (
+            <label className="absolute bottom-0 right-0 bg-blue-700 hover:bg-blue-800 text-white p-1 sm:p-2 rounded-full cursor-pointer transition-colors touch-action-manipulation">
+              <FaCamera size={12} />
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleModalImage}
+                className="hidden"
+              />
+            </label>
+          )}
+        </div>
+        <div>
+          <div className="font-semibold text-base sm:text-lg text-blue-700">
+            {modalEmployee.firstName} {modalEmployee.lastName}
+          </div>
+          <div className="text-blue-600 text-xs sm:text-sm">{modalEmployee.position || 'N/A'}</div>
+          <div className="text-blue-500 text-xs">{modalEmployee.department || 'N/A'}</div>
+        </div>
+      </div>
+      {modalType === 'add' ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {[
+            { label: 'First Name', key: 'firstName', type: 'text', required: true },
+            { label: 'Last Name', key: 'lastName', type: 'text', required: true },
+            { label: 'Email', key: 'email', type: 'email', required: true },
+            { label: 'Department', key: 'department', type: 'select', options: ['', 'Engineering', 'Marketing', 'Sales', 'Human Resources', 'Finance', 'Procurement'], required: true },
+            { label: 'Position', key: 'position', type: 'text', required: true },
+            { label: 'Date of Joining', key: 'dateOfJoining', type: 'text', placeholder: 'DD/MMMM/YYYY', required: true },
+            { label: 'Manager', key: 'manager', type: 'text', required: true },
+            { label: 'Work Location', key: 'workLocation', type: 'text', required: true },
+            { label: 'Role', key: 'role', type: 'select', options: ['employee', 'admin'], required: true },
+          ].map((field) => (
+            <div key={field.key}>
+              <label className="block text-xs sm:text-sm font-medium text-blue-700 mb-1">
+                {field.label}
+                {field.required && '*'}
+              </label>
+              {field.type === 'select' ? (
+                <select
+                  value={modalEmployee[field.key] || ''}
+                  onChange={(e) => handleModalChange(field.key, e.target.value)}
+                  className="w-full px-3 py-2 border border-blue-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 touch-action-manipulation"
+                >
+                  {field.options.map((option) => (
+                    <option key={option} value={option}>
+                      {option.charAt(0).toUpperCase() + option.slice(1)}
+                    </option>
                   ))}
-                </div>
+                </select>
               ) : (
-                <div className="space-y-6">
-                  <div>
-                    <h3 className="text-base font-semibold text-red-700 mb-3">Documents</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {['aadharFront', 'aadharBack', 'bankPassbook', 'panCard'].map((field) => (
-                        <div key={field}>
-                          <label className="block text-xs sm:text-sm font-medium text-blue-700 mb-1">
-                            {field === 'aadharFront' && 'Aadhar Card (Front)'}
-                            {field === 'aadharBack' && 'Aadhar Card (Back)'}
-                            {field === 'bankPassbook' && 'Bank Passbook (PDF)'}
-                            {field === 'panCard' && 'PAN Card (PDF)'}
-                          </label>
-                          {isEditing ? (
-                            <div className="relative w-full h-32 border-2 border-dashed border-blue-200 rounded-lg flex flex-col items-center justify-center text-gray-500 bg-gray-50 hover:bg-blue-50 transition-colors">
-                              {modalEmployee[field] ? (
-                                <div className="text-center">
-                                  <p className="text-sm truncate max-w-[200px]">{modalEmployee[field].name || field}</p>
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      console.log(`Remove ${field} button clicked`);
-                                      handleModalChange(field, null);
-                                    }}
-                                    className="text-xs text-blue-600 hover:text-blue-800 mt-1 touch-action-manipulation"
-                                  >
-                                    Remove
-                                  </button>
-                                </div>
-                              ) : (
-                                <>
-                                  <FaFilePdf size={24} className="text-blue-400 mb-2" />
-                                  <p className="text-sm">Drag & drop PDF or click to upload</p>
-                                </>
-                              )}
-                              <input
-                                type="file"
-                                accept="application/pdf"
-                                onChange={handleFileUpload(field)}
-                                className="absolute w-full h-full opacity-0 cursor-pointer touch-action-manipulation"
-                              />
-                            </div>
-                          ) : (
-                            <div>
-                              {modalEmployee[field] ? (
-                                <a
-                                  href={modalEmployee[field] instanceof File ? URL.createObjectURL(modalEmployee[field]) : modalEmployee[field]}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="flex items-center space-x-2"
-                                >
-                                  <FaFilePdf size={24} className="text-blue-400" />
-                                  <p className="text-blue-800 text-sm sm:text-base truncate max-w-[200px]">
-                                    {field}
-                                  </p>
-                                </a>
-                              ) : (
-                                <p className="text-blue-800 text-sm sm:text-base">Not uploaded</p>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  {Object.entries(detailFields).map(([section, fields]) => (
-                    <div key={section}>
-                      <h3 className="text-base font-semibold text-red-700 mb-3">
-                        {section === 'personalInfo' && 'Personal Information'}
-                        {section === 'contactInfo' && 'Contact Information'}
-                        {section === 'bankingInfo' && 'Banking Information'}
-                        {section === 'employmentInfo' && 'Employment Information'}
-                      </h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {fields.map((field) => (
-                          <div key={field.key}>
-                            <label className="block text-xs sm:text-sm font-medium text-blue-700 mb-1">
-                              {field.label}
-                              {field.required && '*'}
-                            </label>
-                            {isEditing && field.type !== 'select' && !field.readOnly ? (
-                              <input
-                                type={field.type}
-                                value={modalEmployee[field.key] || ''}
-                                onChange={(e) => handleModalChange(field.key, e.target.value)}
-                                placeholder={field.placeholder || ''}
-                                className="w-full px-3 py-2 border border-blue-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 touch-action-manipulation"
-                              />
-                            ) : isEditing && field.type === 'select' ? (
-                              <select
-                                value={modalEmployee[field.key] || ''}
-                                onChange={(e) => handleModalChange(field.key, e.target.value)}
-                                className="w-full px-3 py-2 border border-blue-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 touch-action-manipulation"
-                              >
-                                {field.options.map((option) => (
-                                  <option key={option} value={option}>
-                                    {option.charAt(0).toUpperCase() + option.slice(1)}
-                                  </option>
-                                ))}
-                              </select>
-                            ) : (
-                              <div className="text-sm text-blue-800">
-                                {field.type === 'text' && field.placeholder === 'DD/MMMM/YYYY' ? formatDate(modalEmployee[field.key]) : modalEmployee[field.key] || 'N/A'}
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-              {isEditing && (
-                <div className="flex justify-end mt-4 sm:mt-6 gap-2">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      console.log('Cancel button in modal clicked');
-                      if (modalType === 'add') {
-                        setModalOpen(false);
-                        setModalEmployee(initialEmployee);
-                        setModalIndex(null);
-                      } else {
-                        setIsEditing(false);
-                      }
-                      setError(null);
-                    }}
-                    className="px-4 py-2 bg-blue-200 text-blue-700 rounded-md font-semibold text-sm sm:text-base hover:bg-blue-300 touch-action-manipulation"
-                    disabled={saving}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      console.log('Save button in modal clicked');
-                      handleSaveEmployee();
-                    }}
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-semibold text-sm sm:text-base touch-action-manipulation"
-                    disabled={saving}
-                  >
-                    {saving ? (
-                      <>
-                        <FaSpinner className="animate-spin" size={12} />
-                        Saving...
-                      </>
-                    ) : (
-                      <>
-                        <FaSave /> Save
-                      </>
-                    )}
-                  </button>
-                </div>
+                <input
+                  type={field.type}
+                  value={modalEmployee[field.key] || ''}
+                  onChange={(e) => handleModalChange(field.key, e.target.value)}
+                  placeholder={field.placeholder || ''}
+                  className="w-full px-3 py-2 border border-blue-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 touch-action-manipulation"
+                />
               )}
             </div>
+          ))}
+        </div>
+      ) : (
+        <div className="space-y-6">
+          <div>
+            <h3 className="text-base font-semibold text-red-700 mb-3">Documents</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {['aadharFront', 'aadharBack', 'bankPassbook', 'panCard'].map((field) => (
+                <div key={field}>
+                  <label className="block text-xs sm:text-sm font-medium text-blue-700 mb-1">
+                    {field === 'aadharFront' && 'Aadhar Card (Front)'}
+                    {field === 'aadharBack' && 'Aadhar Card (Back)'}
+                    {field === 'bankPassbook' && 'Bank Passbook (PDF)'}
+                    {field === 'panCard' && 'PAN Card (PDF)'}
+                  </label>
+                  {isEditing ? (
+                    <div className="relative w-full h-32 border-2 border-dashed border-blue-200 rounded-lg flex flex-col items-center justify-center text-gray-500 bg-gray-50 hover:bg-blue-50 transition-colors">
+                      {modalEmployee[field] ? (
+                        <div className="text-center">
+                          <p className="text-sm truncate max-w-[200px]">{modalEmployee[field].name || field}</p>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              console.log(`Remove ${field} button clicked`);
+                              handleModalChange(field, null);
+                            }}
+                            className="text-xs text-blue-600 hover:text-blue-800 mt-1 touch-action-manipulation"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      ) : (
+                        <>
+                          <FaFilePdf size={24} className="text-blue-400 mb-2" />
+                          <p className="text-sm">Drag & drop PDF or click to upload</p>
+                        </>
+                      )}
+                      <input
+                        type="file"
+                        accept="application/pdf"
+                        onChange={handleFileUpload(field)}
+                        className="absolute w-full h-full opacity-0 cursor-pointer touch-action-manipulation"
+                      />
+                    </div>
+                  ) : (
+                    <div>
+                      {modalEmployee[field] ? (
+                        <a
+                          href={modalEmployee[field] instanceof File ? URL.createObjectURL(modalEmployee[field]) : modalEmployee[field]}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center space-x-2"
+                        >
+                          <FaFilePdf size={24} className="text-blue-400" />
+                          <p className="text-blue-800 text-sm sm:text-base truncate max-w-[200px]">
+                            {field}
+                          </p>
+                        </a>
+                      ) : (
+                        <p className="text-blue-800 text-sm sm:text-base">Not uploaded</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
-        )}
+          {Object.entries(detailFields).map(([section, fields]) => (
+            <div key={section}>
+              <h3 className="text-base font-semibold text-red-700 mb-3">
+                {section === 'personalInfo' && 'Personal Information'}
+                {section === 'contactInfo' && 'Contact Information'}
+                {section === 'bankingInfo' && 'Banking Information'}
+                {section === 'employmentInfo' && 'Employment Information'}
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {fields.map((field) => (
+                  <div key={field.key}>
+                    <label className="block text-xs sm:text-sm font-medium text-blue-700 mb-1">
+                      {field.label}
+                      {field.required && '*'}
+                    </label>
+                    {isEditing && field.type !== 'select' && !field.readOnly ? (
+                      <input
+                        type={field.type}
+                        value={modalEmployee[field.key] || ''}
+                        onChange={(e) => handleModalChange(field.key, e.target.value)}
+                        placeholder={field.placeholder || ''}
+                        className="w-full px-3 py-2 border border-blue-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 touch-action-manipulation"
+                      />
+                    ) : isEditing && field.type === 'select' ? (
+                      <select
+                        value={modalEmployee[field.key] || ''}
+                        onChange={(e) => handleModalChange(field.key, e.target.value)}
+                        className="w-full px-3 py-2 border border-blue-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 touch-action-manipulation"
+                      >
+                        {field.options.map((option) => (
+                          <option key={option} value={option}>
+                            {option.charAt(0).toUpperCase() + option.slice(1)}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <div className="text-sm text-blue-800">
+                        {field.type === 'text' && field.placeholder === 'DD/MMMM/YYYY' ? formatDate(modalEmployee[field.key]) : modalEmployee[field.key] || 'N/A'}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+      {isEditing && (
+        <div className="flex justify-end mt-4 sm:mt-6 gap-2">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              console.log('Cancel button in modal clicked');
+              if (modalType === 'add') {
+                setModalOpen(false);
+                setModalEmployee(initialEmployee);
+                setModalIndex(null);
+              } else {
+                setIsEditing(false);
+              }
+              setError(null);
+            }}
+            className="px-4 py-2 bg-blue-200 text-blue-700 rounded-md font-semibold text-sm sm:text-base hover:bg-blue-300 touch-action-manipulation"
+            disabled={saving}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              console.log('Save button in modal clicked');
+              handleSaveEmployee();
+            }}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-semibold text-sm sm:text-base touch-action-manipulation"
+            disabled={saving}
+          >
+            {saving ? (
+              <>
+                <FaSpinner className="animate-spin" size={12} />
+                Saving...
+              </>
+            ) : (
+              <>
+                <FaSave /> Save
+              </>
+            )}
+          </button>
+        </div>
+      )}
+    </div>
+  </div>
+)}
 
         {deleteIndex !== null && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-60 p-4" onClick={() => setDeleteIndex(null)}>

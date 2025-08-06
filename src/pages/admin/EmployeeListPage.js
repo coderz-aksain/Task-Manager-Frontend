@@ -611,7 +611,7 @@ const handleSaveEmployee = async () => {
   }, [showActions, showSearch]);
 
   return (
-    <div className="flex min-h-screen bg-gray-100">
+    <div className="flex min-h-screen bg-white">
       <div className={`fixed inset-y-0 left-0 z-50 md:sticky md:z-10 w-64 md:w-auto transition-transform duration-300 ${showSidebar ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
         <AdminSidebar isOpen={showSidebar} toggleSidebar={() => setShowSidebar((prev) => !prev)} />
       </div>
@@ -620,7 +620,7 @@ const handleSaveEmployee = async () => {
           <Header isLoggedIn={!!token} onToggleSidebar={() => setShowSidebar((prev) => !prev)} />
         </div>
         <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
-          <div className="max-w-full mx-auto bg-white p-4 rounded-lg shadow-md">
+         
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
               <div className="flex items-center gap-2">
                 <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-blue-600">Employee List</h1>
@@ -679,10 +679,10 @@ const handleSaveEmployee = async () => {
                   </div>
                 ) : (
                   <>
-                    <div className="hidden lg:block overflow-x-auto">
+                    <div className="">
                       <table className="min-w-full text-xs sm:text-sm">
                         <thead>
-                          <tr className="bg-blue-100 text-blue-700">
+                          <tr className="bg-gray-200 text-black">
                             {tableColumns.map((col) => (
                               <th key={col.key} className="p-2 sm:p-3 text-left font-semibold whitespace-nowrap">
                                 {col.label}
@@ -855,7 +855,7 @@ const handleSaveEmployee = async () => {
                 )}
               </div>
             )}
-          </div>
+       
         </main>
 
    {modalOpen && (

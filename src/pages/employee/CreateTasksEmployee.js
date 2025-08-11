@@ -316,7 +316,7 @@
 //                   >
 //                     <option value="General">General</option>
 //                     <option value="Auction">Auction</option>
-//                     <option value="Remainder">Remainder</option>
+//                     <option value="Reminder">Reminder</option>
 //                   </select>
 //                 </div>
 //                 <div>
@@ -465,8 +465,8 @@ const validationSchema = Yup.object({
     .min(1, 'At least one assignee is required')
     .required('Assigned To is required'),
   dueTime: Yup.string().when('taskType', {
-    is: 'Remainder',
-    then: (schema) => schema.required('Due Time is required for Remainder tasks'),
+    is: 'Reminder',
+    then: (schema) => schema.required('Due Time is required for Reminder tasks'),
     otherwise: (schema) => schema,
   }),
 });
@@ -728,7 +728,7 @@ function CreateTasksEmployee({ onSubmit, editTask, onCancel }) {
                 formDataToSend.append('taskType', values.taskType);
                 formDataToSend.append('remark', values.remark);
 
-                if (values.taskType === 'Remainder') {
+                if (values.taskType === 'Reminder') {
                   formDataToSend.append('reminderMode', values.reminderMode);
                   formDataToSend.append('reminderType', values.reminderType);
                   formDataToSend.append('dueTime', values.dueTime);
@@ -841,7 +841,7 @@ function CreateTasksEmployee({ onSubmit, editTask, onCancel }) {
                       >
                         <option value="General">General</option>
                         <option value="Auction">Auction</option>
-                        <option value="Remainder">Remainder</option>
+                        <option value="Reminder">Reminder</option>
                       </Field>
                       <ErrorMessage name="taskType" component="div" className="text-red-500 text-sm mt-1" />
                     </div>
@@ -898,7 +898,7 @@ function CreateTasksEmployee({ onSubmit, editTask, onCancel }) {
                       </div>
                     </div>
                     {/* Reminder-Specific Fields */}
-                    {values.taskType === 'Remainder' && (
+                    {values.taskType === 'Reminder' && (
                       <>
                         {/* Due Time */}
                         <div>
@@ -1192,7 +1192,7 @@ function CreateTasksEmployee({ onSubmit, editTask, onCancel }) {
                     </div>
                   </Form>
                 </div>
-                {/* Right Column: Preview (for General and Remainder) */}
+                {/* Right Column: Preview (for General and Reminder) */}
                 {values.taskType !== 'Auction' && (
                   <div className="lg:w-1/2 p-6 bg-gray-100">
                     <h2 className="text-2xl font-bold text-gray-900 mb-6">Task Preview</h2>
@@ -1217,14 +1217,14 @@ function CreateTasksEmployee({ onSubmit, editTask, onCancel }) {
                             Due: {values.dueDate ? new Date(values.dueDate).toLocaleDateString('en-US', {
                               year: 'numeric', month: 'short', day: 'numeric'
                             }) : 'Not set'}
-                            {values.taskType === 'Remainder' && values.dueTime && ` at ${values.dueTime}`}
+                            {values.taskType === 'Reminder' && values.dueTime && ` at ${values.dueTime}`}
                           </span>
                         </div>
                         <div className="flex items-center">
                           <User className="w-4 h-4 mr-2 text-gray-500" />
                           <span>Assigned To: {values.assignedTo.length > 0 ? values.assignedTo.map(emp => emp.name).join(', ') : 'You'}</span>
                         </div>
-                        {values.taskType === 'Remainder' && (
+                        {values.taskType === 'Reminder' && (
                           <>
                             <div className="flex items-center">
                               {values.reminderType === 'one-time' ? (

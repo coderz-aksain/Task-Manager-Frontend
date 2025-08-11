@@ -106,7 +106,7 @@ function CreateTasks({ onSubmit, editTask, onCancel }) {
   }, [token]);
 
   useEffect(() => {
-    if (formData.taskType === 'Remainder' && formData.reminderMode === 'self' && currentUser) {
+    if (formData.taskType === 'Reminder' && formData.reminderMode === 'self' && currentUser) {
       setFormData(prev => ({
         ...prev,
         assignedTo: [{
@@ -297,12 +297,12 @@ function CreateTasks({ onSubmit, editTask, onCancel }) {
       Due Date: "${formData.dueDate || 'Not set'}"
       Due Time: "${formData.dueTime || 'Not set'}"
     `;
-    if (formData.taskType === 'Remainder' && formData.reminderType === 'one-time') {
+    if (formData.taskType === 'Reminder' && formData.reminderType === 'one-time') {
       const recipientsText = formData.reminderMode === 'team' && formData.assignedTo.length > 0
         ? `Assigned To: ${formData.assignedTo.map(emp => emp.name).join(', ')}`
         : `Assigned To: You`;
       prompt += `${recipientsText}\n`;
-    } else if (formData.taskType === 'Remainder') {
+    } else if (formData.taskType === 'Reminder') {
       prompt += `This is an interval-based reminder with the following notification stages:\n`;
       formData.notificationStages.forEach((stage, index) => {
         prompt += `Stage ${index + 1}: Notify ${formatIntervalText(stage)}`;
@@ -393,8 +393,8 @@ function CreateTasks({ onSubmit, editTask, onCancel }) {
       setError('All fields (taskName, description, dueDate, assignedTo, priority, taskType, remark) are required');
       return;
     }
-    if (formData.taskType === 'Remainder' && !formData.dueTime) {
-      setError('Due time is required for Remainder tasks');
+    if (formData.taskType === 'Reminder' && !formData.dueTime) {
+      setError('Due time is required for Reminder tasks');
       return;
     }
     setLoading(true);
@@ -406,7 +406,7 @@ function CreateTasks({ onSubmit, editTask, onCancel }) {
     formDataToSend.append('priority', formData.priority);
     formDataToSend.append('taskType', formData.taskType);
     formDataToSend.append('remark', formData.remark);
-    if (formData.taskType === 'Remainder') {
+    if (formData.taskType === 'Reminder') {
       formDataToSend.append('reminderMode', formData.reminderMode);
       formDataToSend.append('reminderType', formData.reminderType);
       formDataToSend.append('dueTime', formData.dueTime);
@@ -494,7 +494,7 @@ function CreateTasks({ onSubmit, editTask, onCancel }) {
                   >
                     <option value="General">General</option>
                     <option value="Auction">Auction</option>
-                    <option value="Remainder">Remainder</option>
+                    <option value="Reminder">Reminder</option>
                   </select>
                 </div>
                 {/* Task Name */}
@@ -571,7 +571,7 @@ function CreateTasks({ onSubmit, editTask, onCancel }) {
                   </div>
                 </div>
                 {/* Reminder-Specific Fields */}
-                {formData.taskType === 'Remainder' && (
+                {formData.taskType === 'Reminder' && (
                   <>
                     {/* Due Time */}
                     <div>
@@ -820,7 +820,7 @@ function CreateTasks({ onSubmit, editTask, onCancel }) {
                   </>
                 )}
                 {/* Employees */}
-                {(formData.taskType !== 'Remainder' || formData.reminderMode === 'team') && (
+                {(formData.taskType !== 'Reminder' || formData.reminderMode === 'team') && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Assign Employees</label>
                     <input
@@ -953,7 +953,7 @@ function CreateTasks({ onSubmit, editTask, onCancel }) {
                 </div>
               </form>
             </div>
-            {/* Right Column: Preview (for General and Remainder) */}
+            {/* Right Column: Preview (for General and Reminder) */}
             {formData.taskType !== 'Auction' && (
               <div className="lg:w-1/2 p-6 bg-gray-100">
                 <h2 className="text-2xl font-bold text-gray-900 mb-6">Task Preview</h2>
@@ -978,10 +978,10 @@ function CreateTasks({ onSubmit, editTask, onCancel }) {
                         Due: {formData.dueDate ? new Date(formData.dueDate).toLocaleDateString('en-US', {
                           year: 'numeric', month: 'short', day: 'numeric'
                         }) : 'Not set'}
-                        {formData.taskType === 'Remainder' && formData.dueTime && ` at ${formData.dueTime}`}
+                        {formData.taskType === 'Reminder' && formData.dueTime && ` at ${formData.dueTime}`}
                       </span>
                     </div>
-                    {formData.taskType === 'Remainder' && (
+                    {formData.taskType === 'Reminder' && (
                       <>
                         <div className="flex items-center">
                           {formData.reminderType === 'one-time' ? (
@@ -1068,7 +1068,7 @@ function CreateTasks({ onSubmit, editTask, onCancel }) {
                     ></textarea>
                   </div>
                 )} */}
-                {formData.taskType === 'Remainder' && (
+                {formData.taskType === 'Reminder' && (
                   <div className="mt-8 p-6 bg-white rounded-lg shadow-md border border-gray-200">
                     <h3 className="text-xl font-semibold text-gray-900 mb-4">Timeline Visualization</h3>
                     <div className="relative border-l-2 border-blue-300 pl-4 py-2">

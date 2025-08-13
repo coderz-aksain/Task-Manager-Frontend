@@ -1727,7 +1727,7 @@ function CreateTasks({ onSubmit, editTask, onCancel }) {
                               <Mail className="ml-2 mr-1 w-4 h-4 text-purple-700" />
                               <span className="text-gray-700">Email</span>
                             </label>
-                            <label className="inline-flex items-center">
+                            {/* <label className="inline-flex items-center">
                               <input
                                 type="checkbox"
                                 checked={reminder.notificationInApp}
@@ -1738,7 +1738,7 @@ function CreateTasks({ onSubmit, editTask, onCancel }) {
                               />
                               <Smartphone className="ml-2 mr-1 w-4 h-4" />
                               <span className="text-gray-700">In-app</span>
-                            </label>
+                            </label> */}
                             <label className="inline-flex items-center">
                               <input
                                 type="checkbox"

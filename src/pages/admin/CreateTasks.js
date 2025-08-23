@@ -10,6 +10,17 @@
 // ];
 
 // function CreateTasks({ onSubmit, editTask, onCancel }) {
+//   const [reminders, setReminders] = useState([{
+//     id: Date.now().toString(),
+//     taskName: editTask?.taskName || '',
+//     description: editTask?.description || '',
+//     dueDate: editTask?.dueDate || '',
+//     dueTime: editTask?.dueTime || '',
+//     assignedTo: editTask?.assignedTo || [],
+//     notificationEmail: editTask?.notificationEmail ?? true,
+//     notificationInApp: editTask?.notificationInApp ?? true,
+//     notificationAlarm: editTask?.notificationAlarm ?? false,
+//   }]);
 //   const [formData, setFormData] = useState({
 //     taskName: editTask?.taskName || '',
 //     description: editTask?.description || '',
@@ -19,26 +30,16 @@
 //     attachments: editTask?.attachments || [],
 //     taskType: editTask?.taskType || 'General',
 //     remark: editTask?.remark || '',
-//     // Reminder-specific fields
-//     reminderMode: 'self',
-//     reminderType: 'one-time',
-//     dueTime: '',
-//     notificationEmail: true,
-//     notificationInApp: true,
-//     notificationAlarm: false,
-//     notificationStages: [],
 //   });
 //   const [employees, setEmployees] = useState([]);
 //   const [searchTerm, setSearchTerm] = useState('');
 //   const [showEmployeeDropdown, setShowEmployeeDropdown] = useState(false);
 //   const [error, setError] = useState(null);
 //   const [loading, setLoading] = useState(false);
-//   const [showToast, setShowToast] = useState(false);
+//   const [toast, setToast] = useState({ visible: false, message: '', type: '' });
 //   const [dropActive, setDropActive] = useState(false);
 //   const [recipientSearchTerm, setRecipientSearchTerm] = useState('');
 //   const [showRecipientDropdown, setShowRecipientDropdown] = useState(false);
-//   const [showNotificationStages, setShowNotificationStages] = useState(false);
-//   const [showAttachmentSettings, setShowAttachmentSettings] = useState(false);
 //   const [notificationDraft, setNotificationDraft] = useState('');
 //   const [isGeneratingDraft, setIsGeneratingDraft] = useState(false);
 //   const [modalVisible, setModalVisible] = useState(false);
@@ -106,19 +107,6 @@
 //   }, [token]);
 
 //   useEffect(() => {
-//     if (formData.taskType === 'Reminder' && formData.reminderMode === 'self' && currentUser) {
-//       setFormData(prev => ({
-//         ...prev,
-//         assignedTo: [{
-//           email: currentUser.email,
-//           name: currentUser.name,
-//           avatar: currentUser.avatar
-//         }]
-//       }));
-//     }
-//   }, [formData.reminderMode, formData.taskType, currentUser]);
-
-//   useEffect(() => {
 //     const handleClickOutside = (event) => {
 //       if (employeeDropdownRef.current && !employeeDropdownRef.current.contains(event.target)) {
 //         setShowEmployeeDropdown(false);
@@ -146,30 +134,52 @@
 //     );
 //   };
 
-//   const handleInputChange = (e) => {
+//   const handleInputChange = (e, reminderId) => {
 //     const { name, value } = e.target;
-//     setFormData(prev => ({
-//       ...prev,
-//       [name]: value
-//     }));
-//   };
-
-//   const handleEmployeeSelect = (employee) => {
-//     if (!formData.assignedTo.find(emp => emp.email === employee.email)) {
+//     if (formData.taskType === 'Reminder' && reminderId) {
+//       setReminders(prev => prev.map(reminder =>
+//         reminder.id === reminderId ? { ...reminder, [name]: value } : reminder
+//       ));
+//     } else {
 //       setFormData(prev => ({
 //         ...prev,
-//         assignedTo: [...prev.assignedTo, { email: employee.email, name: employee.name }]
+//         [name]: value
 //       }));
+//     }
+//   };
+
+//   const handleEmployeeSelect = (employee, reminderId) => {
+//     if (formData.taskType === 'Reminder' && reminderId) {
+//       setReminders(prev => prev.map(reminder =>
+//         reminder.id === reminderId && !reminder.assignedTo.find(emp => emp.email === employee.email) ?
+//         { ...reminder, assignedTo: [...reminder.assignedTo, { email: employee.email, name: employee.name, avatar: employee.avatar }] } :
+//         reminder
+//       ));
+//     } else {
+//       if (!formData.assignedTo.find(emp => emp.email === employee.email)) {
+//         setFormData(prev => ({
+//           ...prev,
+//           assignedTo: [...prev.assignedTo, { email: employee.email, name: employee.name, avatar: employee.avatar }]
+//         }));
+//       }
 //     }
 //     setSearchTerm('');
 //     setShowEmployeeDropdown(false);
 //   };
 
-//   const handleEmployeeRemove = (email) => {
-//     setFormData(prev => ({
-//       ...prev,
-//       assignedTo: prev.assignedTo.filter(emp => emp.email !== email)
-//     }));
+//   const handleEmployeeRemove = (email, reminderId) => {
+//     if (formData.taskType === 'Reminder' && reminderId) {
+//       setReminders(prev => prev.map(reminder =>
+//         reminder.id === reminderId ?
+//         { ...reminder, assignedTo: reminder.assignedTo.filter(emp => emp.email !== email) } :
+//         reminder
+//       ));
+//     } else {
+//       setFormData(prev => ({
+//         ...prev,
+//         assignedTo: prev.assignedTo.filter(emp => emp.email !== email)
+//       }));
+//     }
 //   };
 
 //   const handleAttachmentAdd = (e) => {
@@ -212,110 +222,16 @@
 //     setDropActive(false);
 //   };
 
-//   const handleAddRecipient = (user) => {
-//     setFormData(prev => ({
-//       ...prev,
-//       assignedTo: [...prev.assignedTo, { email: user, name: user }]
-//     }));
-//     setRecipientSearchTerm('');
-//     setShowRecipientDropdown(false);
-//     recipientInputRef.current.focus();
-//   };
-
-//   const handleRemoveRecipient = (userToRemove) => {
-//     setFormData(prev => ({
-//       ...prev,
-//       assignedTo: prev.assignedTo.filter(emp => emp.email !== userToRemove)
-//     }));
-//   };
-
-//   const addNotificationStage = () => {
-//     setFormData(prev => ({
-//       ...prev,
-//       notificationStages: [
-//         ...prev.notificationStages,
-//         {
-//           id: Date.now().toString(),
-//           triggerType: 'days_before',
-//           triggerValue: 7,
-//           recipients: [],
-//           notifyEmail: true,
-//           notifyInApp: true,
-//           notifyAlarm: false,
-//         }
-//       ]
-//     }));
-//     setShowNotificationStages(true);
-//   };
-
-//   const updateNotificationStage = (id, field, value) => {
-//     setFormData(prev => ({
-//       ...prev,
-//       notificationStages: prev.notificationStages.map(stage =>
-//         stage.id === id ? { ...stage, [field]: value } : stage
-//       )
-//     }));
-//   };
-
-//   const removeNotificationStage = (id) => {
-//     setFormData(prev => ({
-//       ...prev,
-//       notificationStages: prev.notificationStages.filter(stage => stage.id !== id)
-//     }));
-//   };
-
-//   const handleAddStageRecipient = (stageId, user) => {
-//     setFormData(prev => ({
-//       ...prev,
-//       notificationStages: prev.notificationStages.map(stage =>
-//         stage.id === stageId
-//           ? { ...stage, recipients: [...stage.recipients, user] }
-//           : stage
-//       )
-//     }));
-//     setRecipientSearchTerm('');
-//     setShowRecipientDropdown(false);
-//   };
-
-//   const handleRemoveStageRecipient = (stageId, userToRemove) => {
-//     setFormData(prev => ({
-//       ...prev,
-//       notificationStages: prev.notificationStages.map(stage =>
-//         stage.id === stageId
-//           ? { ...stage, recipients: stage.recipients.filter(user => user !== userToRemove) }
-//           : stage
-//       )
-//     }));
-//   };
-
-//   const generateNotificationDraft = async () => {
+//   const generateNotificationDraft = async (reminder) => {
 //     setIsGeneratingDraft(true);
 //     setNotificationDraft('Generating draft...');
 //     let prompt = `Draft a concise and professional reminder notification message.
-//       Title: "${formData.taskName || 'No Title'}"
-//       Description: "${formData.description || 'No Description'}"
-//       Due Date: "${formData.dueDate || 'Not set'}"
-//       Due Time: "${formData.dueTime || 'Not set'}"
+//       Title: "${reminder.taskName || 'No Title'}"
+//       Description: "${reminder.description || 'No Description'}"
+//       Due Date: "${reminder.dueDate || 'Not set'}"
+//       Due Time: "${reminder.dueTime || 'Not set'}"
+//       Assigned To: ${reminder.assignedTo.length > 0 ? reminder.assignedTo.map(emp => emp.name).join(', ') : 'No one assigned'}
 //     `;
-//     if (formData.taskType === 'Reminder' && formData.reminderType === 'one-time') {
-//       const recipientsText = formData.reminderMode === 'team' && formData.assignedTo.length > 0
-//         ? `Assigned To: ${formData.assignedTo.map(emp => emp.name).join(', ')}`
-//         : `Assigned To: You`;
-//       prompt += `${recipientsText}\n`;
-//     } else if (formData.taskType === 'Reminder') {
-//       prompt += `This is an interval-based reminder with the following notification stages:\n`;
-//       formData.notificationStages.forEach((stage, index) => {
-//         prompt += `Stage ${index + 1}: Notify ${formatIntervalText(stage)}`;
-//         if (stage.recipients.length > 0) {
-//           prompt += ` to ${stage.recipients.join(', ')}`;
-//         } else {
-//           prompt += ` to no one specified`;
-//         }
-//         prompt += ` (Email: ${stage.notifyEmail ? 'Yes' : 'No'}, In-app: ${stage.notifyInApp ? 'Yes' : 'No'}, Alarm: ${stage.notifyAlarm ? 'Yes' : 'No'})\n`;
-//       });
-//     } else {
-//       prompt += `Assigned To: ${formData.assignedTo.length > 0 ? formData.assignedTo.map(emp => emp.name).join(', ') : 'No one assigned'}\n`;
-//     }
 //     prompt += `The message should be suitable for an email or in-app notification. Focus on clarity and brevity.`;
 //     let chatHistory = [{ role: "user", parts: [{ text: prompt }] }];
 //     const payload = { contents: chatHistory };
@@ -361,13 +277,6 @@
 //     }
 //   };
 
-//   const formatIntervalText = (stage) => {
-//     if (stage.triggerType === 'on_due_date') {
-//       return 'On Due Date';
-//     }
-//     return `${stage.triggerValue} ${stage.triggerType.replace('_', ' ')} due date`;
-//   };
-
 //   const getPriorityColor = (prio) => {
 //     switch (prio.toLowerCase()) {
 //       case 'high': return 'bg-red-100 text-red-800';
@@ -387,65 +296,136 @@
 //     setModalVisible(false);
 //   };
 
+//   const addReminder = () => {
+//     setReminders(prev => [
+//       ...prev,
+//       {
+//         id: Date.now().toString(),
+//         taskName: '',
+//         description: '',
+//         dueDate: '',
+//         dueTime: '',
+//         assignedTo: [],
+//         notificationEmail: true,
+//         notificationInApp: true,
+//         notificationAlarm: false,
+//       }
+//     ]);
+//   };
+
+//   const removeReminder = (reminderId) => {
+//     setReminders(prev => prev.filter(reminder => reminder.id !== reminderId));
+//   };
+
 //   const handleSubmit = async (e) => {
 //     e.preventDefault();
-//     if (!formData.taskName || !formData.description || !formData.dueDate || formData.assignedTo.length === 0 || !formData.priority || !formData.taskType || !formData.remark) {
-//       setError('All fields (taskName, description, dueDate, assignedTo, priority, taskType, remark) are required');
-//       return;
-//     }
-//     if (formData.taskType === 'Reminder' && !formData.dueTime) {
-//       setError('Due time is required for Reminder tasks');
-//       return;
-//     }
-//     setLoading(true);
-//     const formDataToSend = new FormData();
-//     formDataToSend.append('taskName', formData.taskName);
-//     formDataToSend.append('description', formData.description);
-//     formDataToSend.append('dueDate', formatDate(formData.dueDate));
-//     formDataToSend.append('assignedTo', JSON.stringify(formData.assignedTo.map(emp => emp.email)));
-//     formDataToSend.append('priority', formData.priority);
-//     formDataToSend.append('taskType', formData.taskType);
-//     formDataToSend.append('remark', formData.remark);
+//     setError(null);
 //     if (formData.taskType === 'Reminder') {
-//       formDataToSend.append('reminderMode', formData.reminderMode);
-//       formDataToSend.append('reminderType', formData.reminderType);
-//       formDataToSend.append('dueTime', formData.dueTime);
-//       formDataToSend.append('notificationEmail', formData.notificationEmail);
-//       formDataToSend.append('notificationInApp', formData.notificationInApp);
-//       formDataToSend.append('notificationAlarm', formData.notificationAlarm);
-//       formDataToSend.append('notificationStages', JSON.stringify(formData.notificationStages));
-//       formDataToSend.append('notificationDraft', notificationDraft);
-//     }
-//     formData.attachments.forEach((file, index) => {
-//       if (file instanceof File) {
-//         formDataToSend.append('file', file);
+//       for (const reminder of reminders) {
+//         if (!reminder.taskName || !reminder.description || !reminder.dueDate || !reminder.dueTime || reminder.assignedTo.length === 0) {
+//           setError('All reminder fields (Reminder Name, Description, Reminder Date, Reminder Time, Assign Employee) are required');
+//           setToast({ visible: true, message: 'All reminder fields are required', type: 'error' });
+//           setTimeout(() => setToast({ visible: false, message: '', type: '' }), 3000);
+//           return;
+//         }
 //       }
-//     });
-//     try {
-//       const response = await fetch('https://task-manager-backend-vqen.onrender.com/api/admin/createtask', {
-//         method: 'POST',
-//         headers: {
-//           'Authorization': `Bearer ${token}`,
-//         },
-//         body: formDataToSend,
+//       setLoading(true);
+//       try {
+//         for (const reminder of reminders) {
+//           const formDataToSend = new FormData();
+//           formDataToSend.append('taskName', reminder.taskName);
+//           formDataToSend.append('description', reminder.description);
+//           formDataToSend.append('dueDate', formatDate(reminder.dueDate));
+//           formDataToSend.append('assignedTo', JSON.stringify(reminder.assignedTo.map(emp => emp.email)));
+//           formDataToSend.append('priority', formData.priority);
+//           formDataToSend.append('taskType', formData.taskType);
+//           formDataToSend.append('remark', formData.remark);
+//           formDataToSend.append('notificationEmail', reminder.notificationEmail);
+//           formDataToSend.append('notificationInApp', reminder.notificationInApp);
+//           formDataToSend.append('notificationAlarm', reminder.notificationAlarm);
+//           formDataToSend.append('notificationDraft', notificationDraft);
+//           formData.attachments.forEach((file, index) => {
+//             if (file instanceof File) {
+//               formDataToSend.append('file', file);
+//             }
+//           });
+//           const response = await fetch('https://task-manager-backend-vqen.onrender.com/api/admin/createtask', {
+//             method: 'POST',
+//             headers: {
+//               'Authorization': `Bearer ${token}`,
+//             },
+//             body: formDataToSend,
+//           });
+//           if (!response.ok) {
+//             const errorData = await response.json().catch(() => ({ message: 'Unknown server error' }));
+//             throw new Error(errorData.message || 'Failed to create task');
+//           }
+//           const data = await response.json();
+//           if (typeof onSubmit === 'function') {
+//             onSubmit(data);
+//           }
+//         }
+//         setToast({ visible: true, message: 'Reminders created successfully!', type: 'success' });
+//         setTimeout(() => {
+//           setToast({ visible: false, message: '', type: '' });
+//           navigate('/admin/tasks');
+//         }, 3000);
+//       } catch (err) {
+//         setError(err.message);
+//         setToast({ visible: true, message: err.message || 'Failed to create reminders', type: 'error' });
+//         setTimeout(() => setToast({ visible: false, message: '', type: '' }), 3000);
+//       } finally {
+//         setLoading(false);
+//       }
+//     } else {
+//       if (!formData.taskName || !formData.description || !formData.dueDate || formData.assignedTo.length === 0 || !formData.priority || !formData.remark) {
+//         setError('All fields (Task Name, Description, Due Date, Assigned To, Priority, Remark) are required');
+//         setToast({ visible: true, message: 'All task fields are required', type: 'error' });
+//         setTimeout(() => setToast({ visible: false, message: '', type: '' }), 3000);
+//         return;
+//       }
+//       setLoading(true);
+//       const formDataToSend = new FormData();
+//       formDataToSend.append('taskName', formData.taskName);
+//       formDataToSend.append('description', formData.description);
+//       formDataToSend.append('dueDate', formatDate(formData.dueDate));
+//       formDataToSend.append('assignedTo', JSON.stringify(formData.assignedTo.map(emp => emp.email)));
+//       formDataToSend.append('priority', formData.priority);
+//       formDataToSend.append('taskType', formData.taskType);
+//       formDataToSend.append('remark', formData.remark);
+//       formData.attachments.forEach((file, index) => {
+//         if (file instanceof File) {
+//           formDataToSend.append('file', file);
+//         }
 //       });
-//       if (!response.ok) {
-//         const errorData = await response.json().catch(() => ({ message: 'Unknown server error' }));
-//         throw new Error(errorData.message || 'Failed to create task');
+//       try {
+//         const response = await fetch('https://task-manager-backend-vqen.onrender.com/api/admin/createtask', {
+//           method: 'POST',
+//           headers: {
+//             'Authorization': `Bearer ${token}`,
+//           },
+//           body: formDataToSend,
+//         });
+//         if (!response.ok) {
+//           const errorData = await response.json().catch(() => ({ message: 'Unknown server error' }));
+//           throw new Error(errorData.message || 'Failed to create task');
+//         }
+//         const data = await response.json();
+//         if (typeof onSubmit === 'function') {
+//           onSubmit(data);
+//         }
+//         setToast({ visible: true, message: 'Task created successfully!', type: 'success' });
+//         setTimeout(() => {
+//           setToast({ visible: false, message: '', type: '' });
+//           navigate('/admin/tasks');
+//         }, 3000);
+//       } catch (err) {
+//         setError(err.message);
+//         setToast({ visible: true, message: err.message || 'Failed to create task', type: 'error' });
+//         setTimeout(() => setToast({ visible: false, message: '', type: '' }), 3000);
+//       } finally {
+//         setLoading(false);
 //       }
-//       const data = await response.json();
-//       if (typeof onSubmit === 'function') {
-//         onSubmit(data);
-//       }
-//       setShowToast(true);
-//       setTimeout(() => {
-//         setShowToast(false);
-//         navigate('/admin/tasks');
-//       }, 3000);
-//     } catch (err) {
-//       setError(err.message);
-//     } finally {
-//       setLoading(false);
 //     }
 //   };
 
@@ -468,9 +448,9 @@
 //       <div className="flex-1 flex flex-col">
 //         <Header isLoggedIn={!!token} onToggleSidebar={toggleSidebar} />
 //         <div className="flex-1 p-6 overflow-auto">
-//           <div className={`max-w-8xl mx-auto bg-white rounded-xl shadow-lg p-6 ${formData.taskType !== 'Auction' ? 'flex flex-col lg:flex-row' : ''}`}>
+//           <div className="max-w-8xl mx-auto bg-white rounded-xl shadow-lg p-6 flex flex-col lg:flex-row">
 //             {/* Form Fields */}
-//             <div className={`${formData.taskType !== 'Auction' ? 'lg:w-1/2 p-4 border-r border-gray-200' : 'w-full p-4'}`}>
+//             <div className="lg:w-1/2 p-4 border-r border-gray-200">
 //               <div className="flex items-center justify-between mb-6">
 //                 <h2 className="text-xl font-semibold text-gray-900">
 //                   {editTask ? 'Edit Task' : 'Create New Task'}
@@ -497,434 +477,316 @@
 //                     <option value="Reminder">Reminder</option>
 //                   </select>
 //                 </div>
-//                 {/* Task Name */}
-//                 <div>
-//                   <label className="block text-sm font-medium text-gray-700 mb-2">Task Name *</label>
-//                   <input
-//                     type="text"
-//                     name="taskName"
-//                     value={formData.taskName}
-//                     onChange={handleInputChange}
-//                     required
-//                     className="w-full px-3 py-2 border border-gray-300 rounded-md"
-//                     placeholder="Enter task name"
-//                   />
-//                 </div>
-//                 {/* Description */}
-//                 <div>
-//                   <label className="block text-sm font-medium text-gray-700 mb-2">Description *</label>
-//                   <textarea
-//                     name="description"
-//                     value={formData.description}
-//                     onChange={handleInputChange}
-//                     rows={3}
-//                     className="w-full px-3 py-2 border border-gray-300 rounded-md"
-//                     placeholder="Enter task description"
-//                   />
-//                   {/* {formData.taskType !== 'Auction' && (
-//                     <button
-//                       type="button"
-//                       className="mt-2 px-4 py-2 bg-blue-50 text-blue-700 rounded-md text-sm font-medium hover:bg-blue-100 flex items-center"
-//                       onClick={generateNotificationDraft}
-//                       disabled={isGeneratingDraft}
-//                     >
-//                       {isGeneratingDraft ? (
-//                         <>
-//                           <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-blue-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-//                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-//                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-//                           </svg>
-//                           Generating...
-//                         </>
-//                       ) : (
-//                         <>
-//                           <Sparkles className="mr-2" /> Generate Notification Draft
-//                         </>
-//                       )}
-//                     </button>
-//                   )} */}
-//                 </div>
-//                 {/* Priority and Due Date */}
-//                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-//                   <div>
-//                     <label className="block text-sm font-medium text-gray-700 mb-2">Priority *</label>
-//                     <select
-//                       name="priority"
-//                       value={formData.priority}
-//                       onChange={handleInputChange}
-//                       className="w-full px-3 py-2 border border-gray-300 rounded-md"
-//                     >
-//                       <option value="High">High</option>
-//                       <option value="Medium">Medium</option>
-//                       <option value="Low">Low</option>
-//                     </select>
-//                   </div>
-//                   <div>
-//                     <label className="block text-sm font-medium text-gray-700 mb-2">Due Date *</label>
-//                     <input
-//                       type="date"
-//                       name="dueDate"
-//                       value={formData.dueDate}
-//                       onChange={handleInputChange}
-//                       className="w-full px-3 py-2 border border-gray-300 rounded-md"
-//                     />
-//                   </div>
-//                 </div>
-//                 {/* Reminder-Specific Fields */}
-//                 {formData.taskType === 'Reminder' && (
+//                 {formData.taskType === 'Reminder' ? (
 //                   <>
-//                     {/* Due Time */}
-//                     <div>
-//                       <label className="block text-sm font-medium text-gray-700 mb-2">Due Time *</label>
-//                       <div className="relative">
-//                         <input
-//                           type="time"
-//                           name="dueTime"
-//                           value={formData.dueTime}
-//                           onChange={handleInputChange}
-//                           className="w-full px-3 py-2 border border-gray-300 rounded-md pr-3"
-//                         />
-//                         {/* <Clock className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" /> */}
-//                       </div>
-//                     </div>
-//                     {/* Reminder Mode */}
-//                     <div>
-//                       <label className="block text-sm font-medium text-gray-700 mb-2">Reminder For</label>
-//                       <div className="flex bg-gray-100 rounded-lg p-1">
-//                         <button
-//                           type="button"
-//                           className={`flex-1 px-4 py-2 rounded-md text-sm font-medium ${formData.reminderMode === 'self' ? 'bg-blue-600 text-white shadow' : 'text-gray-700 hover:bg-gray-200'}`}
-//                           onClick={() => setFormData(prev => ({ ...prev, reminderMode: 'self' }))}
-//                         >
-//                           <User className="inline-block mr-2" /> Self
-//                         </button>
-//                         <button
-//                           type="button"
-//                           className={`flex-1 px-4 py-2 rounded-md text-sm font-medium ${formData.reminderMode === 'team' ? 'bg-blue-600 text-white shadow' : 'text-gray-700 hover:bg-gray-200'}`}
-//                           onClick={() => setFormData(prev => ({ ...prev, reminderMode: 'team' }))}
-//                         >
-//                           <Users className="inline-block mr-2" /> Team
-//                         </button>
-//                       </div>
-//                     </div>
-//                     {/* Reminder Type */}
-//                     <div>
-//                       <label className="block text-sm font-medium text-gray-700 mb-2">Reminder Type</label>
-//                       <div className="flex space-x-4">
-//                         <label className="inline-flex items-center">
+//                     {reminders.map((reminder, index) => (
+//                       <div key={reminder.id} className="border border-gray-300 rounded-lg p-4 mb-4 bg-gray-50 relative">
+                        
+//                         <h3 className="text-md font-semibold text-gray-800 mb-3">Reminder {index + 1}</h3>
+//                         {/* Reminder Name */}
+//                         <div>
+//                           <label className="block text-sm font-medium text-gray-700 mb-2">Reminder Name *</label>
 //                           <input
-//                             type="radio"
-//                             name="reminderType"
-//                             value="one-time"
-//                             checked={formData.reminderType === 'one-time'}
-//                             onChange={() => setFormData(prev => ({ ...prev, reminderType: 'one-time', notificationStages: [] }))}
-//                             className="form-radio h-4 w-4 text-blue-600"
+//                             type="text"
+//                             name="taskName"
+//                             value={reminder.taskName}
+//                             onChange={(e) => handleInputChange(e, reminder.id)}
+//                             required
+//                             className="w-full px-3 py-2 border border-gray-300 rounded-md"
+//                             placeholder="Enter reminder name"
 //                           />
-//                           <span className="ml-2 text-gray-700">One-time</span>
-//                         </label>
-//                         <label className="inline-flex items-center">
-//                           <input
-//                             type="radio"
-//                             name="reminderType"
-//                             value="interval"
-//                             checked={formData.reminderType === 'interval'}
-//                             onChange={() => setFormData(prev => ({ ...prev, reminderType: 'interval' }))}
-//                             className="form-radio h-4 w-4 text-blue-600"
-//                           />
-//                           <span className="ml-2 text-gray-700">Interval-based</span>
-//                         </label>
-//                       </div>
-//                     </div>
-//                     {/* Notification Preferences for One-time */}
-//                     {formData.reminderType === 'one-time' && (
-//                       <div>
-//                         <label className="block text-sm font-medium text-gray-700 mb-2">Notification Preferences</label>
-//                         <div className="flex flex-wrap gap-4">
-//                           <label className="inline-flex items-center">
-//                             <input
-//                               type="checkbox"
-//                               checked={formData.notificationEmail}
-//                               onChange={(e) => setFormData(prev => ({ ...prev, notificationEmail: e.target.checked }))}
-//                               className="form-checkbox h-4 w-4 text-blue-600 rounded"
-//                             />
-//                             <Mail className="ml-2 mr-1 w-4 h-4 text-purple-700" />
-//                             <span className="text-gray-700">Email</span>
-//                           </label>
-//                           {/* <label className="inline-flex items-center">
-//                             <input
-//                               type="checkbox"
-//                               checked={formData.notificationInApp}
-//                               onChange={(e) => setFormData(prev => ({ ...prev, notificationInApp: e.target.checked }))}
-//                               className="form-checkbox h-4 w-4 text-blue-600 rounded"
-//                             />
-//                             <Smartphone className="ml-2 mr-1" />
-//                             <span className="text-gray-700">In-app</span>
-//                           </label> */}
-//                           <label className="inline-flex items-center">
-//                             <input
-//                               type="checkbox"
-//                               checked={formData.notificationAlarm}
-//                               onChange={(e) => setFormData(prev => ({ ...prev, notificationAlarm: e.target.checked }))}
-//                               className="form-checkbox h-4 w-4 text-blue-600 rounded"
-//                             />
-//                             <Bell className="ml-2 mr-1 w-4 h-4 text-red-800" />
-//                             <span className="text-gray-700">Alarm Alert</span>
-//                           </label>
 //                         </div>
-//                       </div>
-//                     )}
-//                     {/* Notification Stages for Interval-based */}
-//                     {formData.reminderType === 'interval' && (
-//                       <div className="border border-gray-200 rounded-lg p-5 bg-gray-50">
-//                         <button
-//                           type="button"
-//                           className="flex justify-between items-center w-full text-left text-lg font-semibold text-gray-800"
-//                           onClick={() => setShowNotificationStages(!showNotificationStages)}
-//                         >
-//                           <span className="flex items-center"><Repeat className="mr-2" /> Notification Stages</span>
-//                           {showNotificationStages ? <ChevronUp /> : <ChevronDown />}
-//                         </button>
-//                         {showNotificationStages && (
-//                           <div className="mt-4 space-y-6">
-//                             {formData.notificationStages.map((stage, index) => (
-//                               <div key={stage.id} className="border border-gray-300 rounded-lg p-4 bg-white shadow-sm relative">
-//                                 <h4 className="text-md font-semibold text-gray-800 mb-3">Stage {index + 1}</h4>
+//                         {/* Description */}
+//                         <div className="mt-4">
+//                           <label className="block text-sm font-medium text-gray-700 mb-2">Description *</label>
+//                           <textarea
+//                             name="description"
+//                             value={reminder.description}
+//                             onChange={(e) => handleInputChange(e, reminder.id)}
+//                             rows={3}
+//                             className="w-full px-3 py-2 border border-gray-300 rounded-md"
+//                             placeholder="Enter reminder description"
+//                           />
+//                         </div>
+//                         {/* Reminder Date and Time */}
+//                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+//                           <div>
+//                             <label className="block text-sm font-medium text-gray-700 mb-2">Reminder Date *</label>
+//                             <input
+//                               type="date"
+//                               name="dueDate"
+//                               value={reminder.dueDate}
+//                               onChange={(e) => handleInputChange(e, reminder.id)}
+//                               className="w-full px-3 py-2 border border-gray-300 rounded-md"
+//                             />
+//                           </div>
+//                           <div>
+//                             <label className="block text-sm font-medium text-gray-700 mb-2">Reminder Time *</label>
+//                             <input
+//                               type="time"
+//                               name="dueTime"
+//                               value={reminder.dueTime}
+//                               onChange={(e) => handleInputChange(e, reminder.id)}
+//                               className="w-full px-3 py-2 border border-gray-300 rounded-md"
+//                             />
+//                           </div>
+//                         </div>
+//                         {/* Assign Employees */}
+//                         <div className="mt-4">
+//                           <label className="block text-sm font-medium text-gray-700 mb-2">Assign Employees *</label>
+//                           <input
+//                             type="text"
+//                             value={searchTerm}
+//                             onChange={(e) => setSearchTerm(e.target.value)}
+//                             onFocus={() => setShowEmployeeDropdown(true)}
+//                             className="w-full px-3 py-2 border border-gray-300 rounded-md"
+//                             placeholder="Search employee by name or department"
+//                           />
+//                           {showEmployeeDropdown && (
+//                             <div ref={employeeDropdownRef} className="relative z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+//                               {filteredEmployees.map((employee) => (
+//                                 <button
+//                                   key={employee.id}
+//                                   type="button"
+//                                   onClick={() => handleEmployeeSelect(employee, reminder.id)}
+//                                   className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center space-x-3"
+//                                 >
+//                                   <img src={employee.avatar || ''} alt={employee.name} className="w-8 h-8 rounded-full" />
+//                                   <div>
+//                                     <p className="font-medium">{employee.name || 'Unknown'}</p>
+//                                     <p className="text-sm text-gray-500">{employee.department || 'Unknown'}</p>
+//                                   </div>
+//                                 </button>
+//                               ))}
+//                             </div>
+//                           )}
+//                           <div className="mt-2 flex flex-wrap gap-2">
+//                             {reminder.assignedTo.map((emp) => (
+//                               <div key={emp.email} className="flex items-center bg-blue-50 text-blue-700 px-3 py-1 rounded-full">
+//                                 <img src={emp.avatar || ''} alt={emp.name} className="w-5 h-5 rounded-full mr-2" />
+//                                 <span className="text-sm">{emp.name || 'Unknown'}</span>
 //                                 <button
 //                                   type="button"
-//                                   onClick={() => removeNotificationStage(stage.id)}
-//                                   className="absolute top-3 right-3 text-gray-400 hover:text-red-600"
-//                                   title="Remove stage"
+//                                   onClick={() => handleEmployeeRemove(emp.email, reminder.id)}
+//                                   className="ml-2 text-blue-500 hover:text-blue-700"
 //                                 >
-//                                   <Trash2 size={18} />
+//                                   <X className="w-3 h-3" />
 //                                 </button>
-//                                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
-//                                   <div className="sm:col-span-2">
-//                                     <label className="block text-sm font-medium text-gray-700 mb-1">Trigger</label>
-//                                     <select
-//                                       className="w-full px-3 py-2 border border-gray-300 rounded-md"
-//                                       value={stage.triggerType}
-//                                       onChange={(e) => updateNotificationStage(stage.id, 'triggerType', e.target.value)}
-//                                     >
-//                                       <option value="days_before">Days before due date</option>
-//                                       <option value="weeks_before">Weeks before due date</option>
-//                                       <option value="months_before">Months before due date</option>
-//                                       <option value="on_due_date">On due date</option>
-//                                     </select>
-//                                   </div>
-//                                   {stage.triggerType !== 'on_due_date' && (
-//                                     <div>
-//                                       <label className="block text-sm font-medium text-gray-700 mb-1">Value</label>
-//                                       <input
-//                                         type="number"
-//                                         min="1"
-//                                         className="w-full px-3 py-2 border border-gray-300 rounded-md"
-//                                         value={stage.triggerValue}
-//                                         onChange={(e) => updateNotificationStage(stage.id, 'triggerValue', Math.max(1, parseInt(e.target.value) || 1))}
-//                                       />
-//                                     </div>
-//                                   )}
-//                                 </div>
-//                                 <div className="mb-4">
-//                                   <label className="block text-sm font-medium text-gray-700 mb-1">Recipients for this stage</label>
-//                                   <div className="relative">
-//                                     <div className="flex flex-wrap gap-2 p-2 border border-gray-300 rounded-md min-h-[40px]">
-//                                       {stage.recipients.map(recipient => (
-//                                         <span key={recipient} className="inline-flex items-center bg-purple-100 text-purple-800 text-xs font-medium px-2 py-0.5 rounded-full">
-//                                           {recipient}
-//                                           <button
-//                                             type="button"
-//                                             onClick={() => handleRemoveStageRecipient(stage.id, recipient)}
-//                                             className="ml-1 text-purple-600 hover:text-purple-800"
-//                                           >
-//                                             &times;
-//                                           </button>
-//                                         </span>
-//                                       ))}
-//                                       <input
-//                                         type="text"
-//                                         className="flex-grow min-w-[80px] bg-transparent outline-none py-0.5 text-sm"
-//                                         placeholder={stage.recipients.length === 0 ? "Add recipients..." : ""}
-//                                         value={recipientSearchTerm}
-//                                         onChange={(e) => {
-//                                           setRecipientSearchTerm(e.target.value);
-//                                           setShowRecipientDropdown(true);
-//                                         }}
-//                                         onFocus={() => setShowRecipientDropdown(true)}
-//                                         onBlur={() => setTimeout(() => setShowRecipientDropdown(false), 100)}
-//                                       />
-//                                     </div>
-//                                     {showRecipientDropdown && getFilteredUserOptions(stage.recipients).length > 0 && (
-//                                       <div className="absolute z-10 w-full bg-white border border-gray-300 rounded-md shadow-lg mt-1 max-h-40 overflow-y-auto">
-//                                         {getFilteredUserOptions(stage.recipients).map(user => (
-//                                           <div
-//                                             key={user}
-//                                             className="px-3 py-1.5 cursor-pointer hover:bg-gray-100 text-sm"
-//                                             onMouseDown={(e) => e.preventDefault()}
-//                                             onClick={() => handleAddStageRecipient(stage.id, user)}
-//                                           >
-//                                             {user}
-//                                           </div>
-//                                         ))}
-//                                       </div>
-//                                     )}
-//                                   </div>
-//                                 </div>
-//                                 <div>
-//                                   <label className="block text-sm font-medium text-gray-700 mb-1">Notification Types</label>
-//                                   <div className="flex flex-wrap gap-3">
-//                                     <label className="inline-flex items-center text-sm">
-//                                       <input
-//                                         type="checkbox"
-//                                         checked={stage.notifyEmail}
-//                                         onChange={(e) => updateNotificationStage(stage.id, 'notifyEmail', e.target.checked)}
-//                                         className="form-checkbox h-3.5 w-3.5 text-blue-600 rounded"
-//                                       />
-//                                       <Mail className="ml-1.5 mr-0.5" size={16} />
-//                                       <span className="text-gray-700">Email</span>
-//                                     </label>
-//                                     {/* <label className="inline-flex items-center text-sm">
-//                                       <input
-//                                         type="checkbox"
-//                                         checked={stage.notifyInApp}
-//                                         onChange={(e) => updateNotificationStage(stage.id, 'notifyInApp', e.target.checked)}
-//                                         className="form-checkbox h-3.5 w-3.5 text-blue-600 rounded"
-//                                       />
-//                                       <Smartphone className="ml-1.5 mr-0.5" size={16} />
-//                                       <span className="text-gray-700">In-app</span>
-//                                     </label> */}
-//                                     <label className="inline-flex items-center text-sm">
-//                                       <input
-//                                         type="checkbox"
-//                                         checked={stage.notifyAlarm}
-//                                         onChange={(e) => updateNotificationStage(stage.id, 'notifyAlarm', e.target.checked)}
-//                                         className="form-checkbox h-3.5 w-3.5 text-blue-600 rounded"
-//                                       />
-//                                       <Bell className="ml-1.5 mr-0.5" size={16} />
-//                                       <span className="text-gray-700">Alarm</span>
-//                                     </label>
-//                                   </div>
-//                                 </div>
 //                               </div>
 //                             ))}
+//                           </div>
+//                         </div>
+//                         {/* Notification Preferences */}
+//                         <div className="mt-4">
+//                           <label className="block text-sm font-medium text-gray-700 mb-2">Notification Preferences</label>
+//                           <div className="flex flex-wrap gap-4">
+//                             <label className="inline-flex items-center">
+//                               <input
+//                                 type="checkbox"
+//                                 checked={reminder.notificationEmail}
+//                                 onChange={(e) => setReminders(prev => prev.map(r =>
+//                                   r.id === reminder.id ? { ...r, notificationEmail: e.target.checked } : r
+//                                 ))}
+//                                 className="form-checkbox h-4 w-4 text-blue-600 rounded"
+//                               />
+//                               <Mail className="ml-2 mr-1 w-4 h-4 text-purple-700" />
+//                               <span className="text-gray-700">Email</span>
+//                             </label>
+//                             {/* <label className="inline-flex items-center">
+//                               <input
+//                                 type="checkbox"
+//                                 checked={reminder.notificationInApp}
+//                                 onChange={(e) => setReminders(prev => prev.map(r =>
+//                                   r.id === reminder.id ? { ...r, notificationInApp: e.target.checked } : r
+//                                 ))}
+//                                 className="form-checkbox h-4 w-4 text-blue-600 rounded"
+//                               />
+//                               <Smartphone className="ml-2 mr-1 w-4 h-4" />
+//                               <span className="text-gray-700">In-app</span>
+//                             </label> */}
+//                             <label className="inline-flex items-center">
+//                               <input
+//                                 type="checkbox"
+//                                 checked={reminder.notificationAlarm}
+//                                 onChange={(e) => setReminders(prev => prev.map(r =>
+//                                   r.id === reminder.id ? { ...r, notificationAlarm: e.target.checked } : r
+//                                 ))}
+//                                 className="form-checkbox h-4 w-4 text-blue-600 rounded"
+//                               />
+//                               <Bell className="ml-2 mr-1 w-4 h-4 text-red-800" />
+//                               <span className="text-gray-700">Alarm Alert</span>
+//                             </label>
+//                           </div>
+//                         </div>
+//                       </div>
+//                     ))}
+//                     {/* <button
+//                       type="button"
+//                       onClick={addReminder}
+//                       className="w-full flex items-center justify-center px-4 py-2 border border-dashed border-gray-300 rounded-md text-gray-600 hover:bg-gray-100 text-sm font-medium mt-4"
+//                     >
+//                       <PlusCircle className="mr-2" size={18} /> Add Reminder
+//                     </button> */}
+//                   </>
+//                 ) : (
+//                   <>
+//                     {/* Task Name */}
+//                     <div>
+//                       <label className="block text-sm font-medium text-gray-700 mb-2">Task Name *</label>
+//                       <input
+//                         type="text"
+//                         name="taskName"
+//                         value={formData.taskName}
+//                         onChange={handleInputChange}
+//                         required
+//                         className="w-full px-3 py-2 border border-gray-300 rounded-md"
+//                         placeholder="Enter task name"
+//                       />
+//                     </div>
+//                     {/* Description */}
+//                     <div>
+//                       <label className="block text-sm font-medium text-gray-700 mb-2">Description *</label>
+//                       <textarea
+//                         name="description"
+//                         value={formData.description}
+//                         onChange={handleInputChange}
+//                         rows={3}
+//                         className="w-full px-3 py-2 border border-gray-300 rounded-md"
+//                         placeholder="Enter task description"
+//                       />
+//                     </div>
+//                     {/* Priority and Due Date */}
+//                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+//                       <div>
+//                         <label className="block text-sm font-medium text-gray-700 mb-2">Priority *</label>
+//                         <select
+//                           name="priority"
+//                           value={formData.priority}
+//                           onChange={handleInputChange}
+//                           className="w-full px-3 py-2 border border-gray-300 rounded-md"
+//                         >
+//                           <option value="High">High</option>
+//                           <option value="Medium">Medium</option>
+//                           <option value="Low">Low</option>
+//                         </select>
+//                       </div>
+//                       <div>
+//                         <label className="block text-sm font-medium text-gray-700 mb-2">Due Date *</label>
+//                         <input
+//                           type="date"
+//                           name="dueDate"
+//                           value={formData.dueDate}
+//                           onChange={handleInputChange}
+//                           className="w-full px-3 py-2 border border-gray-300 rounded-md"
+//                         />
+//                       </div>
+//                     </div>
+//                     {/* Assign Employees */}
+//                     <div>
+//                       <label className="block text-sm font-medium text-gray-700 mb-2">Assign Employees</label>
+//                       <input
+//                         type="text"
+//                         value={searchTerm}
+//                         onChange={(e) => setSearchTerm(e.target.value)}
+//                         onFocus={() => setShowEmployeeDropdown(true)}
+//                         className="w-full px-3 py-2 border border-gray-300 rounded-md"
+//                         placeholder="Search employee by name or department"
+//                       />
+//                       {showEmployeeDropdown && (
+//                         <div ref={employeeDropdownRef} className="relative z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+//                           {filteredEmployees.map((employee) => (
+//                             <button
+//                               key={employee.id}
+//                               type="button"
+//                               onClick={() => handleEmployeeSelect(employee)}
+//                               className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center space-x-3"
+//                             >
+//                               <img src={employee.avatar || ''} alt={employee.name} className="w-8 h-8 rounded-full" />
+//                               <div>
+//                                 <p className="font-medium">{employee.name || 'Unknown'}</p>
+//                                 <p className="text-sm text-gray-500">{employee.department || 'Unknown'}</p>
+//                               </div>
+//                             </button>
+//                           ))}
+//                         </div>
+//                       )}
+//                       <div className="mt-2 flex flex-wrap gap-2">
+//                         {formData.assignedTo.map((emp) => (
+//                           <div key={emp.email} className="flex items-center bg-blue-50 text-blue-700 px-3 py-1 rounded-full">
+//                             <img src={emp.avatar || ''} alt={emp.name} className="w-5 h-5 rounded-full mr-2" />
+//                             <span className="text-sm">{emp.name || 'Unknown'}</span>
 //                             <button
 //                               type="button"
-//                               onClick={addNotificationStage}
-//                               className="w-full flex items-center justify-center px-4 py-2 border border-dashed border-gray-300 rounded-md text-gray-600 hover:bg-gray-100 text-sm font-medium"
+//                               onClick={() => handleEmployeeRemove(emp.email)}
+//                               className="ml-2 text-blue-500 hover:text-blue-700"
 //                             >
-//                               <PlusCircle className="mr-2" size={18} /> Add Notification Stage
+//                               <X className="w-3 h-3" />
 //                             </button>
 //                           </div>
-//                         )}
-//                       </div>
-//                     )}
-//                   </>
-//                 )}
-//                 {/* Employees */}
-//                 {(formData.taskType !== 'Reminder' || formData.reminderMode === 'team') && (
-//                   <div>
-//                     <label className="block text-sm font-medium text-gray-700 mb-2">Assign Employees</label>
-//                     <input
-//                       type="text"
-//                       value={searchTerm}
-//                       onChange={(e) => setSearchTerm(e.target.value)}
-//                       onFocus={() => setShowEmployeeDropdown(true)}
-//                       className="w-full px-3 py-2 border border-gray-300 rounded-md"
-//                       placeholder="Search employee by name or department"
-//                     />
-//                     {showEmployeeDropdown && (
-//                       <div ref={employeeDropdownRef} className="relative z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
-//                         {filteredEmployees.map((employee) => (
-//                           <button
-//                             key={employee.id}
-//                             type="button"
-//                             onClick={() => handleEmployeeSelect(employee)}
-//                             className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center space-x-3"
-//                           >
-//                             <img src={employee.avatar || ''} alt={employee.name} className="w-8 h-8 rounded-full" />
-//                             <div>
-//                               <p className="font-medium">{employee.name || 'Unknown'}</p>
-//                               <p className="text-sm text-gray-500">{employee.department || 'Unknown'}</p>
-//                             </div>
-//                           </button>
 //                         ))}
 //                       </div>
-//                     )}
-//                     <div className="mt-2 flex flex-wrap gap-2">
-//                       {formData.assignedTo.map((emp) => (
-//                         <div key={emp.email} className="flex items-center bg-blue-50 text-blue-700 px-3 py-1 rounded-full">
-//                           <img src={emp.avatar || ''} alt={emp.name} className="w-5 h-5 rounded-full mr-2" />
-//                           <span className="text-sm">{emp.name || 'Unknown'}</span>
-//                           <button
-//                             type="button"
-//                             onClick={() => handleEmployeeRemove(emp.email)}
-//                             className="ml-2 text-blue-500 hover:text-blue-700"
-//                           >
-//                             <X className="w-3 h-3" />
-//                           </button>
-//                         </div>
-//                       ))}
 //                     </div>
-//                   </div>
+//                     {/* File Attachments */}
+//                     <div>
+//                       <label className="block text-sm font-medium text-gray-700 mb-2">File Attachments</label>
+//                       <div
+//                         className={`flex flex-col items-center justify-center border-2 border-dashed rounded-md transition-colors ${
+//                           dropActive ? 'border-blue-500 bg-blue-50' : 'border-gray-300 bg-gray-50'
+//                         } min-h-[100px] cursor-pointer relative`}
+//                         onDrop={handleDrop}
+//                         onDragOver={handleDragOver}
+//                         onDragLeave={handleDragLeave}
+//                         onClick={() => document.getElementById('attachment-input').click()}
+//                         tabIndex={0}
+//                         onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') document.getElementById('attachment-input').click(); }}
+//                       >
+//                         <input
+//                           id="attachment-input"
+//                           type="file"
+//                           multiple
+//                           onChange={handleAttachmentAdd}
+//                           className="hidden"
+//                         />
+//                         <Upload className="w-8 h-8 text-blue-400 mb-2" />
+//                         <span className="text-sm text-gray-600 mb-1">
+//                           Drag & drop files here, or <span className="text-blue-600 underline">click to select</span>
+//                         </span>
+//                         <span className="text-xs text-gray-400">(You can select multiple files)</span>
+//                       </div>
+//                       {formData.attachments.length > 0 && (
+//                         <div className="mt-2 space-y-2">
+//                           {formData.attachments.map((attachment, index) => (
+//                             <div key={index} className="flex items-center justify-between bg-gray-50 p-2 rounded">
+//                               <div className="flex items-center space-x-2">
+//                                 <Upload className="w-4 h-4 text-gray-500" />
+//                                 <span className="text-sm">{attachment instanceof File ? attachment.name : attachment}</span>
+//                               </div>
+//                               <button
+//                                 type="button"
+//                                 onClick={() => handleAttachmentRemove(index)}
+//                                 className="text-red-500 hover:text-red-700"
+//                               >
+//                                 <X className="w-4 h-4" />
+//                               </button>
+//                             </div>
+//                           ))}
+//                         </div>
+//                       )}
+//                     </div>
+//                     {/* Remark */}
+//                     <div>
+//                       <label className="block text-sm font-medium text-gray-700 mb-2">Remark *</label>
+//                       <textarea
+//                         name="remark"
+//                         value={formData.remark}
+//                         onChange={handleInputChange}
+//                         rows={2}
+//                         className="w-full px-3 py-2 border border-gray-300 rounded-md"
+//                         placeholder="Enter remark"
+//                       />
+//                     </div>
+//                   </>
 //                 )}
-//                 {/* File Attachments */}
-//                 <div>
-//                   <label className="block text-sm font-medium text-gray-700 mb-2">File Attachments</label>
-//                   <div
-//                     className={`flex flex-col items-center justify-center border-2 border-dashed rounded-md transition-colors ${
-//                       dropActive ? 'border-blue-500 bg-blue-50' : 'border-gray-300 bg-gray-50'
-//                     } min-h-[100px] cursor-pointer relative`}
-//                     onDrop={handleDrop}
-//                     onDragOver={handleDragOver}
-//                     onDragLeave={handleDragLeave}
-//                     onClick={() => document.getElementById('attachment-input').click()}
-//                     tabIndex={0}
-//                     onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') document.getElementById('attachment-input').click(); }}
-//                   >
-//                     <input
-//                       id="attachment-input"
-//                       type="file"
-//                       multiple
-//                       onChange={handleAttachmentAdd}
-//                       className="hidden"
-//                     />
-//                     <Upload className="w-8 h-8 text-blue-400 mb-2" />
-//                     <span className="text-sm text-gray-600 mb-1">
-//                       Drag & drop files here, or <span className="text-blue-600 underline">click to select</span>
-//                     </span>
-//                     <span className="text-xs text-gray-400">(You can select multiple files)</span>
-//                   </div>
-//                   {formData.attachments.length > 0 && (
-//                     <div className="mt-2 space-y-2">
-//                       {formData.attachments.map((attachment, index) => (
-//                         <div key={index} className="flex items-center justify-between bg-gray-50 p-2 rounded">
-//                           <div className="flex items-center space-x-2">
-//                             <Upload className="w-4 h-4 text-gray-500" />
-//                             <span className="text-sm">{attachment instanceof File ? attachment.name : attachment}</span>
-//                           </div>
-//                           <button
-//                             type="button"
-//                             onClick={() => handleAttachmentRemove(index)}
-//                             className="text-red-500 hover:text-red-700"
-//                           >
-//                             <X className="w-4 h-4" />
-//                           </button>
-//                         </div>
-//                       ))}
-//                     </div>
-//                   )}
-//                 </div>
-//                 {/* Remark */}
-//                 <div>
-//                   <label className="block text-sm font-medium text-gray-700 mb-2">Remark *</label>
-//                   <textarea
-//                     name="remark"
-//                     value={formData.remark}
-//                     onChange={handleInputChange}
-//                     rows={2}
-//                     className="w-full px-3 py-2 border border-gray-300 rounded-md"
-//                     placeholder="Enter remark"
-//                   />
-//                 </div>
 //                 {/* Submit Buttons */}
 //                 <div className="flex justify-end space-x-4">
 //                   {onCancel && (
@@ -946,17 +808,92 @@
 //                     ) : (
 //                       <>
 //                         <Plus className="w-4 h-4" />
-//                         <span>{editTask ? 'Update Task' : 'Create Task'}</span>
+//                         <span>{editTask ? 'Update Task' : formData.taskType === 'Reminder' ? 'Save Reminder' : 'Create Task'}</span>
 //                       </>
 //                     )}
 //                   </button>
 //                 </div>
 //               </form>
 //             </div>
-//             {/* Right Column: Preview (for General and Reminder) */}
-//             {formData.taskType !== 'Auction' && (
-//               <div className="lg:w-1/2 p-6 bg-gray-100">
-//                 <h2 className="text-2xl font-bold text-gray-900 mb-6">Task Preview</h2>
+//             {/* Right Column: Preview */}
+//             <div className="lg:w-1/2 p-6 bg-gray-100">
+//               <h2 className="text-2xl font-bold text-gray-900 mb-6">Task Preview</h2>
+//               {formData.taskType === 'Reminder' ? (
+//                 reminders.map((reminder, index) => (
+//                   <div key={reminder.id} className="bg-white rounded-lg shadow-md p-6 border border-gray-200 mb-4">
+//                     <div className="flex items-center justify-between mb-4">
+//                       <h3 className="text-xl font-semibold text-gray-900">
+//                         {reminder.taskName || 'Untitled Reminder'}
+//                       </h3>
+//                       <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getPriorityColor(formData.priority)}`}>
+//                         <Star className="inline-block w-3 h-3 mr-1 -mt-0.5" /> {formData.priority} Priority
+//                       </span>
+//                     </div>
+//                     {reminder.description && (
+//                       <p className="text-gray-700 mb-4 text-sm leading-relaxed">
+//                         {reminder.description}
+//                       </p>
+//                     )}
+//                     <div className="space-y-3 text-sm text-gray-700">
+//                       <div className="flex items-center">
+//                         <Calendar className="w-4 h-4 mr-2 text-gray-500" />
+//                         <span>
+//                           Due: {reminder.dueDate ? new Date(reminder.dueDate).toLocaleDateString('en-US', {
+//                             year: 'numeric', month: 'short', day: 'numeric'
+//                           }) : 'Not set'}
+//                           {reminder.dueTime && ` at ${reminder.dueTime}`}
+//                         </span>
+//                       </div>
+//                       <div className="flex items-center">
+//                         <Users className="w-4 h-4 mr-2 text-gray-500" />
+//                         <span>Assigned To: {reminder.assignedTo.length > 0 ? reminder.assignedTo.map(emp => emp.name).join(', ') : 'No one assigned'}</span>
+//                       </div>
+//                       <div className="flex items-center">
+//                         <Bell className="w-4 h-4 mr-2 text-gray-500" />
+//                         <span>Notifications:
+//                           {reminder.notificationEmail && <span className="ml-1 inline-flex items-center"><Mail className="w-4 h-4 mr-0.5" /> Email</span>}
+//                           {reminder.notificationInApp && <span className="ml-1 inline-flex items-center"><Smartphone className="w-4 h-4 mr-0.5" /> In-app</span>}
+//                           {reminder.notificationAlarm && <span className="ml-1 inline-flex items-center"><Bell className="w-4 h-4 mr-0.5" /> Alarm</span>}
+//                           {!reminder.notificationEmail && !reminder.notificationInApp && !reminder.notificationAlarm && ' None'}
+//                         </span>
+//                       </div>
+//                     </div>
+//                     {/* <button
+//                       type="button"
+//                       className="mt-4 px-4 py-2 bg-blue-50 text-blue-700 rounded-md text-sm font-medium hover:bg-blue-100 flex items-center"
+//                       onClick={() => generateNotificationDraft(reminder)}
+//                       disabled={isGeneratingDraft}
+//                     >
+//                       {isGeneratingDraft ? (
+//                         <>
+//                           <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-blue-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+//                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+//                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+//                           </svg>
+//                           Generating...
+//                         </>
+//                       ) : (
+//                         <>
+//                           <Sparkles className="mr-2" /> Generate Notification Draft
+//                         </>
+//                       )}
+//                     </button> */}
+//                     {notificationDraft && (
+//                       <div className="mt-4 p-4 bg-white rounded-lg shadow-md border border-gray-200">
+//                         <h3 className="text-lg font-semibold text-gray-900 mb-2 flex items-center">
+//                           <Sparkles className="mr-2 text-blue-600" /> Generated Notification Draft
+//                         </h3>
+//                         <textarea
+//                           readOnly
+//                           rows="4"
+//                           className="w-full px-3 py-2 border border-gray-200 rounded-md bg-gray-50 text-gray-800 resize-none"
+//                           value={notificationDraft}
+//                         ></textarea>
+//                       </div>
+//                     )}
+//                   </div>
+//                 ))
+//               ) : (
 //                 <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
 //                   <div className="flex items-center justify-between mb-4">
 //                     <h3 className="text-xl font-semibold text-gray-900">
@@ -978,68 +915,12 @@
 //                         Due: {formData.dueDate ? new Date(formData.dueDate).toLocaleDateString('en-US', {
 //                           year: 'numeric', month: 'short', day: 'numeric'
 //                         }) : 'Not set'}
-//                         {formData.taskType === 'Reminder' && formData.dueTime && ` at ${formData.dueTime}`}
 //                       </span>
 //                     </div>
-//                     {formData.taskType === 'Reminder' && (
-//                       <>
-//                         <div className="flex items-center">
-//                           {formData.reminderType === 'one-time' ? (
-//                             <Clock3 className="w-4 h-4 mr-2 text-gray-500" />
-//                           ) : (
-//                             <Repeat className="w-4 h-4 mr-2 text-gray-500" />
-//                           )}
-//                           <span>Type: {formData.reminderType === 'one-time' ? 'One-time' : 'Interval-based'}</span>
-//                         </div>
-//                         <div className="flex items-center">
-//                           {formData.reminderMode === 'self' ? (
-//                             <>
-//                               <User className="w-4 h-4 mr-2 text-gray-500" />
-//                               <span>Assigned To: You</span>
-//                             </>
-//                           ) : (
-//                             <>
-//                               <Users className="w-4 h-4 mr-2 text-gray-500" />
-//                               <span>Assigned To: {formData.assignedTo.length > 0 ? formData.assignedTo.map(emp => emp.name).join(', ') : 'No one assigned'}</span>
-//                             </>
-//                           )}
-//                         </div>
-//                         {formData.reminderType === 'one-time' && (
-//                           <div className="flex items-center">
-//                             <Bell className="w-4 h-4 mr-2 text-gray-500" />
-//                             <span>Notifications:
-//                               {formData.notificationEmail && <span className="ml-1 inline-flex items-center"><Mail className="w-4 h-4 mr-0.5" /> Email</span>}
-//                               {/* {formData.notificationInApp && <span className="ml-1 inline-flex items-center"><Smartphone className="w-4 h-4 mr-0.5" /> In-app</span>} */}
-//                               {formData.notificationAlarm && <span className="ml-1 inline-flex items-center"><Bell className="w-4 h-4 mr-0.5" /> Alarm</span>}
-//                               {!formData.notificationEmail && !formData.notificationInApp && !formData.notificationAlarm && ' None'}
-//                             </span>
-//                           </div>
-//                         )}
-//                         {formData.reminderType === 'interval' && formData.notificationStages.length > 0 && (
-//                           <div className="space-y-2 mt-4">
-//                             <p className="font-semibold text-gray-800">Notification Stages:</p>
-//                             {formData.notificationStages.map((stage, index) => (
-//                               <div key={stage.id} className="ml-2 p-3 bg-gray-50 rounded-md border border-gray-200">
-//                                 <p className="font-medium text-gray-700 mb-1">Stage {index + 1}: {formatIntervalText(stage)}</p>
-//                                 <p className="text-xs text-gray-600">Recipients: {stage.recipients.length > 0 ? stage.recipients.join(', ') : 'None'}</p>
-//                                 <p className="text-xs text-gray-600">Notify:
-//                                   {stage.notifyEmail && <span className="ml-1 inline-flex items-center"><Mail className="w-3 h-3 mr-0.5" /> Email</span>}
-//                                   {/* {stage.notifyInApp && <span className="ml-1 inline-flex items-center"><Smartphone className="w-3 h-3 mr-0.5" /> In-app</span>} */}
-//                                   {stage.notifyAlarm && <span className="ml-1 inline-flex items-center"><Bell className="w-3 h-3 mr-0.5" /> Alarm</span>}
-//                                   {!stage.notifyEmail && !stage.notifyInApp && !stage.notifyAlarm && ' None'}
-//                                 </p>
-//                               </div>
-//                             ))}
-//                           </div>
-//                         )}
-//                       </>
-//                     )}
-//                     {formData.taskType === 'General' && (
-//                       <div className="flex items-center">
-//                         <Users className="w-4 h-4 mr-2 text-gray-500" />
-//                         <span>Assigned To: {formData.assignedTo.length > 0 ? formData.assignedTo.map(emp => emp.name).join(', ') : 'No one assigned'}</span>
-//                       </div>
-//                     )}
+//                     <div className="flex items-center">
+//                       <Users className="w-4 h-4 mr-2 text-gray-500" />
+//                       <span>Assigned To: {formData.assignedTo.length > 0 ? formData.assignedTo.map(emp => emp.name).join(', ') : 'No one assigned'}</span>
+//                     </div>
 //                     {formData.attachments.length > 0 && (
 //                       <div className="flex items-start">
 //                         <Paperclip className="w-4 h-4 mr-2 text-gray-500 mt-1" />
@@ -1054,59 +935,29 @@
 //                       </div>
 //                     )}
 //                   </div>
-//                 </div>
-//                 {/* {notificationDraft && (
-//                   <div className="mt-8 p-6 bg-white rounded-lg shadow-md border border-gray-200">
-//                     <h3 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
-//                       <Sparkles className="mr-2 text-blue-600" /> Generated Notification Draft
-//                     </h3>
-//                     <textarea
-//                       readOnly
-//                       rows="6"
-//                       className="w-full px-4 py-2 border border-gray-200 rounded-md bg-gray-50 text-gray-800 resize-none"
-//                       value={notificationDraft}
-//                     ></textarea>
-//                   </div>
-//                 )} */}
-//                 {formData.taskType === 'Reminder' && (
-//                   <div className="mt-8 p-6 bg-white rounded-lg shadow-md border border-gray-200">
-//                     <h3 className="text-xl font-semibold text-gray-900 mb-4">Timeline Visualization</h3>
-//                     <div className="relative border-l-2 border-blue-300 pl-4 py-2">
-//                       <div className="absolute -left-2 top-0 w-4 h-4 bg-blue-500 rounded-full border-2 border-white"></div>
-//                       <p className="text-sm text-gray-600">Reminder created: {new Date().toLocaleDateString()}</p>
-//                       <p className="font-medium text-gray-800">"{formData.taskName || 'Untitled Reminder'}"</p>
-//                       {formData.dueDate && (
-//                         <>
-//                           <div className="absolute -left-2 mt-4 w-4 h-4 bg-blue-500 rounded-full border-2 border-white"></div>
-//                           <p className="text-sm text-gray-600 mt-4">Due Date: {new Date(formData.dueDate).toLocaleDateString()}</p>
-//                         </>
-//                       )}
-//                       {formData.reminderType === 'interval' && formData.notificationStages.length > 0 && (
-//                         <>
-//                           {formData.notificationStages.sort((a, b) => {
-//                             if (a.triggerType === 'on_due_date') return 1;
-//                             if (b.triggerType === 'on_due_date') return -1;
-//                             return b.triggerValue - a.triggerValue;
-//                           }).map((stage, index) => (
-//                             <React.Fragment key={stage.id}>
-//                               <div className="absolute -left-2 mt-4 w-4 h-4 bg-blue-500 rounded-full border-2 border-white"></div>
-//                               <p className="text-sm text-gray-600 mt-4">Notification: {formatIntervalText(stage)}</p>
-//                               <p className="text-xs text-gray-600 ml-6">To: {stage.recipients.length > 0 ? stage.recipients.join(', ') : 'No one'}</p>
-//                             </React.Fragment>
-//                           ))}
-//                         </>
-//                       )}
+
+//                   {notificationDraft && (
+//                     <div className="mt-4 p-4 bg-white rounded-lg shadow-md border border-gray-200">
+//                       <h3 className="text-lg font-semibold text-gray-900 mb-2 flex items-center">
+//                         <Sparkles className="mr-2 text-blue-600" /> Generated Notification Draft
+//                       </h3>
+//                       <textarea
+//                         readOnly
+//                         rows="4"
+//                         className="w-full px-3 py-2 border border-gray-200 rounded-md bg-gray-50 text-gray-800 resize-none"
+//                         value={notificationDraft}
+//                       ></textarea>
 //                     </div>
-//                   </div>
-//                 )}
-//               </div>
-//             )}
+//                   )}
+//                 </div>
+//               )}
+//             </div>
 //           </div>
 //         </div>
 //       </div>
-//       {showToast && (
-//         <div className="fixed top-4 right-4 bg-green-500 text-white p-4 rounded-md shadow-lg animate-fade-in-out z-50">
-//           Task created successfully!
+//       {toast.visible && (
+//         <div className={`fixed top-4 right-4 p-4 rounded-md shadow-lg animate-fade-in-out z-50 ${toast.type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`}>
+//           {toast.message}
 //         </div>
 //       )}
 //       {modalVisible && (
@@ -1133,8 +984,13 @@
 // export default CreateTasks;
 
 
+
+
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Plus, X, Upload, Calendar, Bell, Mail, Smartphone, Clock, Paperclip, ChevronDown, ChevronUp, Users, User, Clock3, Repeat, Star, Sparkles, PlusCircle, Trash2 } from 'lucide-react';
+import { useFormik } from 'formik';
+import * as Yup from 'yup';
 import AdminSidebar from '../../components/common/AdminSidebar';
 import Header from '../../components/common/Header';
 import { useNavigate } from 'react-router-dom';
@@ -1156,21 +1012,9 @@ function CreateTasks({ onSubmit, editTask, onCancel }) {
     notificationInApp: editTask?.notificationInApp ?? true,
     notificationAlarm: editTask?.notificationAlarm ?? false,
   }]);
-  const [formData, setFormData] = useState({
-    taskName: editTask?.taskName || '',
-    description: editTask?.description || '',
-    priority: editTask?.priority || 'Medium',
-    dueDate: editTask?.dueDate || '',
-    assignedTo: editTask?.assignedTo || [],
-    attachments: editTask?.attachments || [],
-    taskType: editTask?.taskType || 'General',
-    remark: editTask?.remark || '',
-  });
   const [employees, setEmployees] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [showEmployeeDropdown, setShowEmployeeDropdown] = useState(false);
-  const [error, setError] = useState(null);
-  const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState({ visible: false, message: '', type: '' });
   const [dropActive, setDropActive] = useState(false);
   const [recipientSearchTerm, setRecipientSearchTerm] = useState('');
@@ -1208,7 +1052,8 @@ function CreateTasks({ onSubmit, editTask, onCancel }) {
         })) : [];
         setEmployees(validEmployees);
       } catch (err) {
-        setError(err.message);
+        formik.setErrors({ api: err.message });
+        showToast(err.message, 'error');
       }
     };
     fetchEmployees();
@@ -1269,33 +1114,153 @@ function CreateTasks({ onSubmit, editTask, onCancel }) {
     );
   };
 
-  const handleInputChange = (e, reminderId) => {
+  const showToast = (message, type) => {
+    setToast({ visible: true, message, type });
+    setTimeout(() => setToast({ visible: false, message: '', type: '' }), 5000);
+  };
+
+  const validationSchema = Yup.object({
+    taskType: Yup.string().required('Task Type is required'),
+    taskName: Yup.string().required('Task Name is required'),
+    priority: Yup.string().required('Priority is required'),
+    dueDate: Yup.string().required('Due Date is required'),
+    assignedTo: Yup.array().min(1, 'At least one employee must be assigned'),
+  });
+
+  const reminderValidationSchema = Yup.object({
+    taskName: Yup.string().required('Reminder Name is required'),
+    dueDate: Yup.string().required('Reminder Date is required'),
+    assignedTo: Yup.array().min(1, 'At least one employee must be assigned'),
+  });
+
+  const formik = useFormik({
+    initialValues: {
+      taskType: editTask?.taskType || 'General',
+      taskName: editTask?.taskName || '',
+      description: editTask?.description || '',
+      priority: editTask?.priority || 'Medium',
+      dueDate: editTask?.dueDate || '',
+      assignedTo: editTask?.assignedTo || [],
+      attachments: editTask?.attachments || [],
+      remark: editTask?.remark || '',
+    },
+    validationSchema,
+    onSubmit: async (values, { setSubmitting, setErrors }) => {
+      if (values.taskType === 'Reminder') {
+        try {
+          for (const reminder of reminders) {
+            await reminderValidationSchema.validate(reminder, { abortEarly: false });
+          }
+        } catch (err) {
+          setErrors({ api: 'All reminder fields (Reminder Name, Reminder Date, Assign Employee) are required' });
+          showToast('All reminder fields are required', 'error');
+          setSubmitting(false);
+          return;
+        }
+        setSubmitting(true);
+        try {
+          for (const reminder of reminders) {
+            const formDataToSend = new FormData();
+            formDataToSend.append('taskName', reminder.taskName);
+            formDataToSend.append('description', reminder.description);
+            formDataToSend.append('dueDate', formatDate(reminder.dueDate));
+            formDataToSend.append('assignedTo', JSON.stringify(reminder.assignedTo.map(emp => emp.email)));
+            formDataToSend.append('priority', values.priority);
+            formDataToSend.append('taskType', values.taskType);
+            formDataToSend.append('remark', values.remark);
+            formDataToSend.append('notificationEmail', reminder.notificationEmail);
+            formDataToSend.append('notificationInApp', reminder.notificationInApp);
+            formDataToSend.append('notificationAlarm', reminder.notificationAlarm);
+            formDataToSend.append('notificationDraft', notificationDraft);
+            values.attachments.forEach((file, index) => {
+              if (file instanceof File) {
+                formDataToSend.append('file', file);
+              }
+            });
+            const response = await fetch('https://task-manager-backend-vqen.onrender.com/api/admin/createtask', {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${token}`,
+              },
+              body: formDataToSend,
+            });
+            if (!response.ok) {
+              const errorData = await response.json().catch(() => ({ message: 'Unknown server error' }));
+              throw new Error(errorData.message || 'Failed to create task');
+            }
+            const data = await response.json();
+            if (typeof onSubmit === 'function') {
+              onSubmit(data);
+            }
+          }
+          showToast('Reminders created successfully!', 'success');
+          setTimeout(() => navigate('/admin/tasks'), 3000);
+        } catch (err) {
+          setErrors({ api: err.message });
+          showToast(err.message || 'Failed to create reminders', 'error');
+        } finally {
+          setSubmitting(false);
+        }
+      } else {
+        setSubmitting(true);
+        const formDataToSend = new FormData();
+        formDataToSend.append('taskName', values.taskName);
+        formDataToSend.append('description', values.description);
+        formDataToSend.append('dueDate', formatDate(values.dueDate));
+        formDataToSend.append('assignedTo', JSON.stringify(values.assignedTo.map(emp => emp.email)));
+        formDataToSend.append('priority', values.priority);
+        formDataToSend.append('taskType', values.taskType);
+        formDataToSend.append('remark', values.remark);
+        values.attachments.forEach((file, index) => {
+          if (file instanceof File) {
+            formDataToSend.append('file', file);
+          }
+        });
+        try {
+          const response = await fetch('https://task-manager-backend-vqen.onrender.com/api/admin/createtask', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+            },
+            body: formDataToSend,
+          });
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ message: 'Unknown server error' }));
+            throw new Error(errorData.message || 'Failed to create task');
+          }
+          const data = await response.json();
+          if (typeof onSubmit === 'function') {
+            onSubmit(data);
+          }
+          showToast('Task created successfully!', 'success');
+          setTimeout(() => navigate('/admin/tasks'), 3000);
+        } catch (err) {
+          setErrors({ api: err.message });
+          showToast(err.message || 'Failed to create task', 'error');
+        } finally {
+          setSubmitting(false);
+        }
+      }
+    },
+  });
+
+  const handleReminderInputChange = (e, reminderId) => {
     const { name, value } = e.target;
-    if (formData.taskType === 'Reminder' && reminderId) {
-      setReminders(prev => prev.map(reminder =>
-        reminder.id === reminderId ? { ...reminder, [name]: value } : reminder
-      ));
-    } else {
-      setFormData(prev => ({
-        ...prev,
-        [name]: value
-      }));
-    }
+    setReminders(prev => prev.map(reminder =>
+      reminder.id === reminderId ? { ...reminder, [name]: value } : reminder
+    ));
   };
 
   const handleEmployeeSelect = (employee, reminderId) => {
-    if (formData.taskType === 'Reminder' && reminderId) {
+    if (formik.values.taskType === 'Reminder' && reminderId) {
       setReminders(prev => prev.map(reminder =>
         reminder.id === reminderId && !reminder.assignedTo.find(emp => emp.email === employee.email) ?
         { ...reminder, assignedTo: [...reminder.assignedTo, { email: employee.email, name: employee.name, avatar: employee.avatar }] } :
         reminder
       ));
     } else {
-      if (!formData.assignedTo.find(emp => emp.email === employee.email)) {
-        setFormData(prev => ({
-          ...prev,
-          assignedTo: [...prev.assignedTo, { email: employee.email, name: employee.name, avatar: employee.avatar }]
-        }));
+      if (!formik.values.assignedTo.find(emp => emp.email === employee.email)) {
+        formik.setFieldValue('assignedTo', [...formik.values.assignedTo, { email: employee.email, name: employee.name, avatar: employee.avatar }]);
       }
     }
     setSearchTerm('');
@@ -1303,36 +1268,27 @@ function CreateTasks({ onSubmit, editTask, onCancel }) {
   };
 
   const handleEmployeeRemove = (email, reminderId) => {
-    if (formData.taskType === 'Reminder' && reminderId) {
+    if (formik.values.taskType === 'Reminder' && reminderId) {
       setReminders(prev => prev.map(reminder =>
         reminder.id === reminderId ?
         { ...reminder, assignedTo: reminder.assignedTo.filter(emp => emp.email !== email) } :
         reminder
       ));
     } else {
-      setFormData(prev => ({
-        ...prev,
-        assignedTo: prev.assignedTo.filter(emp => emp.email !== email)
-      }));
+      formik.setFieldValue('assignedTo', formik.values.assignedTo.filter(emp => emp.email !== email));
     }
   };
 
   const handleAttachmentAdd = (e) => {
     if (e.target.files) {
       const files = Array.from(e.target.files);
-      setFormData(prev => ({
-        ...prev,
-        attachments: [...prev.attachments, ...files]
-      }));
+      formik.setFieldValue('attachments', [...formik.values.attachments, ...files]);
       e.target.value = '';
     }
   };
 
   const handleAttachmentRemove = (index) => {
-    setFormData(prev => ({
-      ...prev,
-      attachments: prev.attachments.filter((_, i) => i !== index)
-    }));
+    formik.setFieldValue('attachments', formik.values.attachments.filter((_, i) => i !== index));
   };
 
   const handleDrop = (e) => {
@@ -1340,10 +1296,7 @@ function CreateTasks({ onSubmit, editTask, onCancel }) {
     setDropActive(false);
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       const files = Array.from(e.dataTransfer.files);
-      setFormData(prev => ({
-        ...prev,
-        attachments: [...prev.attachments, ...files]
-      }));
+      formik.setFieldValue('attachments', [...formik.values.attachments, ...files]);
     }
   };
 
@@ -1452,118 +1405,6 @@ function CreateTasks({ onSubmit, editTask, onCancel }) {
     setReminders(prev => prev.filter(reminder => reminder.id !== reminderId));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError(null);
-    if (formData.taskType === 'Reminder') {
-      for (const reminder of reminders) {
-        if (!reminder.taskName || !reminder.description || !reminder.dueDate || !reminder.dueTime || reminder.assignedTo.length === 0) {
-          setError('All reminder fields (Reminder Name, Description, Reminder Date, Reminder Time, Assign Employee) are required');
-          setToast({ visible: true, message: 'All reminder fields are required', type: 'error' });
-          setTimeout(() => setToast({ visible: false, message: '', type: '' }), 3000);
-          return;
-        }
-      }
-      setLoading(true);
-      try {
-        for (const reminder of reminders) {
-          const formDataToSend = new FormData();
-          formDataToSend.append('taskName', reminder.taskName);
-          formDataToSend.append('description', reminder.description);
-          formDataToSend.append('dueDate', formatDate(reminder.dueDate));
-          formDataToSend.append('assignedTo', JSON.stringify(reminder.assignedTo.map(emp => emp.email)));
-          formDataToSend.append('priority', formData.priority);
-          formDataToSend.append('taskType', formData.taskType);
-          formDataToSend.append('remark', formData.remark);
-          formDataToSend.append('notificationEmail', reminder.notificationEmail);
-          formDataToSend.append('notificationInApp', reminder.notificationInApp);
-          formDataToSend.append('notificationAlarm', reminder.notificationAlarm);
-          formDataToSend.append('notificationDraft', notificationDraft);
-          formData.attachments.forEach((file, index) => {
-            if (file instanceof File) {
-              formDataToSend.append('file', file);
-            }
-          });
-          const response = await fetch('https://task-manager-backend-vqen.onrender.com/api/admin/createtask', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${token}`,
-            },
-            body: formDataToSend,
-          });
-          if (!response.ok) {
-            const errorData = await response.json().catch(() => ({ message: 'Unknown server error' }));
-            throw new Error(errorData.message || 'Failed to create task');
-          }
-          const data = await response.json();
-          if (typeof onSubmit === 'function') {
-            onSubmit(data);
-          }
-        }
-        setToast({ visible: true, message: 'Reminders created successfully!', type: 'success' });
-        setTimeout(() => {
-          setToast({ visible: false, message: '', type: '' });
-          navigate('/admin/tasks');
-        }, 3000);
-      } catch (err) {
-        setError(err.message);
-        setToast({ visible: true, message: err.message || 'Failed to create reminders', type: 'error' });
-        setTimeout(() => setToast({ visible: false, message: '', type: '' }), 3000);
-      } finally {
-        setLoading(false);
-      }
-    } else {
-      if (!formData.taskName || !formData.description || !formData.dueDate || formData.assignedTo.length === 0 || !formData.priority || !formData.remark) {
-        setError('All fields (Task Name, Description, Due Date, Assigned To, Priority, Remark) are required');
-        setToast({ visible: true, message: 'All task fields are required', type: 'error' });
-        setTimeout(() => setToast({ visible: false, message: '', type: '' }), 3000);
-        return;
-      }
-      setLoading(true);
-      const formDataToSend = new FormData();
-      formDataToSend.append('taskName', formData.taskName);
-      formDataToSend.append('description', formData.description);
-      formDataToSend.append('dueDate', formatDate(formData.dueDate));
-      formDataToSend.append('assignedTo', JSON.stringify(formData.assignedTo.map(emp => emp.email)));
-      formDataToSend.append('priority', formData.priority);
-      formDataToSend.append('taskType', formData.taskType);
-      formDataToSend.append('remark', formData.remark);
-      formData.attachments.forEach((file, index) => {
-        if (file instanceof File) {
-          formDataToSend.append('file', file);
-        }
-      });
-      try {
-        const response = await fetch('https://task-manager-backend-vqen.onrender.com/api/admin/createtask', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-          body: formDataToSend,
-        });
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({ message: 'Unknown server error' }));
-          throw new Error(errorData.message || 'Failed to create task');
-        }
-        const data = await response.json();
-        if (typeof onSubmit === 'function') {
-          onSubmit(data);
-        }
-        setToast({ visible: true, message: 'Task created successfully!', type: 'success' });
-        setTimeout(() => {
-          setToast({ visible: false, message: '', type: '' });
-          navigate('/admin/tasks');
-        }, 3000);
-      } catch (err) {
-        setError(err.message);
-        setToast({ visible: true, message: err.message || 'Failed to create task', type: 'error' });
-        setTimeout(() => setToast({ visible: false, message: '', type: '' }), 3000);
-      } finally {
-        setLoading(false);
-      }
-    }
-  };
-
   const formatDate = (dateStr) => {
     const [year, month, day] = dateStr.split('-');
     return `${day.padStart(2, '0')}-${month.padStart(2, '0')}-${year}`;
@@ -1596,48 +1437,54 @@ function CreateTasks({ onSubmit, editTask, onCancel }) {
                   </button>
                 )}
               </div>
-              {error && <div className="text-red-500 mb-4">{error}</div>}
-              <form onSubmit={handleSubmit} className="space-y-6">
+              {formik.errors.api && <div className="text-red-500 mb-4">{formik.errors.api}</div>}
+              <form onSubmit={formik.handleSubmit} className="space-y-6">
                 {/* Task Type */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Task Type *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Task Type <span className="text-red-500">*</span>
+                  </label>
                   <select
                     name="taskType"
-                    value={formData.taskType}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    value={formik.values.taskType}
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
+                    className={`w-full px-3 py-2 border rounded-md ${formik.touched.taskType && formik.errors.taskType ? 'border-red-500' : 'border-gray-300'}`}
                   >
                     <option value="General">General</option>
                     <option value="Auction">Auction</option>
                     <option value="Reminder">Reminder</option>
                   </select>
+                  {formik.touched.taskType && formik.errors.taskType && (
+                    <div className="text-red-500 text-sm mt-1">{formik.errors.taskType}</div>
+                  )}
                 </div>
-                {formData.taskType === 'Reminder' ? (
+                {formik.values.taskType === 'Reminder' ? (
                   <>
                     {reminders.map((reminder, index) => (
                       <div key={reminder.id} className="border border-gray-300 rounded-lg p-4 mb-4 bg-gray-50 relative">
-                        
                         <h3 className="text-md font-semibold text-gray-800 mb-3">Reminder {index + 1}</h3>
                         {/* Reminder Name */}
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Reminder Name *</label>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Reminder Name <span className="text-red-500">*</span>
+                          </label>
                           <input
                             type="text"
                             name="taskName"
                             value={reminder.taskName}
-                            onChange={(e) => handleInputChange(e, reminder.id)}
-                            required
+                            onChange={(e) => handleReminderInputChange(e, reminder.id)}
                             className="w-full px-3 py-2 border border-gray-300 rounded-md"
                             placeholder="Enter reminder name"
                           />
                         </div>
                         {/* Description */}
                         <div className="mt-4">
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Description *</label>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
                           <textarea
                             name="description"
                             value={reminder.description}
-                            onChange={(e) => handleInputChange(e, reminder.id)}
+                            onChange={(e) => handleReminderInputChange(e, reminder.id)}
                             rows={3}
                             className="w-full px-3 py-2 border border-gray-300 rounded-md"
                             placeholder="Enter reminder description"
@@ -1646,29 +1493,33 @@ function CreateTasks({ onSubmit, editTask, onCancel }) {
                         {/* Reminder Date and Time */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Reminder Date *</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Reminder Date <span className="text-red-500">*</span>
+                            </label>
                             <input
                               type="date"
                               name="dueDate"
                               value={reminder.dueDate}
-                              onChange={(e) => handleInputChange(e, reminder.id)}
+                              onChange={(e) => handleReminderInputChange(e, reminder.id)}
                               className="w-full px-3 py-2 border border-gray-300 rounded-md"
                             />
                           </div>
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Reminder Time *</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Reminder Time</label>
                             <input
                               type="time"
                               name="dueTime"
                               value={reminder.dueTime}
-                              onChange={(e) => handleInputChange(e, reminder.id)}
+                              onChange={(e) => handleReminderInputChange(e, reminder.id)}
                               className="w-full px-3 py-2 border border-gray-300 rounded-md"
                             />
                           </div>
                         </div>
                         {/* Assign Employees */}
                         <div className="mt-4">
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Assign Employees *</label>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Assign Employees <span className="text-red-500">*</span>
+                          </label>
                           <input
                             type="text"
                             value={searchTerm}
@@ -1727,7 +1578,7 @@ function CreateTasks({ onSubmit, editTask, onCancel }) {
                               <Mail className="ml-2 mr-1 w-4 h-4 text-purple-700" />
                               <span className="text-gray-700">Email</span>
                             </label>
-                            {/* <label className="inline-flex items-center">
+                            <label className="inline-flex items-center">
                               <input
                                 type="checkbox"
                                 checked={reminder.notificationInApp}
@@ -1738,7 +1589,7 @@ function CreateTasks({ onSubmit, editTask, onCancel }) {
                               />
                               <Smartphone className="ml-2 mr-1 w-4 h-4" />
                               <span className="text-gray-700">In-app</span>
-                            </label> */}
+                            </label>
                             <label className="inline-flex items-center">
                               <input
                                 type="checkbox"
@@ -1767,24 +1618,30 @@ function CreateTasks({ onSubmit, editTask, onCancel }) {
                   <>
                     {/* Task Name */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Task Name *</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Task Name <span className="text-red-500">*</span>
+                      </label>
                       <input
                         type="text"
                         name="taskName"
-                        value={formData.taskName}
-                        onChange={handleInputChange}
-                        required
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                        value={formik.values.taskName}
+                        onChange={formik.handleChange}
+                        onBlur={formik.handleBlur}
+                        className={`w-full px-3 py-2 border rounded-md ${formik.touched.taskName && formik.errors.taskName ? 'border-red-500' : 'border-gray-300'}`}
                         placeholder="Enter task name"
                       />
+                      {formik.touched.taskName && formik.errors.taskName && (
+                        <div className="text-red-500 text-sm mt-1">{formik.errors.taskName}</div>
+                      )}
                     </div>
                     {/* Description */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Description *</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
                       <textarea
                         name="description"
-                        value={formData.description}
-                        onChange={handleInputChange}
+                        value={formik.values.description}
+                        onChange={formik.handleChange}
+                        onBlur={formik.handleBlur}
                         rows={3}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md"
                         placeholder="Enter task description"
@@ -1793,38 +1650,52 @@ function CreateTasks({ onSubmit, editTask, onCancel }) {
                     {/* Priority and Due Date */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Priority *</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Priority <span className="text-red-500">*</span>
+                        </label>
                         <select
                           name="priority"
-                          value={formData.priority}
-                          onChange={handleInputChange}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                          value={formik.values.priority}
+                          onChange={formik.handleChange}
+                          onBlur={formik.handleBlur}
+                          className={`w-full px-3 py-2 border rounded-md ${formik.touched.priority && formik.errors.priority ? 'border-red-500' : 'border-gray-300'}`}
                         >
                           <option value="High">High</option>
                           <option value="Medium">Medium</option>
                           <option value="Low">Low</option>
                         </select>
+                        {formik.touched.priority && formik.errors.priority && (
+                          <div className="text-red-500 text-sm mt-1">{formik.errors.priority}</div>
+                        )}
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Due Date *</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Due Date <span className="text-red-500">*</span>
+                        </label>
                         <input
                           type="date"
                           name="dueDate"
-                          value={formData.dueDate}
-                          onChange={handleInputChange}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                          value={formik.values.dueDate}
+                          onChange={formik.handleChange}
+                          onBlur={formik.handleBlur}
+                          className={`w-full px-3 py-2 border rounded-md ${formik.touched.dueDate && formik.errors.dueDate ? 'border-red-500' : 'border-gray-300'}`}
                         />
+                        {formik.touched.dueDate && formik.errors.dueDate && (
+                          <div className="text-red-500 text-sm mt-1">{formik.errors.dueDate}</div>
+                        )}
                       </div>
                     </div>
                     {/* Assign Employees */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Assign Employees</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Assign Employees <span className="text-red-500">*</span>
+                      </label>
                       <input
                         type="text"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         onFocus={() => setShowEmployeeDropdown(true)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                        className={`w-full px-3 py-2 border rounded-md ${formik.touched.assignedTo && formik.errors.assignedTo ? 'border-red-500' : 'border-gray-300'}`}
                         placeholder="Search employee by name or department"
                       />
                       {showEmployeeDropdown && (
@@ -1846,7 +1717,7 @@ function CreateTasks({ onSubmit, editTask, onCancel }) {
                         </div>
                       )}
                       <div className="mt-2 flex flex-wrap gap-2">
-                        {formData.assignedTo.map((emp) => (
+                        {formik.values.assignedTo.map((emp) => (
                           <div key={emp.email} className="flex items-center bg-blue-50 text-blue-700 px-3 py-1 rounded-full">
                             <img src={emp.avatar || ''} alt={emp.name} className="w-5 h-5 rounded-full mr-2" />
                             <span className="text-sm">{emp.name || 'Unknown'}</span>
@@ -1860,6 +1731,9 @@ function CreateTasks({ onSubmit, editTask, onCancel }) {
                           </div>
                         ))}
                       </div>
+                      {formik.touched.assignedTo && formik.errors.assignedTo && (
+                        <div className="text-red-500 text-sm mt-1">{formik.errors.assignedTo}</div>
+                      )}
                     </div>
                     {/* File Attachments */}
                     <div>
@@ -1888,9 +1762,9 @@ function CreateTasks({ onSubmit, editTask, onCancel }) {
                         </span>
                         <span className="text-xs text-gray-400">(You can select multiple files)</span>
                       </div>
-                      {formData.attachments.length > 0 && (
+                      {formik.values.attachments.length > 0 && (
                         <div className="mt-2 space-y-2">
-                          {formData.attachments.map((attachment, index) => (
+                          {formik.values.attachments.map((attachment, index) => (
                             <div key={index} className="flex items-center justify-between bg-gray-50 p-2 rounded">
                               <div className="flex items-center space-x-2">
                                 <Upload className="w-4 h-4 text-gray-500" />
@@ -1910,11 +1784,12 @@ function CreateTasks({ onSubmit, editTask, onCancel }) {
                     </div>
                     {/* Remark */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Remark *</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Remark</label>
                       <textarea
                         name="remark"
-                        value={formData.remark}
-                        onChange={handleInputChange}
+                        value={formik.values.remark}
+                        onChange={formik.handleChange}
+                        onBlur={formik.handleBlur}
                         rows={2}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md"
                         placeholder="Enter remark"
@@ -1935,15 +1810,15 @@ function CreateTasks({ onSubmit, editTask, onCancel }) {
                   )}
                   <button
                     type="submit"
-                    className={`px-6 py-2 bg-blue-600 text-white rounded-md flex items-center space-x-2 ${loading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-700'}`}
-                    disabled={loading}
+                    className={`px-6 py-2 bg-blue-600 text-white rounded-md flex items-center space-x-2 ${formik.isSubmitting ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-700'}`}
+                    disabled={formik.isSubmitting}
                   >
-                    {loading ? (
+                    {formik.isSubmitting ? (
                       <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
                     ) : (
                       <>
                         <Plus className="w-4 h-4" />
-                        <span>{editTask ? 'Update Task' : formData.taskType === 'Reminder' ? 'Save Reminder' : 'Create Task'}</span>
+                        <span>{editTask ? 'Update Task' : formik.values.taskType === 'Reminder' ? 'Save Reminder' : 'Create Task'}</span>
                       </>
                     )}
                   </button>
@@ -1953,15 +1828,15 @@ function CreateTasks({ onSubmit, editTask, onCancel }) {
             {/* Right Column: Preview */}
             <div className="lg:w-1/2 p-6 bg-gray-100">
               <h2 className="text-2xl font-bold text-gray-900 mb-6">Task Preview</h2>
-              {formData.taskType === 'Reminder' ? (
+              {formik.values.taskType === 'Reminder' ? (
                 reminders.map((reminder, index) => (
                   <div key={reminder.id} className="bg-white rounded-lg shadow-md p-6 border border-gray-200 mb-4">
                     <div className="flex items-center justify-between mb-4">
                       <h3 className="text-xl font-semibold text-gray-900">
                         {reminder.taskName || 'Untitled Reminder'}
                       </h3>
-                      <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getPriorityColor(formData.priority)}`}>
-                        <Star className="inline-block w-3 h-3 mr-1 -mt-0.5" /> {formData.priority} Priority
+                      <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getPriorityColor(formik.values.priority)}`}>
+                        <Star className="inline-block w-3 h-3 mr-1 -mt-0.5" /> {formik.values.priority} Priority
                       </span>
                     </div>
                     {reminder.description && (
@@ -1993,26 +1868,7 @@ function CreateTasks({ onSubmit, editTask, onCancel }) {
                         </span>
                       </div>
                     </div>
-                    {/* <button
-                      type="button"
-                      className="mt-4 px-4 py-2 bg-blue-50 text-blue-700 rounded-md text-sm font-medium hover:bg-blue-100 flex items-center"
-                      onClick={() => generateNotificationDraft(reminder)}
-                      disabled={isGeneratingDraft}
-                    >
-                      {isGeneratingDraft ? (
-                        <>
-                          <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-blue-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                          </svg>
-                          Generating...
-                        </>
-                      ) : (
-                        <>
-                          <Sparkles className="mr-2" /> Generate Notification Draft
-                        </>
-                      )}
-                    </button> */}
+       
                     {notificationDraft && (
                       <div className="mt-4 p-4 bg-white rounded-lg shadow-md border border-gray-200">
                         <h3 className="text-lg font-semibold text-gray-900 mb-2 flex items-center">
@@ -2032,37 +1888,37 @@ function CreateTasks({ onSubmit, editTask, onCancel }) {
                 <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-xl font-semibold text-gray-900">
-                      {formData.taskName || 'Untitled Task'}
+                      {formik.values.taskName || 'Untitled Task'}
                     </h3>
-                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getPriorityColor(formData.priority)}`}>
-                      <Star className="inline-block w-3 h-3 mr-1 -mt-0.5" /> {formData.priority} Priority
+                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getPriorityColor(formik.values.priority)}`}>
+                      <Star className="inline-block w-3 h-3 mr-1 -mt-0.5" /> {formik.values.priority} Priority
                     </span>
                   </div>
-                  {formData.description && (
+                  {formik.values.description && (
                     <p className="text-gray-700 mb-4 text-sm leading-relaxed">
-                      {formData.description}
+                      {formik.values.description}
                     </p>
                   )}
                   <div className="space-y-3 text-sm text-gray-700">
                     <div className="flex items-center">
                       <Calendar className="w-4 h-4 mr-2 text-gray-500" />
                       <span>
-                        Due: {formData.dueDate ? new Date(formData.dueDate).toLocaleDateString('en-US', {
+                        Due: {formik.values.dueDate ? new Date(formik.values.dueDate).toLocaleDateString('en-US', {
                           year: 'numeric', month: 'short', day: 'numeric'
                         }) : 'Not set'}
                       </span>
                     </div>
                     <div className="flex items-center">
                       <Users className="w-4 h-4 mr-2 text-gray-500" />
-                      <span>Assigned To: {formData.assignedTo.length > 0 ? formData.assignedTo.map(emp => emp.name).join(', ') : 'No one assigned'}</span>
+                      <span>Assigned To: {formik.values.assignedTo.length > 0 ? formik.values.assignedTo.map(emp => emp.name).join(', ') : 'No one assigned'}</span>
                     </div>
-                    {formData.attachments.length > 0 && (
+                    {formik.values.attachments.length > 0 && (
                       <div className="flex items-start">
                         <Paperclip className="w-4 h-4 mr-2 text-gray-500 mt-1" />
                         <div>
                           <p>Attachments:</p>
                           <ul className="list-disc list-inside ml-2">
-                            {formData.attachments.map((file, index) => (
+                            {formik.values.attachments.map((file, index) => (
                               <li key={index}>{file instanceof File ? file.name : file}</li>
                             ))}
                           </ul>
@@ -2070,26 +1926,6 @@ function CreateTasks({ onSubmit, editTask, onCancel }) {
                       </div>
                     )}
                   </div>
-                  <button
-                    type="button"
-                    className="mt-4 px-4 py-2 bg-blue-50 text-blue-700 rounded-md text-sm font-medium hover:bg-blue-100 flex items-center"
-                    onClick={() => generateNotificationDraft(formData)}
-                    disabled={isGeneratingDraft}
-                  >
-                    {isGeneratingDraft ? (
-                      <>
-                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-blue-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        Generating...
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles className="mr-2" /> Generate Notification Draft
-                      </>
-                    )}
-                  </button>
                   {notificationDraft && (
                     <div className="mt-4 p-4 bg-white rounded-lg shadow-md border border-gray-200">
                       <h3 className="text-lg font-semibold text-gray-900 mb-2 flex items-center">

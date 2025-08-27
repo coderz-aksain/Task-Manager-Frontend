@@ -703,19 +703,19 @@ const TaskPage = () => {
                 <div className="flex flex-col sm:flex-row gap-2">
                   <Link to="/employee/createtasks">
                     <button
-                      onClick={() => {
-                        setIsModalOpen(true);
-                        setEditId(null);
-                        setFormData({
-                          ...initialForm,
-                          taskType:
-                            filterTaskType === "all"
-                              ? "General"
-                              : filterTaskType,
-                        });
-                      }}
+                      // onClick={() => {
+                      //   setIsModalOpen(true);
+                      //   setEditId(null);
+                      //   setFormData({
+                      //     ...initialForm,
+                      //     taskType:
+                      //       filterTaskType === "all"
+                      //         ? "General"
+                      //         : filterTaskType,
+                      //   });
+                      // }}
                       className="p-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center justify-center text-sm sm:text-base w-10 h-10 sm:w-auto sm:h-auto"
-                      disabled={isLoading}
+                      // disabled={isLoading}
                       title="Create Task"
                     >
                       <Plus />

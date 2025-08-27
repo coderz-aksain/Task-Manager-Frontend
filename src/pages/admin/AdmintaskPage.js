@@ -6888,7 +6888,8 @@ const statusOptions = [
 
 const getDisplayStatus = (task) => {
   if (isOverdue(task.dueDate, task.status) && task.status !== "Complete") {
-    return "Pending";
+    // return "Pending";
+    return (task.dueDate, task.status);
   }
   return task.status;
 };
@@ -7829,18 +7830,18 @@ const AdmintaskPage = () => {
                 <div className="flex flex-col sm:flex-row gap-2">
                   <Link to="/admin/createtasks">
                     <button
-                      onClick={() => {
-                        setIsModalOpen(true);
-                        setEditId(null);
-                        setFormData({
-                          ...initialForm,
-                          taskType:
-                            filterTaskType === "all" ? "General" : filterTaskType,
-                        });
-                      }}
+                      // onClick={() => {
+                      //   setIsModalOpen(false);
+                      //   setEditId(null);
+                      //   setFormData({
+                      //     ...initialForm,
+                      //     taskType:
+                      //       filterTaskType === "all" ? "General" : filterTaskType,
+                      //   });
+                      // }}
                       className="p-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center justify-center text-sm sm:text-base w-full sm:w-10 h-10"
                       title="Create Task"
-                      disabled={isLoading}
+                      // disabled={isLoading}
                     >
                       <Plus className="w-5 h-5" />
                     </button>

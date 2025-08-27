@@ -8587,7 +8587,7 @@ const AdmintaskPage = () => {
                         >
                           <option value="General">General</option>
                           <option value="Auctions">Auctions</option>
-                          <option value="Remainder">Remainder</option>
+                          <option value="Remainder">Reminder</option>
                         </select>
                         {formData.errors.taskType && (
                           <p className="text-red-500 text-xs mt-1">

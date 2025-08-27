@@ -378,15 +378,6 @@
 //     }
 //   };
 
-//   const getPriorityColor = (prio) => {
-//     switch (prio.toLowerCase()) {
-//       case 'high': return 'bg-red-100 text-red-800';
-//       case 'medium': return 'bg-yellow-100 text-yellow-800';
-//       case 'low': return 'bg-green-100 text-green-800';
-//       default: return 'bg-gray-100 text-gray-800';
-//     }
-//   };
-
 //   const showModal = (title, message) => {
 //     setModalTitle(title);
 //     setModalMessage(message);
@@ -436,12 +427,11 @@
 //       </div>
 //       <div className="flex-1 flex flex-col">
 //         <Header isLoggedIn={!!token} onToggleSidebar={toggleSidebar} />
-//         <div className="flex-1 p-6 overflow-auto">
-//           <div className="max-w-8xl mx-auto bg-white rounded-xl shadow-lg p-6 flex flex-col lg:flex-row">
-//             {/* Form Fields */}
-//             <div className="lg:w-1/2 p-4 border-r border-gray-200">
+//         <div className="flex-1 p-4 sm:p-6 overflow-auto">
+//           <div className="max-w-8xl mx-auto bg-white rounded-xl shadow-lg p-4 sm:p-6">
+//             <div className="w-full">
 //               <div className="flex items-center justify-between mb-6">
-//                 <h2 className="text-xl font-semibold text-gray-900">
+//                 <h2 className="text-lg sm:text-xl font-semibold text-gray-900">
 //                   {editTask ? 'Edit Task' : 'Create New Task'}
 //                 </h2>
 //                 {onCancel && (
@@ -450,7 +440,7 @@
 //                   </button>
 //                 )}
 //               </div>
-//               {formik.errors.api && <div className="text-red-500 mb-4">{formik.errors.api}</div>}
+//               {formik.errors.api && <div className="text-red-500 mb-4 text-sm">{formik.errors.api}</div>}
 //               <form onSubmit={formik.handleSubmit} className="space-y-6">
 //                 {/* Task Type */}
 //                 <div>
@@ -504,7 +494,7 @@
 //                           />
 //                         </div>
 //                         {/* Reminder Date and Time */}
-//                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+//                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
 //                           <div>
 //                             <label className="block text-sm font-medium text-gray-700 mb-2">
 //                               Reminder Date <span className="text-red-500">*</span>
@@ -619,13 +609,13 @@
 //                         </div>
 //                       </div>
 //                     ))}
-//                     {/* <button
+//                     <button
 //                       type="button"
 //                       onClick={addReminder}
 //                       className="w-full flex items-center justify-center px-4 py-2 border border-dashed border-gray-300 rounded-md text-gray-600 hover:bg-gray-100 text-sm font-medium mt-4"
 //                     >
 //                       <PlusCircle className="mr-2" size={18} /> Add Reminder
-//                     </button> */}
+//                     </button>
 //                   </>
 //                 ) : (
 //                   <>
@@ -661,7 +651,7 @@
 //                       />
 //                     </div>
 //                     {/* Priority and Due Date */}
-//                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+//                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 //                       <div>
 //                         <label className="block text-sm font-medium text-gray-700 mb-2">
 //                           Priority <span className="text-red-500">*</span>
@@ -838,123 +828,6 @@
 //                 </div>
 //               </form>
 //             </div>
-//             {/* Right Column: Preview */}
-//             <div className="lg:w-1/2 p-6 bg-gray-100">
-//               <h2 className="text-2xl font-bold text-gray-900 mb-6">Task Preview</h2>
-//               {formik.values.taskType === 'Reminder' ? (
-//                 reminders.map((reminder, index) => (
-//                   <div key={reminder.id} className="bg-white rounded-lg shadow-md p-6 border border-gray-200 mb-4">
-//                     <div className="flex items-center justify-between mb-4">
-//                       <h3 className="text-xl font-semibold text-gray-900">
-//                         {reminder.taskName || 'Untitled Reminder'}
-//                       </h3>
-//                       <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getPriorityColor(formik.values.priority)}`}>
-//                         <Star className="inline-block w-3 h-3 mr-1 -mt-0.5" /> {formik.values.priority} Priority
-//                       </span>
-//                     </div>
-//                     {reminder.description && (
-//                       <p className="text-gray-700 mb-4 text-sm leading-relaxed">
-//                         {reminder.description}
-//                       </p>
-//                     )}
-//                     <div className="space-y-3 text-sm text-gray-700">
-//                       <div className="flex items-center">
-//                         <Calendar className="w-4 h-4 mr-2 text-gray-500" />
-//                         <span>
-//                           Due: {reminder.dueDate ? new Date(reminder.dueDate).toLocaleDateString('en-US', {
-//                             year: 'numeric', month: 'short', day: 'numeric'
-//                           }) : 'Not set'}
-//                           {reminder.dueTime && ` at ${reminder.dueTime}`}
-//                         </span>
-//                       </div>
-//                       <div className="flex items-center">
-//                         <Users className="w-4 h-4 mr-2 text-gray-500" />
-//                         <span>Assigned To: {reminder.assignedTo.length > 0 ? reminder.assignedTo.map(emp => emp.name).join(', ') : 'No one assigned'}</span>
-//                       </div>
-//                       <div className="flex items-center">
-//                         <Bell className="w-4 h-4 mr-2 text-gray-500" />
-//                         <span>Notifications:
-//                           {reminder.notificationEmail && <span className="ml-1 inline-flex items-center"><Mail className="w-4 h-4 mr-0.5" /> Email</span>}
-//                           {reminder.notificationInApp && <span className="ml-1 inline-flex items-center"><Smartphone className="w-4 h-4 mr-0.5" /> In-app</span>}
-//                           {reminder.notificationAlarm && <span className="ml-1 inline-flex items-center"><Bell className="w-4 h-4 mr-0.5" /> Alarm</span>}
-//                           {!reminder.notificationEmail && !reminder.notificationInApp && !reminder.notificationAlarm && ' None'}
-//                         </span>
-//                       </div>
-//                     </div>
-       
-//                     {notificationDraft && (
-//                       <div className="mt-4 p-4 bg-white rounded-lg shadow-md border border-gray-200">
-//                         <h3 className="text-lg font-semibold text-gray-900 mb-2 flex items-center">
-//                           <Sparkles className="mr-2 text-blue-600" /> Generated Notification Draft
-//                         </h3>
-//                         <textarea
-//                           readOnly
-//                           rows="4"
-//                           className="w-full px-3 py-2 border border-gray-200 rounded-md bg-gray-50 text-gray-800 resize-none"
-//                           value={notificationDraft}
-//                         ></textarea>
-//                       </div>
-//                     )}
-//                   </div>
-//                 ))
-//               ) : (
-//                 <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
-//                   <div className="flex items-center justify-between mb-4">
-//                     <h3 className="text-xl font-semibold text-gray-900">
-//                       {formik.values.taskName || 'Untitled Task'}
-//                     </h3>
-//                     <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getPriorityColor(formik.values.priority)}`}>
-//                       <Star className="inline-block w-3 h-3 mr-1 -mt-0.5" /> {formik.values.priority} Priority
-//                     </span>
-//                   </div>
-//                   {formik.values.description && (
-//                     <p className="text-gray-700 mb-4 text-sm leading-relaxed">
-//                       {formik.values.description}
-//                     </p>
-//                   )}
-//                   <div className="space-y-3 text-sm text-gray-700">
-//                     <div className="flex items-center">
-//                       <Calendar className="w-4 h-4 mr-2 text-gray-500" />
-//                       <span>
-//                         Due: {formik.values.dueDate ? new Date(formik.values.dueDate).toLocaleDateString('en-US', {
-//                           year: 'numeric', month: 'short', day: 'numeric'
-//                         }) : 'Not set'}
-//                       </span>
-//                     </div>
-//                     <div className="flex items-center">
-//                       <Users className="w-4 h-4 mr-2 text-gray-500" />
-//                       <span>Assigned To: {formik.values.assignedTo.length > 0 ? formik.values.assignedTo.map(emp => emp.name).join(', ') : 'No one assigned'}</span>
-//                     </div>
-//                     {formik.values.attachments.length > 0 && (
-//                       <div className="flex items-start">
-//                         <Paperclip className="w-4 h-4 mr-2 text-gray-500 mt-1" />
-//                         <div>
-//                           <p>Attachments:</p>
-//                           <ul className="list-disc list-inside ml-2">
-//                             {formik.values.attachments.map((file, index) => (
-//                               <li key={index}>{file instanceof File ? file.name : file}</li>
-//                             ))}
-//                           </ul>
-//                         </div>
-//                       </div>
-//                     )}
-//                   </div>
-//                   {notificationDraft && (
-//                     <div className="mt-4 p-4 bg-white rounded-lg shadow-md border border-gray-200">
-//                       <h3 className="text-lg font-semibold text-gray-900 mb-2 flex items-center">
-//                         <Sparkles className="mr-2 text-blue-600" /> Generated Notification Draft
-//                       </h3>
-//                       <textarea
-//                         readOnly
-//                         rows="4"
-//                         className="w-full px-3 py-2 border border-gray-200 rounded-md bg-gray-50 text-gray-800 resize-none"
-//                         value={notificationDraft}
-//                       ></textarea>
-//                     </div>
-//                   )}
-//                 </div>
-//               )}
-//             </div>
 //           </div>
 //         </div>
 //       </div>
@@ -985,7 +858,6 @@
 // }
 
 // export default CreateTasks;
-
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Plus, X, Upload, Calendar, Bell, Mail, Smartphone, Clock, Paperclip, ChevronDown, ChevronUp, Users, User, Clock3, Repeat, Star, Sparkles, PlusCircle, Trash2 } from 'lucide-react';
@@ -1124,13 +996,21 @@ function CreateTasks({ onSubmit, editTask, onCancel }) {
     taskName: Yup.string().required('Task Name is required'),
     priority: Yup.string().required('Priority is required'),
     dueDate: Yup.string().required('Due Date is required'),
-    assignedTo: Yup.array().min(1, 'At least one employee must be assigned'),
+    description: Yup.string(),
+    assignedTo: Yup.array(),
+    attachments: Yup.array(),
+    remark: Yup.string(),
   });
 
   const reminderValidationSchema = Yup.object({
     taskName: Yup.string().required('Reminder Name is required'),
     dueDate: Yup.string().required('Reminder Date is required'),
-    assignedTo: Yup.array().min(1, 'At least one employee must be assigned'),
+    description: Yup.string(),
+    dueTime: Yup.string(),
+    assignedTo: Yup.array(),
+    notificationEmail: Yup.boolean(),
+    notificationInApp: Yup.boolean(),
+    notificationAlarm: Yup.boolean(),
   });
 
   const formik = useFormik({
@@ -1152,8 +1032,8 @@ function CreateTasks({ onSubmit, editTask, onCancel }) {
             await reminderValidationSchema.validate(reminder, { abortEarly: false });
           }
         } catch (err) {
-          setErrors({ api: 'All reminder fields (Reminder Name, Reminder Date, Assign Employee) are required' });
-          showToast('All reminder fields are required', 'error');
+          setErrors({ api: 'All reminder fields (Reminder Name, Reminder Date) are required' });
+          showToast('All reminder fields (Reminder Name, Reminder Date) are required', 'error');
           setSubmitting(false);
           return;
         }
@@ -1397,6 +1277,7 @@ function CreateTasks({ onSubmit, editTask, onCancel }) {
   };
 
   const formatDate = (dateStr) => {
+    if (!dateStr) return '';
     const [year, month, day] = dateStr.split('-');
     return `${day.padStart(2, '0')}-${month.padStart(2, '0')}-${year}`;
   };
@@ -1454,6 +1335,15 @@ function CreateTasks({ onSubmit, editTask, onCancel }) {
                     {reminders.map((reminder, index) => (
                       <div key={reminder.id} className="border border-gray-300 rounded-lg p-4 mb-4 bg-gray-50 relative">
                         <h3 className="text-md font-semibold text-gray-800 mb-3">Reminder {index + 1}</h3>
+                        {reminders.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => removeReminder(reminder.id)}
+                            className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
+                          >
+                            <Trash2 className="w-5 h-5" />
+                          </button>
+                        )}
                         {/* Reminder Name */}
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1464,9 +1354,12 @@ function CreateTasks({ onSubmit, editTask, onCancel }) {
                             name="taskName"
                             value={reminder.taskName}
                             onChange={(e) => handleReminderInputChange(e, reminder.id)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                            className={`w-full px-3 py-2 border rounded-md ${reminder.taskName === '' && formik.submitCount > 0 ? 'border-red-500' : 'border-gray-300'}`}
                             placeholder="Enter reminder name"
                           />
+                          {reminder.taskName === '' && formik.submitCount > 0 && (
+                            <div className="text-red-500 text-sm mt-1">Reminder Name is required</div>
+                          )}
                         </div>
                         {/* Description */}
                         <div className="mt-4">
@@ -1491,8 +1384,11 @@ function CreateTasks({ onSubmit, editTask, onCancel }) {
                               name="dueDate"
                               value={reminder.dueDate}
                               onChange={(e) => handleReminderInputChange(e, reminder.id)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                              className={`w-full px-3 py-2 border rounded-md ${reminder.dueDate === '' && formik.submitCount > 0 ? 'border-red-500' : 'border-gray-300'}`}
                             />
+                            {reminder.dueDate === '' && formik.submitCount > 0 && (
+                              <div className="text-red-500 text-sm mt-1">Reminder Date is required</div>
+                            )}
                           </div>
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">Reminder Time</label>
@@ -1508,7 +1404,7 @@ function CreateTasks({ onSubmit, editTask, onCancel }) {
                         {/* Assign Employees */}
                         <div className="mt-4">
                           <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Assign Employees <span className="text-red-500">*</span>
+                            Assign Employees <span className= "text-red-700">*</span>
                           </label>
                           <input
                             type="text"
@@ -1678,14 +1574,14 @@ function CreateTasks({ onSubmit, editTask, onCancel }) {
                     {/* Assign Employees */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Assign Employees <span className="text-red-500">*</span>
+                        Assign Employees  <span className= "text-red-700">*</span>
                       </label>
                       <input
                         type="text"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         onFocus={() => setShowEmployeeDropdown(true)}
-                        className={`w-full px-3 py-2 border rounded-md ${formik.touched.assignedTo && formik.errors.assignedTo ? 'border-red-500' : 'border-gray-300'}`}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md"
                         placeholder="Search employee by name or department"
                       />
                       {showEmployeeDropdown && (
@@ -1721,9 +1617,6 @@ function CreateTasks({ onSubmit, editTask, onCancel }) {
                           </div>
                         ))}
                       </div>
-                      {formik.touched.assignedTo && formik.errors.assignedTo && (
-                        <div className="text-red-500 text-sm mt-1">{formik.errors.assignedTo}</div>
-                      )}
                     </div>
                     {/* File Attachments */}
                     <div>

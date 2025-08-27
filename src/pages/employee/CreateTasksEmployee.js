@@ -942,7 +942,7 @@ function CreateTasksEmployee({ onSubmit, editTask, onCancel }) {
                   <Form className="space-y-6">
                     {/* Task Type */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Task Type *</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Task Type <span className= "text-red-600">*</span></label>
                       <Field
                         as="select"
                         name="taskType"
@@ -957,7 +957,7 @@ function CreateTasksEmployee({ onSubmit, editTask, onCancel }) {
                     </div>
                     {/* Task Name */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Task Name *</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Task Name <span className= "text-red-600">*</span> </label>
                       <Field
                         type="text"
                         name="taskName"
@@ -983,7 +983,7 @@ function CreateTasksEmployee({ onSubmit, editTask, onCancel }) {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       {values.taskType !== 'Reminder' && (
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Priority *</label>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Priority<span className= "text-red-600">*</span> </label>
                           <Field
                             as="select"
                             name="priority"
@@ -998,7 +998,7 @@ function CreateTasksEmployee({ onSubmit, editTask, onCancel }) {
                         </div>
                       )}
                       <div onClick={handleDateClick}>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Due Date *</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Due Date<span className= "text-red-600">*</span></label>
                         <Field
                           type="date"
                           name="dueDate"

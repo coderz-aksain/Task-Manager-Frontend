@@ -8118,7 +8118,7 @@ const AdmintaskPage = () => {
                         <td className="py-4 px-2 sm:px-4 text-gray-900 text-center truncate">
                           {task.taskId}
                         </td>
-                        <td className="py-4 px-2 sm:px-4 text-start truncate font-bold">
+                        <td className="py-4 px-2 sm:px-4 text-start truncate font-normal">
                           {task.taskName}
                         </td>
                         <td className="py-4 px-2 sm:px-4 text-center">

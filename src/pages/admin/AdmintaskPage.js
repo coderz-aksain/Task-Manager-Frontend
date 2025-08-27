@@ -6875,7 +6875,7 @@ const formatDisplayDate = (dateStr) => {
   return `${day}/${month}/${year}`;
 };
 
-const taskTypes = ["Auctions", "General", "Remainder"];
+const taskTypes = ["Auctions", "General", "Reminder"];
 const priorities = ["High", "Medium", "Low"];
 const statusOptions = [
   { value: "Open", label: "Open" },
@@ -7767,7 +7767,7 @@ const AdmintaskPage = () => {
         return "bg-purple-100 text-purple-800";
       case "General":
         return "bg-blue-100 text-blue-800";
-      case "Remainder":
+      case "Reminder":
         return "bg-orange-100 text-orange-800";
       default:
         return "bg-gray-100 text-gray-800";
@@ -8587,7 +8587,7 @@ const AdmintaskPage = () => {
                         >
                           <option value="General">General</option>
                           <option value="Auctions">Auctions</option>
-                          <option value="Remainder">Reminder</option>
+                          <option value="Reminder">Reminder</option>
                         </select>
                         {formData.errors.taskType && (
                           <p className="text-red-500 text-xs mt-1">

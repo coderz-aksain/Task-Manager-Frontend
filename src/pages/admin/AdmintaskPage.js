@@ -2395,9 +2395,10 @@ const generateTaskId = (tasks) => {
 const isOverdue = (dueDate, dueTime, status) => {
   if (!dueDate) return false;
   const due = new Date(dueDate);
-  if (dueTime !== "N/A") {
+  // Ensure dueTime is a valid string
+  if (typeof dueTime === "string" && dueTime !== "N/A") {
     const [hours, minutes] = dueTime.split(":").map(Number);
-    due.setHours(hours, minutes, 0, 0);
+    due.setHours(hours || 23, minutes || 59, 0, 0);
   } else {
     due.setHours(23, 59, 59, 999);
   }
@@ -3709,13 +3710,10 @@ const AdmintaskPage = () => {
                                     </span>
                                   )}
                                   <span className="absolute left-1/2 transform -translate-x-1/2 top-8 bg-red-800 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none whitespace-nowrap">
-                                    {
-                                      emp.email
-                                        .split("@")[0]
-                                        .replace(".", " ")
-                                        .replace(/\b\w/g, (l) =>
-                                          l.toUpperCase()
-                                        )}
+                                    {emp.email
+                                      .split("@")[0]
+                                      .replace(".", " ")
+                                      .replace(/\b\w/g, (l) => l.toUpperCase())}
                                   </span>
                                 </div>
                               ))
@@ -3969,14 +3967,14 @@ const AdmintaskPage = () => {
                 ))
               )}
             </div>
-              {sortedTasks.length === 0 && (
-                <div className="text-center py-12 hidden lg:block">
-                  <div className="text-gray-500 mb-4">Loading...</div>
-                  <div className="text-sm text-gray-400">
-                    Hold tight, we're fetching your tasks!
-                  </div>
+            {sortedTasks.length === 0 && (
+              <div className="text-center py-12 hidden lg:block">
+                <div className="text-gray-500 mb-4">Loading...</div>
+                <div className="text-sm text-gray-400">
+                  Hold tight, we're fetching your tasks!
                 </div>
-              )}
+              </div>
+            )}
 
             {/* Create/Edit Task Modal */}
             {(isModalOpen || isEditModalOpen) && (
@@ -4290,7 +4288,7 @@ const AdmintaskPage = () => {
                     </div>
                     {isLoading && (
                       <div className="flex justify-center">
-                        <Loader2 className="w-6 h-6 text-blue-600 animate-spin" />
+                        {/* <Loader2 className="w-6 h-6 text-blue-600 animate-spin" /> */}
                       </div>
                     )}
                     <div className="flex justify-end space-x-4">
@@ -4310,11 +4308,22 @@ const AdmintaskPage = () => {
                       >
                         Cancel
                       </button>
+                      {/* <button
+                        type="submit"
+                        className="px-4 sm:px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center space-x-2 text-sm"
+                        disabled={isLoading}
+                      >
+                        <span>{editId ? "Update Task" : "Create Task"}</span>
+                      </button> */}
+
                       <button
                         type="submit"
                         className="px-4 sm:px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center space-x-2 text-sm"
                         disabled={isLoading}
                       >
+                        {isLoading ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : null}
                         <span>{editId ? "Update Task" : "Create Task"}</span>
                       </button>
                     </div>
@@ -4453,11 +4462,18 @@ const AdmintaskPage = () => {
                       <p className="text-sm text-gray-500 mb-2">Due Date</p>
                       <p className="text-sm">
                         {viewTask.dueDate
-                          ? new Date(viewTask.dueDate).toLocaleDateString()
+                          ? new Date(viewTask.dueDate)
+                              .toLocaleDateString("en-GB", {
+                                day: "2-digit",
+                                month: "short", // gives "Aug"
+                                year: "numeric",
+                              })
+                              .replace(/ /g, "/") // replaces spaces with "/"
                           : "N/A"}
                         {viewTask.dueTime !== "N/A" && ` ${viewTask.dueTime}`}
                       </p>
                     </div>
+
                     {/* <div>
                       <p className="text-sm text-gray-500 mb-2">Assigned To</p>
                       <p className="text-sm text-gray-800 break-words">
@@ -4471,31 +4487,38 @@ const AdmintaskPage = () => {
                     </div> */}
 
                     <div>
-  <p className="text-sm text-gray-500 mb-2">Assigned To</p>
-  <p className="text-sm text-gray-800 break-words">
-    {Array.isArray(viewTask.assignedTo) &&
-    viewTask.assignedTo.length > 0
-      ? viewTask.assignedTo
-          .map((emp) => 
-          
-            emp.email.split('@')[0].replace('.', ' ').replace(/\b\w/g, l => l.toUpperCase())
-          )
-          .join(", ")
-      : "Unassigned"}
-  </p>
-</div>
+                      <p className="text-sm text-gray-500 mb-2">Assigned To</p>
+                      <p className="text-sm text-gray-800 break-words">
+                        {Array.isArray(viewTask.assignedTo) &&
+                        viewTask.assignedTo.length > 0
+                          ? viewTask.assignedTo
+                              .map((emp) =>
+                                emp.email
+                                  .split("@")[0]
+                                  .replace(".", " ")
+                                  .replace(/\b\w/g, (l) => l.toUpperCase())
+                              )
+                              .join(", ")
+                          : "Unassigned"}
+                      </p>
+                    </div>
                     <div>
                       <p className="text-sm text-gray-500 mb-2">
                         Assigned Date
                       </p>
                       <p className="text-sm">
                         {viewTask.assignedDateTime
-                          ? new Date(
-                              viewTask.assignedDateTime
-                            ).toLocaleDateString()
+                          ? new Date(viewTask.assignedDateTime)
+                              .toLocaleDateString("en-GB", {
+                                day: "2-digit",
+                                month: "short", // "Aug"
+                                year: "numeric",
+                              })
+                              .replace(/ /g, "/") // 28/Aug/2025 format
                           : "N/A"}
                       </p>
                     </div>
+
                     <div>
                       <p className="text-sm text-gray-500 mb-2">Remark</p>
                       <p className="text-sm text-gray-800">

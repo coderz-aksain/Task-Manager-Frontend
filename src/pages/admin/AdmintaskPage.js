@@ -14,7 +14,7 @@
 //   Mail,
 //   MessageCircle,
 //   Filter,
-//   FunnelX
+//   FunnelX,
 // } from "lucide-react";
 // import AdminSidebar from "../../components/common/AdminSidebar";
 // import Header from "../../components/common/Header";
@@ -44,9 +44,11 @@
 // ];
 
 // const getDisplayStatus = (task) => {
-//   if (isOverdue(task.dueDate, task.status) && task.status !== "Complete") {
-//     // return "Pending";
-//     return (task.dueDate, task.status);
+//   if (
+//     isOverdue(task.dueDate, task.dueTime, task.status) &&
+//     task.status !== "Complete"
+//   ) {
+//     return "Pending";
 //   }
 //   return task.status;
 // };
@@ -81,8 +83,17 @@
 //   return todayCount + 1;
 // };
 
-// const isOverdue = (dueDate, status) => {
-//   return dueDate && new Date(dueDate) < new Date() && status !== "Complete";
+// const isOverdue = (dueDate, dueTime, status) => {
+//   if (!dueDate) return false;
+//   const due = new Date(dueDate);
+//   // Ensure dueTime is a valid string
+//   if (typeof dueTime === "string" && dueTime !== "N/A") {
+//     const [hours, minutes] = dueTime.split(":").map(Number);
+//     due.setHours(hours || 23, minutes || 59, 0, 0);
+//   } else {
+//     due.setHours(23, 59, 59, 999);
+//   }
+//   return due < new Date() && status !== "Complete";
 // };
 
 // const getInitials = (name) => {
@@ -125,7 +136,8 @@
 
 //   // SEPARATE STATES FOR FILTER AND MODAL DROPDOWNS
 //   const [showEmployeeDropdown, setShowEmployeeDropdown] = useState(false); // For filter dropdown
-//   const [showModalEmployeeDropdown, setShowModalEmployeeDropdown] = useState(false); // For edit modal dropdown
+//   const [showModalEmployeeDropdown, setShowModalEmployeeDropdown] =
+//     useState(false); // For edit modal dropdown
 
 //   const [employeeSearchTerm, setEmployeeSearchTerm] = useState("");
 //   const [showRemainderEmailModal, setShowRemainderEmailModal] = useState(false);
@@ -213,9 +225,12 @@
 //       }
 //     }
 //     document.addEventListener("mousedown", handleClickOutside);
-//     return () =>
-//       document.removeEventListener("mousedown", handleClickOutside);
-//   }, [showEmployeeDropdown, showModalEmployeeDropdown, showDueDateSortDropdown]);
+//     return () => document.removeEventListener("mousedown", handleClickOutside);
+//   }, [
+//     showEmployeeDropdown,
+//     showModalEmployeeDropdown,
+//     showDueDateSortDropdown,
+//   ]);
 
 //   // Reminder Modal close on outside click
 //   useEffect(() => {
@@ -245,8 +260,7 @@
 //       }
 //     }
 //     document.addEventListener("mousedown", handleDeleteOutside);
-//     return () =>
-//       document.removeEventListener("mousedown", handleDeleteOutside);
+//     return () => document.removeEventListener("mousedown", handleDeleteOutside);
 //   }, [showDeleteConfirm]);
 
 //   useEffect(() => {
@@ -396,6 +410,18 @@
 //     }
 //   }, [token, employees]);
 
+//   useEffect(() => {
+//     tasks.forEach((task) => {
+//       if (
+//         isOverdue(task.dueDate, task.dueTime, task.status) &&
+//         task.status !== "Pending" &&
+//         task.status !== "Complete"
+//       ) {
+//         handleUpdateTaskStatus(task.taskId, "Pending");
+//       }
+//     });
+//   }, [tasks]);
+
 //   const handleInputChange = (e) => {
 //     const { name, value } = e.target;
 //     setFormData((prev) => ({
@@ -471,7 +497,7 @@
 //     const isEditing = !!editId;
 //     const wasPending =
 //       isEditing &&
-//       isOverdue(formData.dueDate, formData.status) &&
+//       isOverdue(formData.dueDate, formData.dueTime, formData.status) &&
 //       getDisplayStatus(formData) === "Pending";
 //     const statusChanged =
 //       isEditing &&
@@ -689,7 +715,7 @@
 //       const updatedTask = await response.json();
 //       setTasks((prev) =>
 //         prev.map((task) =>
-//           task._id === taskId
+//           task._id === updatedTask.task._id
 //             ? {
 //                 ...updatedTask.task,
 //                 fileUrls: updatedTask.task.fileUrls || [],
@@ -782,7 +808,9 @@
 //     setRemainderEmailBody(
 //       `Hi, this is a reminder to complete the task before due date which is on ${
 //         task.dueDate ? new Date(task.dueDate).toLocaleDateString() : "N/A"
-//       }${task.dueTime !== "N/A" ? " at " + task.dueTime : ""}.\n\nPlease ensure timely completion.`
+//       }${
+//         task.dueTime !== "N/A" ? " at " + task.dueTime : ""
+//       }.\n\nPlease ensure timely completion.`
 //     );
 //     setShowRemainderEmailModal(true);
 //   };
@@ -963,7 +991,8 @@
 //   };
 
 //   // Get assigned by employee for view modal
-//   const assignedByEmployee = viewTask && employees.find(emp => emp.email === viewTask.assignedBy);
+//   const assignedByEmployee =
+//     viewTask && employees.find((emp) => emp.email === viewTask.assignedBy);
 
 //   return (
 //     <div className="flex min-h-screen bg-white relative">
@@ -1095,10 +1124,13 @@
 //                 <div className="relative w-full sm:w-56">
 //                   <div
 //                     className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white cursor-pointer flex items-center space-x-2"
-//                     onClick={() => setShowEmployeeDropdown(!showEmployeeDropdown)}
+//                     onClick={() =>
+//                       setShowEmployeeDropdown(!showEmployeeDropdown)
+//                     }
 //                   >
 //                     {filterEmployee !== "all" &&
-//                     employees.find((emp) => emp.email === filterEmployee)?.avatar ? (
+//                     employees.find((emp) => emp.email === filterEmployee)
+//                       ?.avatar ? (
 //                       <img
 //                         src={
 //                           employees.find((emp) => emp.email === filterEmployee)
@@ -1112,8 +1144,9 @@
 //                         {filterEmployee === "all"
 //                           ? "All"
 //                           : getInitials(
-//                               employees.find((emp) => emp.email === filterEmployee)
-//                                 ?.name || "U"
+//                               employees.find(
+//                                 (emp) => emp.email === filterEmployee
+//                               )?.name || "U"
 //                             )}
 //                       </span>
 //                     )}
@@ -1121,8 +1154,9 @@
 //                       <span className="text-gray-700 text-sm leading-tight truncate w-40">
 //                         {filterEmployee === "all"
 //                           ? "All Employees"
-//                           : employees.find((emp) => emp.email === filterEmployee)
-//                               ?.name || "Unknown"}
+//                           : employees.find(
+//                               (emp) => emp.email === filterEmployee
+//                             )?.name || "Unknown"}
 //                       </span>
 //                       {filterEmployee !== "all" && (
 //                         <span className="text-gray-400 text-xs leading-tight truncate w-40">
@@ -1189,7 +1223,7 @@
 //               </div>
 //             </div>
 //             <div className="hidden lg:block">
-//               <div className="w-full">
+//               <div className="w-full overflow-y-auto max-h-[70vh]">
 //                 <table className="w-full text-xs sm:text-sm table-fixed">
 //                   <thead className="bg-gray-100 border-gray-700 rounded-full sticky top-0 z-10 border-b border-gray-200">
 //                     <tr>
@@ -1214,9 +1248,13 @@
 //                       <th className="w-32 text-center py-3 px-2 sm:px-4 font-medium text-gray-700 whitespace-nowrap relative">
 //                         Due Date
 //                         <button
-//                           onClick={() => setShowDueDateSortDropdown(!showDueDateSortDropdown)}
+//                           onClick={() =>
+//                             setShowDueDateSortDropdown(!showDueDateSortDropdown)
+//                           }
 //                           className={`ml-2 p-1 rounded-full  ${
-//                             dueDateSort !== "none" ? "text-green-600" : "text-gray-600"
+//                             dueDateSort !== "none"
+//                               ? "text-green-600"
+//                               : "text-gray-600"
 //                           } hover:bg-gray-200`}
 //                           title="Sort by Due Date"
 //                           disabled={isLoading}
@@ -1268,14 +1306,19 @@
 //                       <tr
 //                         key={task._id}
 //                         className={`border-b border-gray-100 hover:bg-gray-50 cursor-pointer ${
-//                           isOverdue(task.dueDate, task.status) ? "bg-red-50" : ""
+//                           isOverdue(task.dueDate, task.dueTime, task.status)
+//                             ? "bg-red-50"
+//                             : ""
 //                         }`}
 //                         onClick={() => handleViewTask(task)}
 //                       >
 //                         <td className="py-4 px-2 sm:px-4 text-gray-900 text-center truncate">
 //                           {task.taskId}
 //                         </td>
-//                         <td className="py-4 px-2 sm:px-4 text-start truncate font-normal">
+//                         <td
+//                           className="py-4 px-2 sm:px-4 text-start truncate font-normal"
+//                           title={task.taskName}
+//                         >
 //                           {task.taskName}
 //                         </td>
 //                         <td className="py-4 px-2 sm:px-4 text-center">
@@ -1305,6 +1348,41 @@
 //                             {getDisplayStatus(task)}
 //                           </span>
 //                         </td>
+//                         {/* <td className="py-4 px-2 sm:px-4 text-gray-600 text-center">
+//                           <span className="flex -space-x-1 justify-center">
+//                             {Array.isArray(task.assignedTo) &&
+//                             task.assignedTo.length > 0 ? (
+//                               task.assignedTo.map((emp) => (
+//                                 <div key={emp.email} className="relative group">
+//                                   {emp.avatar ? (
+//                                     <img
+//                                       src={emp.avatar}
+//                                       alt={emp.name || emp.email}
+//                                       className="inline-block w-7 h-7 rounded-full border border-gray-300"
+//                                     />
+//                                   ) : (
+//                                     <span className="inline-flex w-7 h-7 bg-gray-200 rounded-full items-center justify-center text-gray-600 text-xs font-medium">
+//                                       {getInitials(emp.name || emp.email)}
+//                                     </span>
+//                                   )}
+//                                   <span className="absolute left-1/2 transform -translate-x-1/2 top-8 bg-red-800 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none whitespace-nowrap">
+//                                     { emp.email}
+//                                   </span>
+//                                 </div>
+//                               ))
+//                             ) : (
+//                               <div className="relative group">
+//                                 <span className="inline-flex w-6 h-6 bg-gray-100 rounded-full items-center justify-center text-gray-600 text-xs font-medium">
+//                                   UN
+//                                 </span>
+//                                 <span className="absolute left-1/2 transform -translate-x-1/2 top-8 bg-gray-800 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+//                                   Unassigned
+//                                 </span>
+//                               </div>
+//                             )}
+//                           </span>
+//                         </td> */}
+
 //                         <td className="py-4 px-2 sm:px-4 text-gray-600 text-center">
 //                           <span className="flex -space-x-1 justify-center">
 //                             {Array.isArray(task.assignedTo) &&
@@ -1322,8 +1400,11 @@
 //                                       {getInitials(emp.name || emp.email)}
 //                                     </span>
 //                                   )}
-//                                   <span className="absolute left-1/2 transform -translate-x-1/2 top-8 bg-gray-800 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none whitespace-nowrap">
-//                                     {emp.name || emp.email}
+//                                   <span className="absolute left-1/2 transform -translate-x-1/2 top-8 bg-red-800 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none whitespace-nowrap">
+//                                     {emp.email
+//                                       .split("@")[0]
+//                                       .replace(".", " ")
+//                                       .replace(/\b\w/g, (l) => l.toUpperCase())}
 //                                   </span>
 //                                 </div>
 //                               ))
@@ -1339,10 +1420,15 @@
 //                             )}
 //                           </span>
 //                         </td>
+
 //                         <td className="py-4 px-2 sm:px-4 text-gray-600 text-center truncate">
 //                           {formatDisplayDate(task.dueDate)}
 //                           {task.dueTime !== "N/A" && ` ${task.dueTime}`}
-//                           {isOverdue(task.dueDate, task.status) && (
+//                           {isOverdue(
+//                             task.dueDate,
+//                             task.dueTime,
+//                             task.status
+//                           ) && (
 //                             <AlertCircle className="inline ml-2 text-red-600 w-4 h-4" />
 //                           )}
 //                         </td>
@@ -1360,7 +1446,9 @@
 //                               <Eye className="w-4 h-4" />
 //                             </button>
 //                             <button
-//                               onClick={() => handleOpenRemainderEmailModal(task)}
+//                               onClick={() =>
+//                                 handleOpenRemainderEmailModal(task)
+//                               }
 //                               className="p-1 text-purple-600 hover:bg-purple-50 rounded"
 //                               title="Send Reminder"
 //                               disabled={isLoading}
@@ -1406,7 +1494,9 @@
 //             <div className="lg:hidden grid gap-4">
 //               {sortedTasks.length === 0 ? (
 //                 <div className="text-center py-12 text-gray-500">
-//                   <div className="mb-4">No tasks found matching your criteria</div>
+//                   <div className="mb-4">
+//                     No tasks found matching your criteria
+//                   </div>
 //                   <div className="text-sm text-gray-400">
 //                     Try adjusting your search or filters
 //                   </div>
@@ -1416,13 +1506,18 @@
 //                   <div
 //                     key={task._id}
 //                     className={`border rounded-lg p-4 shadow-md bg-white hover:shadow-lg transition-shadow duration-200 ${
-//                       isOverdue(task.dueDate, task.status) ? "bg-red-50" : ""
+//                       isOverdue(task.dueDate, task.dueTime, task.status)
+//                         ? "bg-red-50"
+//                         : ""
 //                     }`}
 //                     onClick={() => handleViewTask(task)}
 //                   >
 //                     <div className="flex justify-between items-start">
 //                       <div className="flex items-center gap-2">
-//                         <span className="font-bold text-sm sm:text-base">
+//                         <span
+//                           className="font-bold text-sm sm:text-base"
+//                           title={task.taskName}
+//                         >
 //                           {task.taskName}
 //                         </span>
 //                       </div>
@@ -1495,7 +1590,7 @@
 //                         <span className="font-semibold">Due Date:</span>{" "}
 //                         {formatDisplayDate(task.dueDate)}{" "}
 //                         {task.dueTime !== "N/A" && task.dueTime}{" "}
-//                         {isOverdue(task.dueDate, task.status) && (
+//                         {isOverdue(task.dueDate, task.dueTime, task.status) && (
 //                           <AlertCircle className="inline ml-1 text-red-600 w-4 h-4" />
 //                         )}
 //                       </div>
@@ -1563,14 +1658,14 @@
 //                 ))
 //               )}
 //             </div>
-//             {sortedTasks.length === 0 && (
+//             {/* {sortedTasks.length === 0 && (
 //               <div className="text-center py-12 hidden lg:block">
 //                 <div className="text-gray-500 mb-4">Loading...</div>
 //                 <div className="text-sm text-gray-400">
 //                   Hold tight, we're fetching your tasks!
 //                 </div>
 //               </div>
-//             )}
+//             )} */}
 
 //             {/* Create/Edit Task Modal */}
 //             {(isModalOpen || isEditModalOpen) && (
@@ -1711,7 +1806,9 @@
 //                                 {getInitials(emp.name || "Unknown")}
 //                               </span>
 //                             )}
-//                             <span className="text-sm">{emp.name || "Unknown"}</span>
+//                             <span className="text-sm">
+//                               {emp.name || "Unknown"}
+//                             </span>
 //                             <button
 //                               type="button"
 //                               onClick={() => handleEmployeeRemove(emp.email)}
@@ -1882,7 +1979,7 @@
 //                     </div>
 //                     {isLoading && (
 //                       <div className="flex justify-center">
-//                         <Loader2 className="w-6 h-6 text-blue-600 animate-spin" />
+//                         {/* <Loader2 className="w-6 h-6 text-blue-600 animate-spin" /> */}
 //                       </div>
 //                     )}
 //                     <div className="flex justify-end space-x-4">
@@ -1902,11 +1999,22 @@
 //                       >
 //                         Cancel
 //                       </button>
+//                       {/* <button
+//                         type="submit"
+//                         className="px-4 sm:px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center space-x-2 text-sm"
+//                         disabled={isLoading}
+//                       >
+//                         <span>{editId ? "Update Task" : "Create Task"}</span>
+//                       </button> */}
+
 //                       <button
 //                         type="submit"
 //                         className="px-4 sm:px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center space-x-2 text-sm"
 //                         disabled={isLoading}
 //                       >
+//                         {isLoading ? (
+//                           <Loader2 className="w-4 h-4 animate-spin" />
+//                         ) : null}
 //                         <span>{editId ? "Update Task" : "Create Task"}</span>
 //                       </button>
 //                     </div>
@@ -1940,9 +2048,11 @@
 //                       <h2 className="text-lg sm:text-xl font-bold">
 //                         {viewTask.taskName}
 //                       </h2>
-//                       {isOverdue(viewTask.dueDate, viewTask.status) && (
-//                         <AlertCircle className="text-red-500 w-5 h-5" />
-//                       )}
+//                       {isOverdue(
+//                         viewTask.dueDate,
+//                         viewTask.dueTime,
+//                         viewTask.status
+//                       ) && <AlertCircle className="text-red-500 w-5 h-5" />}
 //                     </div>
 //                     <div className="flex space-x-2 mt-6">
 //                       <button
@@ -1987,7 +2097,9 @@
 //                           />
 //                         ) : (
 //                           <span className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-xs text-gray-600">
-//                             {getInitials(assignedByEmployee?.name || viewTask.assignedBy)}
+//                             {getInitials(
+//                               assignedByEmployee?.name || viewTask.assignedBy
+//                             )}
 //                           </span>
 //                         )}
 //                         <div className="flex flex-col">
@@ -2041,31 +2153,68 @@
 //                       <p className="text-sm text-gray-500 mb-2">Due Date</p>
 //                       <p className="text-sm">
 //                         {viewTask.dueDate
-//                           ? new Date(viewTask.dueDate).toLocaleDateString()
+//                           ? new Date(viewTask.dueDate)
+//                               .toLocaleDateString("en-GB", {
+//                                 day: "2-digit",
+//                                 month: "short", // gives "Aug"
+//                                 year: "numeric",
+//                               })
+//                               .replace(/ /g, "/") // replaces spaces with "/"
 //                           : "N/A"}
 //                         {viewTask.dueTime !== "N/A" && ` ${viewTask.dueTime}`}
 //                       </p>
 //                     </div>
+
+//                     {/* <div>
+//                       <p className="text-sm text-gray-500 mb-2">Assigned To</p>
+//                       <p className="text-sm text-gray-800 break-words">
+//                         {Array.isArray(viewTask.assignedTo) &&
+//                         viewTask.assignedTo.length > 0
+//                           ? viewTask.assignedTo
+//                               .map((emp) => emp.name)
+//                               .join(", ")
+//                           : "Unassigned"}
+//                       </p>
+//                     </div> */}
+
 //                     <div>
 //                       <p className="text-sm text-gray-500 mb-2">Assigned To</p>
 //                       <p className="text-sm text-gray-800 break-words">
 //                         {Array.isArray(viewTask.assignedTo) &&
 //                         viewTask.assignedTo.length > 0
-//                           ? viewTask.assignedTo.map((emp) => emp.name).join(", ")
+//                           ? viewTask.assignedTo
+//                               .map((emp) =>
+//                                 emp.email
+//                                   .split("@")[0]
+//                                   .replace(".", " ")
+//                                   .replace(/\b\w/g, (l) => l.toUpperCase())
+//                               )
+//                               .join(", ")
 //                           : "Unassigned"}
 //                       </p>
 //                     </div>
 //                     <div>
-//                       <p className="text-sm text-gray-500 mb-2">Assigned Date</p>
+//                       <p className="text-sm text-gray-500 mb-2">
+//                         Assigned Date
+//                       </p>
 //                       <p className="text-sm">
 //                         {viewTask.assignedDateTime
-//                           ? new Date(viewTask.assignedDateTime).toLocaleDateString()
+//                           ? new Date(viewTask.assignedDateTime)
+//                               .toLocaleDateString("en-GB", {
+//                                 day: "2-digit",
+//                                 month: "short", // "Aug"
+//                                 year: "numeric",
+//                               })
+//                               .replace(/ /g, "/") // 28/Aug/2025 format
 //                           : "N/A"}
 //                       </p>
 //                     </div>
+
 //                     <div>
 //                       <p className="text-sm text-gray-500 mb-2">Remark</p>
-//                       <p className="text-sm text-gray-800">{viewTask.remark || "None"}</p>
+//                       <p className="text-sm text-gray-800">
+//                         {viewTask.remark || "None"}
+//                       </p>
 //                     </div>
 //                   </div>
 //                   <div className="mb-6">
@@ -2073,7 +2222,10 @@
 //                     {viewTask.fileUrls && viewTask.fileUrls.length > 0 ? (
 //                       <div className="space-y-2">
 //                         {viewTask.fileUrls.map((url, index) => (
-//                           <div key={index} className="flex items-center space-x-2">
+//                           <div
+//                             key={index}
+//                             className="flex items-center space-x-2"
+//                           >
 //                             <Upload className="w-4 h-4 text-gray-500" />
 //                             <a
 //                               href={url}
@@ -2101,7 +2253,7 @@
 //                         onClick={() => setActiveTab("all")}
 //                         disabled={isLoading}
 //                       >
-//                        Activity Logs
+//                         Activity Logs
 //                       </button>
 //                       <button
 //                         className={`px-4 py-2 text-sm font-medium ${
@@ -2117,40 +2269,57 @@
 //                     </div>
 //                     {activeTab === "all" && (
 //                       <div className="space-y-4">
-//                         {(viewTask.comments || []).concat(viewTask.activityLogs || []).sort(
-//                           (a, b) => new Date(b.timestamp) - new Date(a.timestamp)
-//                         ).slice(0, showFullComments ? undefined : 3).map((item, index) => (
-//                           <div key={index} className="flex items-start space-x-3">
-//                             {/* Show image if available, else show avatar */}
-//                             {item.profileImage ? (
-//                               <img
-//                                 src={item.profileImage}
-//                                 alt={item.userName || item.user || "User"}
-//                                 className="w-8 h-8 rounded-full"
-//                               />
-//                             ) : (
-//                               <span className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-xs text-gray-600">
-//                                 {getInitials(item.userName || item.user || "Unknown")}
-//                               </span>
-//                             )}
-//                             <div>
-//                               <p className="text-sm font-medium">{item.userName || item.user || "Unknown"}</p>
-//                               <p className="text-xs text-gray-500">
-//                                 {new Date(item.timestamp).toLocaleString()}
-//                               </p>
-//                               <p className="text-sm text-gray-800">{item.message || item.action}</p>
+//                         {(viewTask.comments || [])
+//                           .concat(viewTask.activityLogs || [])
+//                           .sort(
+//                             (a, b) =>
+//                               new Date(b.timestamp) - new Date(a.timestamp)
+//                           )
+//                           .slice(0, showFullComments ? undefined : 3)
+//                           .map((item, index) => (
+//                             <div
+//                               key={index}
+//                               className="flex items-start space-x-3"
+//                             >
+//                               {/* Show image if available, else show avatar */}
+//                               {item.profileImage ? (
+//                                 <img
+//                                   src={item.profileImage}
+//                                   alt={item.userName || item.user || "User"}
+//                                   className="w-8 h-8 rounded-full"
+//                                 />
+//                               ) : (
+//                                 <span className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-xs text-gray-600">
+//                                   {getInitials(
+//                                     item.userName || item.user || "Unknown"
+//                                   )}
+//                                 </span>
+//                               )}
+//                               <div>
+//                                 <p className="text-sm font-medium">
+//                                   {item.userName || item.user || "Unknown"}
+//                                 </p>
+//                                 <p className="text-xs text-gray-500">
+//                                   {new Date(item.timestamp).toLocaleString()}
+//                                 </p>
+//                                 <p className="text-sm text-gray-800">
+//                                   {item.message || item.action}
+//                                 </p>
+//                               </div>
 //                             </div>
-//                           </div>
-//                         ))}
-//                         {(viewTask.comments?.length + viewTask.activityLogs?.length > 3 && !showFullComments) && (
-//                           <button
-//                             onClick={() => setShowFullComments(true)}
-//                             className="text-blue-600 hover:underline text-sm"
-//                             disabled={isLoading}
-//                           >
-//                             Show more
-//                           </button>
-//                         )}
+//                           ))}
+//                         {viewTask.comments?.length +
+//                           viewTask.activityLogs?.length >
+//                           3 &&
+//                           !showFullComments && (
+//                             <button
+//                               onClick={() => setShowFullComments(true)}
+//                               className="text-blue-600 hover:underline text-sm"
+//                               disabled={isLoading}
+//                             >
+//                               Show more
+//                             </button>
+//                           )}
 //                       </div>
 //                     )}
 
@@ -2175,25 +2344,36 @@
 //                             <Send className="w-5 h-5" />
 //                           </button>
 //                         </form>
-//                         {(viewTask.comments || []).sort(
-//                           (a, b) => new Date(b.timestamp) - new Date(a.timestamp)
-//                         ).slice(0, showFullComments ? undefined : 3).map((comment, index) => (
-//                           <div key={index} className="flex items-start space-x-3">
-//                             <img
-//                               src={comment.profileImage || ""}
-//                               alt={comment.userName || "User"}
-//                               className="w-8 h-8 rounded-full"
-//                             />
-//                             <div>
-//                               <p className="text-sm font-medium">{comment.userName || "Unknown"}</p>
-//                               <p className="text-xs text-gray-500">
-//                                 {new Date(comment.timestamp).toLocaleString()}
-//                               </p>
-//                               <p className="text-sm text-gray-800">{comment.message}</p>
+//                         {(viewTask.comments || [])
+//                           .sort(
+//                             (a, b) =>
+//                               new Date(b.timestamp) - new Date(a.timestamp)
+//                           )
+//                           .slice(0, showFullComments ? undefined : 3)
+//                           .map((comment, index) => (
+//                             <div
+//                               key={index}
+//                               className="flex items-start space-x-3"
+//                             >
+//                               <img
+//                                 src={comment.profileImage || ""}
+//                                 alt={comment.userName || "User"}
+//                                 className="w-8 h-8 rounded-full"
+//                               />
+//                               <div>
+//                                 <p className="text-sm font-medium">
+//                                   {comment.userName || "Unknown"}
+//                                 </p>
+//                                 <p className="text-xs text-gray-500">
+//                                   {new Date(comment.timestamp).toLocaleString()}
+//                                 </p>
+//                                 <p className="text-sm text-gray-800">
+//                                   {comment.message}
+//                                 </p>
+//                               </div>
 //                             </div>
-//                           </div>
-//                         ))}
-//                         {(viewTask.comments?.length > 3 && !showFullComments) && (
+//                           ))}
+//                         {viewTask.comments?.length > 3 && !showFullComments && (
 //                           <button
 //                             onClick={() => setShowFullComments(true)}
 //                             className="text-blue-600 hover:underline text-sm"
@@ -2212,10 +2392,14 @@
 //             {/* Delete Confirmation Modal */}
 //             {showDeleteConfirm && taskToDelete && (
 //               <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
-//                 <div ref={deleteModalRef} className="bg-white rounded-lg shadow-xl p-4 sm:p-6 max-w-md w-full">
+//                 <div
+//                   ref={deleteModalRef}
+//                   className="bg-white rounded-lg shadow-xl p-4 sm:p-6 max-w-md w-full"
+//                 >
 //                   <h3 className="text-lg font-bold mb-4">Confirm Delete</h3>
 //                   <p className="text-sm text-gray-600 mb-6">
-//                     Are you sure you want to delete the task "{taskToDelete.taskName}"? This action cannot be undone.
+//                     Are you sure you want to delete the task "
+//                     {taskToDelete.taskName}"? This action cannot be undone.
 //                   </p>
 //                   <div className="flex justify-end space-x-4">
 //                     <button
@@ -2240,7 +2424,10 @@
 //             {/* Reminder Email Modal */}
 //             {showRemainderEmailModal && remainderEmailTask && (
 //               <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
-//                 <div ref={reminderModalRef} className="bg-white rounded-lg shadow-xl p-4 sm:p-6 max-w-md w-full relative">
+//                 <div
+//                   ref={reminderModalRef}
+//                   className="bg-white rounded-lg shadow-xl p-4 sm:p-6 max-w-md w-full relative"
+//                 >
 //                   <button
 //                     onClick={() => setShowRemainderEmailModal(false)}
 //                     className="text-gray-500 hover:text-gray-700 absolute top-2 right-2"
@@ -2248,9 +2435,12 @@
 //                   >
 //                     <X className="w-5 h-5" />
 //                   </button>
-//                   <h3 className="text-lg font-bold mb-4">Send Reminder Email</h3>
+//                   <h3 className="text-lg font-bold mb-4">
+//                     Send Reminder Email
+//                   </h3>
 //                   <p className="text-sm text-gray-600 mb-4">
-//                     Sending reminder for task: <strong>{remainderEmailTask.taskName}</strong>
+//                     Sending reminder for task:{" "}
+//                     <strong>{remainderEmailTask.taskName}</strong>
 //                   </p>
 //                   <textarea
 //                     value={remainderEmailBody}
@@ -2292,7 +2482,9 @@
 //             {toast.show && (
 //               <div
 //                 className={`fixed bottom-4 right-4 p-4 rounded-md shadow-lg text-sm ${
-//                   toast.type === "success" ? "bg-green-600 text-white" : "bg-red-600 text-white"
+//                   toast.type === "success"
+//                     ? "bg-green-600 text-white"
+//                     : "bg-red-600 text-white"
 //                 }`}
 //               >
 //                 {toast.message}
@@ -2306,6 +2498,12 @@
 // };
 
 // export default AdmintaskPage;
+
+
+// =============================================BELOW IS THE CODE FOR MULTIPLE FILTER SELECTION=================================================
+// =============================================BELOW IS THE CODE FOR MULTIPLE FILTER SELECTION=================================================
+
+
 
 import React, { useState, useEffect, useRef } from "react";
 import {
@@ -2342,6 +2540,7 @@ const formatDisplayDate = (dateStr) => {
 };
 
 const taskTypes = ["Auctions", "General", "Reminder"];
+// const taskTypes = [ "General"];
 const priorities = ["High", "Medium", "Low"];
 const statusOptions = [
   { value: "Open", label: "Open" },
@@ -2420,10 +2619,10 @@ const AdmintaskPage = () => {
   const [showSidebar, setShowSidebar] = useState(false);
   const [tasks, setTasks] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterStatus, setFilterStatus] = useState("all");
+  const [filterStatus, setFilterStatus] = useState([]);
   const [filterPriority, setFilterPriority] = useState("all");
   const [filterTaskType, setFilterTaskType] = useState("all");
-  const [filterEmployee, setFilterEmployee] = useState("all");
+  const [filterEmployee, setFilterEmployee] = useState([]);
   const [sortBy, setSortBy] = useState("taskId"); // Default sort by Task ID
   const [dueDateSort, setDueDateSort] = useState("none");
   const [showDueDateSortDropdown, setShowDueDateSortDropdown] = useState(false);
@@ -2440,6 +2639,7 @@ const AdmintaskPage = () => {
   const [employees, setEmployees] = useState([]);
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [employeesFetched, setEmployeesFetched] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState(null);
 
@@ -2448,7 +2648,10 @@ const AdmintaskPage = () => {
   const [showModalEmployeeDropdown, setShowModalEmployeeDropdown] =
     useState(false); // For edit modal dropdown
 
+  const [showStatusDropdown, setShowStatusDropdown] = useState(false);
+
   const [employeeSearchTerm, setEmployeeSearchTerm] = useState("");
+  const [filterEmployeeSearch, setFilterEmployeeSearch] = useState("");
   const [showRemainderEmailModal, setShowRemainderEmailModal] = useState(false);
   const [remainderEmailTask, setRemainderEmailTask] = useState(null);
   const [remainderEmailBody, setRemainderEmailBody] = useState("");
@@ -2469,6 +2672,7 @@ const AdmintaskPage = () => {
   // SEPARATE REFS FOR FILTER AND MODAL DROPDOWNS
   const employeeDropdownRef = useRef(null); // For filter dropdown
   const modalEmployeeDropdownRef = useRef(null); // For edit modal dropdown
+  const statusDropdownRef = useRef(null);
   const dueDateDropdownRef = useRef(null);
   const deleteModalRef = useRef(null);
   const reminderModalRef = useRef(null);
@@ -2481,20 +2685,20 @@ const AdmintaskPage = () => {
   const isFilterApplied = () => {
     return (
       searchTerm !== "" ||
-      filterStatus !== "all" ||
+      filterStatus.length > 0 ||
       filterPriority !== "all" ||
       filterTaskType !== "all" ||
-      filterEmployee !== "all" ||
+      filterEmployee.length > 0 ||
       dueDateSort !== "none"
     );
   };
 
   const clearAllFilters = () => {
     setSearchTerm("");
-    setFilterStatus("all");
+    setFilterStatus([]);
     setFilterPriority("all");
     setFilterTaskType("all");
-    setFilterEmployee("all");
+    setFilterEmployee([]);
     setDueDateSort("none");
   };
 
@@ -2524,6 +2728,15 @@ const AdmintaskPage = () => {
         setShowModalEmployeeDropdown(false);
       }
 
+      // Status dropdown
+      if (
+        showStatusDropdown &&
+        statusDropdownRef.current &&
+        !statusDropdownRef.current.contains(event.target)
+      ) {
+        setShowStatusDropdown(false);
+      }
+
       // Due date dropdown
       if (
         showDueDateSortDropdown &&
@@ -2538,6 +2751,7 @@ const AdmintaskPage = () => {
   }, [
     showEmployeeDropdown,
     showModalEmployeeDropdown,
+    showStatusDropdown,
     showDueDateSortDropdown,
   ]);
 
@@ -2603,9 +2817,17 @@ const AdmintaskPage = () => {
     updateUnseenComments(newUnseen);
   }, [tasks]);
 
+  // Fetch employees on token change
   useEffect(() => {
     const fetchEmployees = async () => {
+      if (!token) {
+        setError("No authentication token found");
+        console.error("No token found in localStorage");
+        return;
+      }
+
       try {
+        setIsLoading(true);
         const response = await fetch(
           "https://task-manager-backend-vqen.onrender.com/api/admin/allemployees",
           {
@@ -2631,14 +2853,25 @@ const AdmintaskPage = () => {
             }))
           : [];
         setEmployees(validEmployees);
+        setEmployeesFetched(true);
       } catch (err) {
         setError(err.message);
         console.error("Error fetching employees:", err);
+      } finally {
+        setIsLoading(false);
       }
     };
 
+    fetchEmployees();
+  }, [token]);
+
+  // Fetch tasks after employees are fetched
+  useEffect(() => {
     const fetchTasks = async () => {
+      if (!token || !employeesFetched) return;
+
       try {
+        setIsLoading(true);
         const response = await fetch(
           "https://task-manager-backend-vqen.onrender.com/api/admin/gettasks",
           {
@@ -2708,16 +2941,13 @@ const AdmintaskPage = () => {
       } catch (err) {
         setError(err.message);
         console.error("Error fetching tasks:", err);
+      } finally {
+        setIsLoading(false);
       }
     };
 
-    if (token) {
-      fetchEmployees().then(() => fetchTasks());
-    } else {
-      setError("No authentication token found");
-      console.error("No token found in localStorage");
-    }
-  }, [token, employees]);
+    fetchTasks();
+  }, [token, employeesFetched, employees]);
 
   useEffect(() => {
     tasks.forEach((task) => {
@@ -3163,6 +3393,18 @@ const AdmintaskPage = () => {
     }
   };
 
+  const toggleStatus = (value) => {
+    setFilterStatus((prev) =>
+      prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value]
+    );
+  };
+
+  const toggleEmployee = (email) => {
+    setFilterEmployee((prev) =>
+      prev.includes(email) ? prev.filter((e) => e !== email) : [...prev, email]
+    );
+  };
+
   const filteredTasks = tasks.filter((task) => {
     const displayStatus = getDisplayStatus(task);
     const matchesSearch =
@@ -3173,14 +3415,14 @@ const AdmintaskPage = () => {
         ? task.description.toLowerCase().includes(searchTerm.toLowerCase())
         : false);
     const matchesStatus =
-      filterStatus === "all" || displayStatus === filterStatus;
+      filterStatus.length === 0 || filterStatus.includes(displayStatus);
     const matchesPriority =
       filterPriority === "all" || task.priority === filterPriority;
     const matchesTaskType =
       filterTaskType === "all" || task.taskType === filterTaskType;
     const matchesEmployee =
-      filterEmployee === "all" ||
-      task.assignedTo.some((emp) => emp.email === filterEmployee);
+      filterEmployee.length === 0 ||
+      task.assignedTo.some((emp) => filterEmployee.includes(emp.email));
     return (
       matchesSearch &&
       matchesStatus &&
@@ -3213,7 +3455,7 @@ const AdmintaskPage = () => {
     }
   });
 
-  const filteredEmployees = employees.filter(
+  const filteredEmployeesForModal = employees.filter(
     (emp) =>
       (emp.name &&
         typeof emp.name === "string" &&
@@ -3221,6 +3463,16 @@ const AdmintaskPage = () => {
       (emp.department &&
         typeof emp.department === "string" &&
         emp.department.toLowerCase().includes(employeeSearchTerm.toLowerCase()))
+  );
+
+  const filteredEmployeesForFilter = employees.filter(
+    (emp) =>
+      (emp.name &&
+        typeof emp.name === "string" &&
+        emp.name.toLowerCase().includes(filterEmployeeSearch.toLowerCase())) ||
+      (emp.department &&
+        typeof emp.department === "string" &&
+        emp.department.toLowerCase().includes(filterEmployeeSearch.toLowerCase()))
   );
 
   const getStatusColor = (status) => {
@@ -3303,6 +3555,16 @@ const AdmintaskPage = () => {
   const assignedByEmployee =
     viewTask && employees.find((emp) => emp.email === viewTask.assignedBy);
 
+  // Tooltip component
+  const Tooltip = ({ children, text }) => (
+    <span className="relative group">
+      {children}
+      <span className="absolute left-1/2 transform -translate-x-1/2 -top-7 bg-black text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity z-50 whitespace-nowrap pointer-events-none">
+        {text}
+      </span>
+    </span>
+  );
+
   return (
     <div className="flex min-h-screen bg-white relative">
       <div className="sticky top-0 h-screen z-40">
@@ -3315,6 +3577,12 @@ const AdmintaskPage = () => {
             {error && (
               <div className="mb-4 p-4 bg-red-100 text-red-800 rounded">
                 {error}
+              </div>
+            )}
+            {isLoading && (
+              <div className="mb-4 p-4 bg-blue-100 text-blue-800 rounded flex items-center justify-center">
+                <Loader2 className="w-6 h-6 animate-spin mr-2" />
+                Loading tasks...
               </div>
             )}
             <div className="mb-6">
@@ -3404,19 +3672,86 @@ const AdmintaskPage = () => {
                     disabled={isLoading}
                   />
                 </div>
-                <select
-                  value={filterStatus}
-                  onChange={(e) => setFilterStatus(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs sm:text-sm w-full sm:w-auto"
-                  disabled={isLoading}
-                >
-                  <option value="all">All Status</option>
-                  {statusOptions.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
+                {/* --- Status Filter Multi-select --- */}
+                <div className="relative min-w-[180px] max-w-full sm:min-w-[220px] sm:max-w-[220px]">
+                  <div
+                    className="px-3 py-2 border border-gray-300 rounded-md bg-white cursor-pointer flex items-center justify-between w-full text-xs sm:text-sm"
+                    onClick={() => setShowStatusDropdown(!showStatusDropdown)}
+                  >
+                    <span className="flex flex-wrap items-center gap-1">
+                      {filterStatus.length === 0 ? (
+                        <>
+                          <span className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center text-xs text-gray-600 mr-2">
+                            All
+                          </span>
+                          All Status
+                        </>
+                      ) : (
+                        <>
+                          <span className="flex flex-wrap gap-1">
+                            {filterStatus.slice(0, 5).map((status, idx) => (
+                              <Tooltip key={status} text={status}>
+                                <span
+                                  className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center text-xs text-blue-800 border border-gray-300"
+                                >
+                                  {status[0]}
+                                </span>
+                              </Tooltip>
+                            ))}
+                            {filterStatus.length > 5 && (
+                              <Tooltip text={filterStatus.slice(5).join(", ")}>
+                                <span className="w-5 h-5 rounded-full bg-gray-300 flex items-center justify-center text-xs text-gray-700 ml-1">
+                                  +{filterStatus.length - 5}
+                                </span>
+                              </Tooltip>
+                            )}
+                          </span>
+                          <span className="ml-2">Applied Status</span>
+                        </>
+                      )}
+                    </span>
+                  </div>
+                  {showStatusDropdown && (
+                    <div
+                      ref={statusDropdownRef}
+                      className="absolute z-20 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-64 overflow-y-auto min-w-[180px] max-w-full sm:min-w-[220px] sm:max-w-[220px]"
+                    >
+                      <label className="flex items-center px-3 py-2 hover:bg-gray-100 cursor-pointer text-xs sm:text-sm">
+                        <input
+                          type="checkbox"
+                          checked={filterStatus.length === 0}
+                          onChange={() => setFilterStatus([])}
+                          className="mr-2"
+                          disabled={isLoading}
+                        />
+                        <span className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center text-xs text-gray-600 mr-2">
+                          All
+                        </span>
+                        <span>All Status</span>
+                      </label>
+                      {statusOptions.map((opt) => (
+                        <label
+                          key={opt.value}
+                          className="flex items-center px-3 py-2 hover:bg-gray-100 cursor-pointer text-xs sm:text-sm"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={filterStatus.includes(opt.value)}
+                            onChange={() => toggleStatus(opt.value)}
+                            className="mr-2"
+                            disabled={isLoading}
+                          />
+                          <Tooltip text={opt.label}>
+                            <span className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center text-xs text-blue-800 mr-2 border border-gray-300">
+                              {opt.label[0]}
+                            </span>
+                          </Tooltip>
+                          {opt.label}
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </div>
                 <select
                   value={filterPriority}
                   onChange={(e) => setFilterPriority(e.target.value)}
@@ -3430,101 +3765,120 @@ const AdmintaskPage = () => {
                     </option>
                   ))}
                 </select>
-                <div className="relative w-full sm:w-56">
+                {/* --- Employee Filter Multi-select --- */}
+                <div className="relative min-w-[180px] max-w-full sm:min-w-[220px] sm:max-w-[220px]">
                   <div
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white cursor-pointer flex items-center space-x-2"
-                    onClick={() =>
-                      setShowEmployeeDropdown(!showEmployeeDropdown)
-                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white cursor-pointer flex items-center justify-between text-xs sm:text-sm"
+                    onClick={() => setShowEmployeeDropdown(!showEmployeeDropdown)}
                   >
-                    {filterEmployee !== "all" &&
-                    employees.find((emp) => emp.email === filterEmployee)
-                      ?.avatar ? (
-                      <img
-                        src={
-                          employees.find((emp) => emp.email === filterEmployee)
-                            ?.avatar
-                        }
-                        alt="Profile"
-                        className="w-5 h-5 rounded-full"
-                      />
-                    ) : (
-                      <span className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center text-xs text-gray-600">
-                        {filterEmployee === "all"
-                          ? "All"
-                          : getInitials(
-                              employees.find(
-                                (emp) => emp.email === filterEmployee
-                              )?.name || "U"
+                    <span className="flex flex-wrap items-center gap-1">
+                      {filterEmployee.length === 0 ? (
+                        <>
+                          <span className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center text-xs text-gray-600 mr-2">
+                            All
+                          </span>
+                          All Employees
+                        </>
+                      ) : (
+                        <>
+                          <span className="flex flex-wrap gap-1">
+                            {filterEmployee.slice(0, 5).map((email, idx) => {
+                              const emp = employees.find((e) => e.email === email);
+                              return (
+                                <Tooltip key={email} text={emp?.name || email}>
+                                  {emp?.avatar ? (
+                                    <img
+                                      src={emp.avatar}
+                                      alt={emp.name}
+                                      className="w-5 h-5 rounded-full border border-gray-300"
+                                    />
+                                  ) : (
+                                    <span
+                                      className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center text-xs text-gray-600"
+                                    >
+                                      {getInitials(emp?.name || "U")}
+                                    </span>
+                                  )}
+                                </Tooltip>
+                              );
+                            })}
+                            {filterEmployee.length > 5 && (
+                              <Tooltip text={filterEmployee.slice(5).map(email => {
+                                const emp = employees.find(e => e.email === email);
+                                return emp?.name || email;
+                              }).join(", ")}>
+                                <span className="w-5 h-5 rounded-full bg-gray-300 flex items-center justify-center text-xs text-gray-700 ml-1">
+                                  +{filterEmployee.length - 5}
+                                </span>
+                              </Tooltip>
                             )}
-                      </span>
-                    )}
-                    <div className="flex flex-col">
-                      <span className="text-gray-700 text-sm leading-tight truncate w-40">
-                        {filterEmployee === "all"
-                          ? "All Employees"
-                          : employees.find(
-                              (emp) => emp.email === filterEmployee
-                            )?.name || "Unknown"}
-                      </span>
-                      {filterEmployee !== "all" && (
-                        <span className="text-gray-400 text-xs leading-tight truncate w-40">
-                          {employees.find((emp) => emp.email === filterEmployee)
-                            ?.position || ""}
-                        </span>
+                          </span>
+                          {/* <span className="ml-2">Employees ({filterEmployee.length})</span> */}
+                        </>
                       )}
-                    </div>
+                    </span>
+                    {/* No filter icon */}
                   </div>
                   {showEmployeeDropdown && (
                     <div
                       ref={employeeDropdownRef}
-                      className="absolute z-20 mt-1 w-full sm:w-56 bg-white border border-gray-300 rounded-md shadow-lg max-h-64 overflow-y-auto"
+                      className="absolute z-20 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-64 overflow-y-auto min-w-[180px] max-w-full sm:min-w-[220px] sm:max-w-[220px]"
                     >
-                      <div
-                        className="flex items-center px-3 py-2 hover:bg-gray-100 cursor-pointer"
-                        onClick={() => {
-                          setFilterEmployee("all");
-                          setShowEmployeeDropdown(false);
-                        }}
-                      >
+                      <input
+                        type="text"
+                        value={filterEmployeeSearch}
+                        onChange={(e) => setFilterEmployeeSearch(e.target.value)}
+                        className="w-full px-3 py-2 border-b border-gray-300 text-xs sm:text-sm"
+                        placeholder="Search by name "
+                        disabled={isLoading}
+                      />
+                      <label className="flex items-center px-3 py-2 hover:bg-gray-100 cursor-pointer text-xs sm:text-sm">
+                        <input
+                          type="checkbox"
+                          checked={filterEmployee.length === 0}
+                          onChange={() => setFilterEmployee([])}
+                          className="mr-2"
+                          disabled={isLoading}
+                        />
                         <span className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center text-xs text-gray-600 mr-2">
                           All
                         </span>
-                        <div>
-                          <span className="text-sm text-gray-900">
-                            All Employees
-                          </span>
-                        </div>
-                      </div>
-                      {filteredEmployees.map((emp) => (
-                        <div
+                        <span>All Employees</span>
+                      </label>
+                      {filteredEmployeesForFilter.map((emp) => (
+                        <label
                           key={emp.email}
-                          className="flex items-center px-3 py-2 hover:bg-gray-100 cursor-pointer"
-                          onClick={() => {
-                            setFilterEmployee(emp.email);
-                            setShowEmployeeDropdown(false);
-                          }}
+                          className="flex items-center px-3 py-2 hover:bg-gray-100 cursor-pointer text-xs sm:text-sm"
                         >
-                          {emp.avatar ? (
-                            <img
-                              src={emp.avatar}
-                              alt={emp.name}
-                              className="w-5 h-5 rounded-full mr-2"
-                            />
-                          ) : (
-                            <span className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center text-xs text-gray-600 mr-2">
-                              {getInitials(emp.name || "Unknown")}
-                            </span>
-                          )}
+                          <input
+                            type="checkbox"
+                            checked={filterEmployee.includes(emp.email)}
+                            onChange={() => toggleEmployee(emp.email)}
+                            className="mr-2"
+                            disabled={isLoading}
+                          />
+                          <Tooltip text={emp.name || emp.email}>
+                            {emp.avatar ? (
+                              <img
+                                src={emp.avatar}
+                                alt={emp.name}
+                                className="w-5 h-5 rounded-full mr-2"
+                              />
+                            ) : (
+                              <span className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center text-xs text-gray-600 mr-2">
+                                {getInitials(emp.name || "Unknown")}
+                              </span>
+                            )}
+                          </Tooltip>
                           <div>
-                            <span className="text-sm text-gray-900">
+                            <span className="text-gray-900">
                               {emp.name || "Unknown"}
                             </span>
                             <span className="block text-xs text-gray-500">
                               {emp.position || "Unknown"}
                             </span>
                           </div>
-                        </div>
+                        </label>
                       ))}
                     </div>
                   )}
@@ -3532,8 +3886,20 @@ const AdmintaskPage = () => {
               </div>
             </div>
             <div className="hidden lg:block">
-              <div className="w-full overflow-y-auto max-h-[70vh]">
-                <table className="w-full text-xs sm:text-sm table-fixed">
+              {sortedTasks.length === 0 ? (
+                <div className="text-center py-12">
+                  <div className="mb-4">
+                    <Search className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">No tasks found</h3>
+                    <p className="text-gray-500 mb-4">No tasks match your current filters</p>
+                  </div>
+                  <div className="text-sm text-gray-400">
+                    Try adjusting your search or filters to find what you're looking for
+                  </div>
+                </div>
+              ) : (
+                <div className="w-full overflow-y-auto max-h-[70vh]">
+                  <table className="w-full text-xs sm:text-sm table-fixed">
                   <thead className="bg-gray-100 border-gray-700 rounded-full sticky top-0 z-10 border-b border-gray-200">
                     <tr>
                       <th className="w-20 text-center py-3 px-2 sm:px-4 font-medium text-gray-700 whitespace-nowrap">
@@ -3799,21 +4165,24 @@ const AdmintaskPage = () => {
                   </tbody>
                 </table>
               </div>
+            )}
             </div>
-            <div className="lg:hidden grid gap-4">
+            <div className="lg:hidden  grid gap-4">
               {sortedTasks.length === 0 ? (
-                <div className="text-center py-12 text-gray-500">
+                <div className="text-center py-12">
                   <div className="mb-4">
-                    No tasks found matching your criteria
+                    <Search className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">No tasks found</h3>
+                    <p className="text-gray-500 mb-4">No tasks match your current filters</p>
                   </div>
                   <div className="text-sm text-gray-400">
-                    Try adjusting your search or filters
+                    Try adjusting your search or filters to find what you're looking for
                   </div>
                 </div>
               ) : (
                 sortedTasks.map((task) => (
                   <div
-                    key={task._id}
+                    key={task?._id}
                     className={`border rounded-lg p-4 shadow-md bg-white hover:shadow-lg transition-shadow duration-200 ${
                       isOverdue(task.dueDate, task.dueTime, task.status)
                         ? "bg-red-50"
@@ -3963,20 +4332,182 @@ const AdmintaskPage = () => {
                         {task.description || "None"}
                       </div>
                     </div>
+                    <>
+                      <div className="mb-6">
+                        <p className="text-sm text-gray-500 mb-2">Attachments</p>
+                        {Array.isArray(task?.fileUrls) && task.fileUrls.length > 0 ? (
+                          <div className="space-y-2">
+                            {task.fileUrls.map((url, index) => (
+                              <div
+                                key={index}
+                                className="flex items-center space-x-2"
+                              >
+                                <Upload className="w-4 h-4 text-gray-500" />
+                                <a
+                                  href={url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-sm text-blue-600 hover:underline truncate"
+                                >
+                                  {url.split("/").pop()}
+                                </a>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-sm text-gray-800">No attachments</p>
+                        )}
+                      </div>
+                      <div className="mb-6">
+                        <div className="flex border-b border-gray-200 mb-4">
+                          <button
+                            className={`px-4 py-2 text-sm font-medium ${
+                              activeTab === "all"
+                                ? "border-b-2 border-blue-600 text-blue-600"
+                                : "text-gray-500 hover:text-gray-700"
+                            }`}
+                            onClick={() => setActiveTab("all")}
+                            disabled={isLoading}
+                          >
+                            Activity Logs
+                          </button>
+                          <button
+                            className={`px-4 py-2 text-sm font-medium ${
+                              activeTab === "comments"
+                                ? "border-b-2 border-blue-600 text-blue-600"
+                                : "text-gray-500 hover:text-gray-700"
+                            }`}
+                            onClick={() => setActiveTab("comments")}
+                            disabled={isLoading}
+                          >
+                            Comments
+                          </button>
+                        </div>
+                        {activeTab === "all" && (
+                          <div className="space-y-4">
+                            {(Array.isArray(viewTask?.comments) ? viewTask.comments : [])
+                              .concat(Array.isArray(viewTask?.activityLogs) ? viewTask.activityLogs : [])
+                              .sort(
+                                (a, b) =>
+                                  new Date(b.timestamp) - new Date(a.timestamp)
+                              )
+                              .slice(0, showFullComments ? undefined : 3)
+                              .map((item, index) => (
+                                <div
+                                  key={index}
+                                  className="flex items-start space-x-3"
+                                >
+                                  {/* Show image if available, else show avatar */}
+                                  {item.profileImage ? (
+                                    <img
+                                      src={item.profileImage}
+                                      alt={item.userName || item.user || "User"}
+                                      className="w-8 h-8 rounded-full"
+                                    />
+                                  ) : (
+                                    <span className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-xs text-gray-600">
+                                      {getInitials(
+                                        item.userName || item.user || "Unknown"
+                                      )}
+                                    </span>
+                                  )}
+                                  <div>
+                                    <p className="text-sm font-medium">
+                                      {item.userName || item.user || "Unknown"}
+                                    </p>
+                                    <p className="text-xs text-gray-500">
+                                      {new Date(item.timestamp).toLocaleString()}
+                                    </p>
+                                    <p className="text-sm text-gray-800">
+                                      {item.message || item.action}
+                                    </p>
+                                  </div>
+                                </div>
+                              ))}
+                            {(Array.isArray(viewTask?.comments) ? viewTask.comments.length : 0) +
+                              (Array.isArray(viewTask?.activityLogs) ? viewTask.activityLogs.length : 0) >
+                              3 &&
+                              !showFullComments && (
+                                <button
+                                  onClick={() => setShowFullComments(true)}
+                                  className="text-blue-600 hover:underline text-sm"
+                                  disabled={isLoading}
+                                >
+                                  Show more
+                                </button>
+                              )}
+                          </div>
+                        )}
+
+                        {activeTab === "comments" && (
+                          <div className="space-y-4">
+                            <form
+                              onSubmit={handleAddComment}
+                              className="flex items-center space-x-2"
+                            >
+                              <input
+                                type="text"
+                                name="comment"
+                                placeholder="Add a comment..."
+                                className="flex-1 h-10 px-3 py-2 border mb-4 border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                                disabled={isLoading}
+                              />
+                              <button
+                                type="submit"
+                                className="p-2  bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                                disabled={isLoading}
+                              >
+                                <Send className="w-5 h-5" />
+                              </button>
+                            </form>
+                            {(Array.isArray(viewTask?.comments) ? viewTask.comments : [])
+                              .sort(
+                                (a, b) =>
+                                  new Date(b.timestamp) - new Date(a.timestamp)
+                              )
+                              .slice(0, showFullComments ? undefined : 3)
+                              .map((comment, index) => (
+                                <div
+                                  key={index}
+                                  className="flex items-start space-x-3"
+                                >
+                                  <img
+                                    src={comment.profileImage || ""}
+                                    alt={comment.userName || "User"}
+                                    className="w-8 h-8 rounded-full"
+                                  />
+                                  <div>
+                                    <p className="text-sm font-medium">
+                                      {comment.userName || "Unknown"}
+                                    </p>
+                                    <p className="text-xs text-gray-500">
+                                      {new Date(comment.timestamp).toLocaleString()}
+                                    </p>
+                                    <p className="text-sm text-gray-800">
+                                      {comment.message}
+                                    </p>
+                                  </div>
+                                </div>
+                              ))}
+                            {(Array.isArray(viewTask?.comments) ? viewTask.comments.length : 0) > 3 &&
+                              !showFullComments && (
+                                <button
+                                  onClick={() => setShowFullComments(true)}
+                                  className="text-blue-600 hover:underline text-sm"
+                                  disabled={isLoading}
+                                >
+                                  Show more
+                                </button>
+                              )}
+                          </div>
+                        )}
+                      </div>
+                    </>
                   </div>
                 ))
               )}
             </div>
-            {sortedTasks.length === 0 && (
-              <div className="text-center py-12 hidden lg:block">
-                <div className="text-gray-500 mb-4">Loading...</div>
-                <div className="text-sm text-gray-400">
-                  Hold tight, we're fetching your tasks!
-                </div>
-              </div>
-            )}
-
-            {/* Create/Edit Task Modal */}
+ {/* Create/Edit Task Modal */}
             {(isModalOpen || isEditModalOpen) && (
               <div
                 className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4"
@@ -4064,7 +4595,7 @@ const AdmintaskPage = () => {
                           ref={modalEmployeeDropdownRef} // Use modal-specific ref
                           className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto"
                         >
-                          {filteredEmployees.map((employee) => (
+                          {filteredEmployeesForFilter.map((employee) => (
                             <button
                               key={employee.id}
                               type="button"
@@ -4806,4 +5337,4 @@ const AdmintaskPage = () => {
   );
 };
 
-export default AdmintaskPage;
+export default AdmintaskPage;  

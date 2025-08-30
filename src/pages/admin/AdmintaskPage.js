@@ -1,3 +1,4 @@
+
 // =============================================BELOW IS THE CODE FOR MULTIPLE FILTER SELECTION=================================================
 // =============================================BELOW IS THE CODE FOR MULTIPLE FILTER SELECTION=================================================
 // =============================================BELOW IS THE CODE FOR MULTIPLE FILTER SELECTION=================================================
@@ -91,18 +92,54 @@ const generateTaskId = (tasks) => {
   return todayCount + 1;
 };
 
+// const isOverdue = (dueDate, dueTime, status) => {
+//   if (!dueDate) return false;
+//   const due = new Date(dueDate);
+//   // Ensure dueTime is a valid string
+//   if (typeof dueTime === "string" && dueTime !== "N/A") {
+//     const [hours, minutes] = dueTime.split(":").map(Number);
+//     due.setHours(hours || 23, minutes || 59, 0, 0);
+//   } else {
+//     due.setHours(23, 59, 59, 999);
+//   }
+//   return due < new Date() && status !== "Complete";
+// };
+
+
+
+// ==================CORRECTED THE isOverdue FUNCTION TO HANDLE INVALID DUE TIME=========================
 const isOverdue = (dueDate, dueTime, status) => {
   if (!dueDate) return false;
-  const due = new Date(dueDate);
-  // Ensure dueTime is a valid string
+
+  // Ensure dueDate is in YYYY-MM-DD format
+  let due;
+  try {
+    due = new Date(dueDate); // Should work for YYYY-MM-DD
+    if (isNaN(due)) {
+      console.error(`Invalid dueDate format: ${dueDate}`);
+      return false; // Prevent invalid date from causing issues
+    }
+  } catch (error) {
+    console.error(`Error parsing dueDate: ${dueDate}`, error);
+    return false;
+  }
+
+  // Set time if provided
   if (typeof dueTime === "string" && dueTime !== "N/A") {
     const [hours, minutes] = dueTime.split(":").map(Number);
-    due.setHours(hours || 23, minutes || 59, 0, 0);
+    if (!isNaN(hours) && !isNaN(minutes)) {
+      due.setHours(hours, minutes, 0, 0);
+    } else {
+      due.setHours(23, 59, 59, 999); // Default to end of day if time is invalid
+    }
   } else {
-    due.setHours(23, 59, 59, 999);
+    due.setHours(23, 59, 59, 999); // Default to end of day
   }
-  return due < new Date() && status !== "Complete";
+
+  const now = new Date();
+  return due < now && status !== "Complete";
 };
+
 
 const getInitials = (name) => {
   if (!name || typeof name !== "string") return "UN";
@@ -350,79 +387,176 @@ const AdmintaskPage = () => {
       }
     };
 
-    const fetchTasks = async () => {
-      try {
-        const response = await fetch(
-          "https://task-manager-backend-vqen.onrender.com/api/admin/gettasks",
-          {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-        if (!response.ok) {
-          throw new Error(`Failed to fetch tasks: ${response.statusText}`);
-        }
-        const data = await response.json();
-        const validTasks = Array.isArray(data)
-          ? data
-              .map((task) => {
-                const assignedTo = Array.isArray(task.assignedTo)
-                  ? task.assignedTo.map((email) => {
-                      const employee = employees.find(
-                        (emp) => emp.email === email
-                      );
-                      return {
-                        email: email || "",
-                        name: employee ? employee.name : email || "Unknown",
-                        avatar: employee ? employee.avatar : "",
-                      };
-                    })
-                  : [];
-                return {
-                  _id: task._id || "",
-                  taskId: task.taskId || 0,
-                  taskName: task.taskName || "",
-                  description: task.description || "",
-                  dueDate: task.dueDate
-                    ? task.dueDate.split("/").reverse().join("-")
-                    : "",
-                  dueTime: task.dueTime || "N/A",
-                  priority: task.priority || "Low",
-                  status: task.status || "Open",
-                  assignedBy: task.assignedBy || "admin@company.com",
-                  assignedTo,
-                  taskType: task.taskType || "General",
-                  fileUrls: task.fileUrls || [],
-                  assignedDateTime: task.assignedDateTime || "",
-                  activityLogs: task.activityLogs || [],
-                  comments: task.comments || [],
-                  remark: task.remark || "",
-                };
-              })
-              .filter((task) => {
-                const isValid =
-                  task._id &&
-                  task.taskName &&
-                  task.status &&
-                  task.priority &&
-                  task.taskType &&
-                  task.dueDate;
-                if (!isValid) {
-                  console.warn("Invalid task filtered out:", task);
-                }
-                return isValid;
-              })
-          : [];
-        setTasks(validTasks);
-        localStorage.setItem("tasks_stepper", JSON.stringify(validTasks));
-      } catch (err) {
-        setError(err.message);
-        console.error("Error fetching tasks:", err);
+    // const fetchTasks = async () => {
+    //   try {
+    //     const response = await fetch(
+    //       "https://task-manager-backend-vqen.onrender.com/api/admin/gettasks",
+    //       {
+    //         method: "GET",
+    //         headers: {
+    //           "Content-Type": "application/json",
+    //           Authorization: `Bearer ${token}`,
+    //         },
+    //       }
+    //     );
+    //     if (!response.ok) {
+    //       throw new Error(`Failed to fetch tasks: ${response.statusText}`);
+    //     }
+    //     const data = await response.json();
+    //     const validTasks = Array.isArray(data)
+    //       ? data
+    //           .map((task) => {
+    //             const assignedTo = Array.isArray(task.assignedTo)
+    //               ? task.assignedTo.map((email) => {
+    //                   const employee = employees.find(
+    //                     (emp) => emp.email === email
+    //                   );
+    //                   return {
+    //                     email: email || "",
+    //                     name: employee ? employee.name : email || "Unknown",
+    //                     avatar: employee ? employee.avatar : "",
+    //                   };
+    //                 })
+    //               : [];
+    //             return {
+    //               _id: task._id || "",
+    //               taskId: task.taskId || 0,
+    //               taskName: task.taskName || "",
+    //               description: task.description || "",
+    //               dueDate: task.dueDate
+    //                 ? task.dueDate.split("/").reverse().join("-")
+    //                 : "",
+    //               dueTime: task.dueTime || "N/A",
+    //               priority: task.priority || "Low",
+    //               status: task.status || "Open",
+    //               assignedBy: task.assignedBy || "admin@company.com",
+    //               assignedTo,
+    //               taskType: task.taskType || "General",
+    //               fileUrls: task.fileUrls || [],
+    //               assignedDateTime: task.assignedDateTime || "",
+    //               activityLogs: task.activityLogs || [],
+    //               comments: task.comments || [],
+    //               remark: task.remark || "",
+    //             };
+    //           })
+    //           .filter((task) => {
+    //             const isValid =
+    //               task._id &&
+    //               task.taskName &&
+    //               task.status &&
+    //               task.priority &&
+    //               task.taskType &&
+    //               task.dueDate;
+    //             if (!isValid) {
+    //               console.warn("Invalid task filtered out:", task);
+    //             }
+    //             return isValid;
+    //           })
+    //       : [];
+    //     setTasks(validTasks);
+    //     localStorage.setItem("tasks_stepper", JSON.stringify(validTasks));
+    //   } catch (err) {
+    //     setError(err.message);
+    //     console.error("Error fetching tasks:", err);
+    //   }
+    // };
+
+
+      const fetchTasks = async () => {
+  try {
+    const response = await fetch(
+      "https://task-manager-backend-vqen.onrender.com/api/admin/gettasks",
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
       }
-    };
+    );
+    if (!response.ok) {
+      throw new Error(`Failed to fetch tasks: ${response.statusText}`);
+    }
+    const data = await response.json();
+    const validTasks = Array.isArray(data)
+      ? data
+          .map((task) => {
+            // Validate and convert dueDate from DD/MM/YYYY to YYYY-MM-DD
+            let formattedDueDate = "";
+            if (task.dueDate) {
+              const parts = task.dueDate.split("/");
+              if (parts.length === 3) {
+                const [day, month, year] = parts;
+                // Validate date components
+                if (
+                  day.length === 2 &&
+                  month.length === 2 &&
+                  year.length === 4
+                ) {
+                  formattedDueDate = `${year}-${month}-${day}`;
+                  // Verify date is valid
+                  const testDate = new Date(formattedDueDate);
+                  if (isNaN(testDate)) {
+                    console.warn(`Invalid dueDate for task ${task.taskId}: ${task.dueDate}`);
+                    formattedDueDate = "";
+                  }
+                } else {
+                  console.warn(`Invalid dueDate format for task ${task.taskId}: ${task.dueDate}`);
+                }
+              }
+            }
+
+            const assignedTo = Array.isArray(task.assignedTo)
+              ? task.assignedTo.map((email) => {
+                  const employee = employees.find((emp) => emp.email === email);
+                  return {
+                    email: email || "",
+                    name: employee ? employee.name : email || "Unknown",
+                    avatar: employee ? employee.avatar : "",
+                  };
+                })
+              : [];
+            return {
+              _id: task._id || "",
+              taskId: task.taskId || 0,
+              taskName: task.taskName || "",
+              description: task.description || "",
+              dueDate: formattedDueDate,
+              dueTime: task.dueTime || "N/A",
+              priority: task.priority || "Low",
+              status: task.status || "Open",
+              assignedBy: task.assignedBy || "admin@company.com",
+              assignedTo,
+              taskType: task.taskType || "General",
+              fileUrls: task.fileUrls || [],
+              assignedDateTime: task.assignedDateTime || "",
+              activityLogs: task.activityLogs || [],
+              comments: task.comments || [],
+              remark: task.remark || "",
+            };
+          })
+          .filter((task) => {
+            const isValid =
+              task._id &&
+              task.taskName &&
+              task.status &&
+              task.priority &&
+              task.taskType &&
+              task.dueDate;
+            if (!isValid) {
+              console.warn("Invalid task filtered out:", task);
+            }
+            return isValid;
+          })
+      : [];
+    setTasks(validTasks);
+    localStorage.setItem("tasks_stepper", JSON.stringify(validTasks));
+  } catch (err) {
+    setError(err.message);
+    console.error("Error fetching tasks:", err);
+  }
+};
+
 
     if (token) {
       fetchEmployees().then(() => fetchTasks());
@@ -514,145 +648,162 @@ const AdmintaskPage = () => {
   };
 
   const handleSubmit = async (e, isDraft = false) => {
-    e.preventDefault();
-    const errors = validateForm();
-    const isEditing = !!editId;
-    const wasPending =
-      isEditing &&
-      isOverdue(formData.dueDate, formData.dueTime, formData.status) &&
-      getDisplayStatus(formData) === "Pending";
-    const statusChanged =
-      isEditing &&
-      formData.status !== "Pending" &&
-      formData.status !== getDisplayStatus(formData);
-    if (
-      wasPending &&
-      statusChanged &&
-      (!formData.dueDate || new Date(formData.dueDate) <= new Date())
-    ) {
-      errors.dueDate =
-        "To update the status of an overdue task, please select a new future due date.";
+  e.preventDefault();
+  const errors = validateForm();
+  const isEditing = !!editId;
+  const wasPending =
+    isEditing &&
+    isOverdue(formData.dueDate, formData.dueTime, formData.status) &&
+    getDisplayStatus(formData) === "Pending";
+  const statusChanged =
+    isEditing &&
+    formData.status !== "Pending" &&
+    formData.status !== getDisplayStatus(formData);
+
+  // Validate dueDate format (YYYY-MM-DD)
+  let formattedDueDate = "";
+  if (formData.dueDate) {
+    const date = new Date(formData.dueDate);
+    if (!isNaN(date)) {
+      const day = String(date.getDate()).padStart(2, "0");
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const year = date.getFullYear();
+      formattedDueDate = `${day}-${month}-${year}`; // Convert to DD-MM-YYYY for backend
+    } else {
+      errors.dueDate = "Invalid due date format";
     }
-    if (Object.keys(errors).length > 0) {
-      setFormData((prev) => ({ ...prev, errors }));
+  }
+
+  if (
+    wasPending &&
+    statusChanged &&
+    (!formData.dueDate || new Date(formData.dueDate) <= new Date())
+  ) {
+    errors.dueDate =
+      "To update the status of an overdue task, please select a new future due date.";
+  }
+  if (Object.keys(errors).length > 0) {
+    setFormData((prev) => ({ ...prev, errors }));
+    return;
+  }
+  setIsLoading(true);
+  const now = new Date();
+  const assignedDateTime = now.toISOString();
+  const formDataToSend = new FormData();
+  formDataToSend.append("taskTitle", formData.taskName);
+  formDataToSend.append("description", formData.description);
+  formDataToSend.append("dueDate", formattedDueDate);
+  formDataToSend.append("dueTime", formData.dueTime);
+  formDataToSend.append("priority", formData.priority);
+  formDataToSend.append("status", isDraft ? "Draft" : formData.status);
+  formDataToSend.append("assignedBy", formData.assignedBy);
+  formDataToSend.append(
+    "assignedTo",
+    JSON.stringify(formData.assignedTo.map((emp) => emp.email))
+  );
+  formDataToSend.append("taskType", formData.taskType);
+  formDataToSend.append("remark", formData.remark || "");
+  formDataToSend.append("assignedDateTime", assignedDateTime);
+  selectedFiles.forEach((file, index) => {
+    if (file instanceof File) {
+      formDataToSend.append("file", file);
+    } else {
+      console.error(`Invalid file at index ${index}:`, file);
+    }
+  });
+  if (editId && formData.fileUrls.length > 0) {
+    formDataToSend.append("fileUrls", JSON.stringify(formData.fileUrls));
+  }
+  let taskToUpdate = null;
+  if (editId) {
+    taskToUpdate = tasks.find((task) => task._id === editId);
+    if (!taskToUpdate) {
+      setError("Task not found for the given editId");
+      setIsLoading(false);
       return;
     }
-    setIsLoading(true);
-    const now = new Date();
-    const assignedDateTime = now.toISOString();
-    const formDataToSend = new FormData();
-    formDataToSend.append("taskTitle", formData.taskName);
-    formDataToSend.append("description", formData.description);
-    const [year, month, day] = formData.dueDate.split("-");
-    const formattedDueDate = `${day}-${month}-${year}`;
-    formDataToSend.append("dueDate", formattedDueDate);
-    formDataToSend.append("dueTime", formData.dueTime);
-    formDataToSend.append("priority", formData.priority);
-    formDataToSend.append("status", isDraft ? "Draft" : formData.status);
-    formDataToSend.append("assignedBy", formData.assignedBy);
-    formDataToSend.append(
-      "assignedTo",
-      JSON.stringify(formData.assignedTo.map((emp) => emp.email))
-    );
-    formDataToSend.append("taskType", formData.taskType);
-    formDataToSend.append("remark", formData.remark || "");
-    formDataToSend.append("assignedDateTime", assignedDateTime);
-    selectedFiles.forEach((file, index) => {
-      if (file instanceof File) {
-        formDataToSend.append("file", file);
-      } else {
-        console.error(`Invalid file at index ${index}:`, file);
-      }
+  } else {
+    formDataToSend.append("taskId", formData.taskId || generateTaskId(tasks));
+  }
+  try {
+    const url = editId
+      ? `https://task-manager-backend-vqen.onrender.com/api/admin/updatetask/${taskToUpdate?.taskId}`
+      : "https://task-manager-backend-vqen.onrender.com/api/admin/createtask";
+    const method = editId ? "PATCH" : "POST";
+    const response = await fetch(url, {
+      method: method,
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: formDataToSend,
     });
-    if (editId && formData.fileUrls.length > 0) {
-      formDataToSend.append("fileUrls", JSON.stringify(formData.fileUrls));
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(
+        errorData.message ||
+          (editId ? "Failed to update task" : "Failed to create task")
+      );
     }
-    let taskToUpdate = null;
+    const updatedTask = await response.json();
     if (editId) {
-      taskToUpdate = tasks.find((task) => task._id === editId);
-      if (!taskToUpdate) {
-        setError("Task not found for the given editId");
-        setIsLoading(false);
-        return;
-      }
+      setTasks((prev) =>
+        prev.map((task) =>
+          task._id === editId
+            ? {
+                ...updatedTask.task,
+                fileUrls: updatedTask.task.fileUrls || [],
+                dueDate: updatedTask.task.dueDate
+                  ? updatedTask.task.dueDate.split("/").reverse().join("-")
+                  : "",
+                assignedTo: updatedTask.task.assignedTo.map((email) => ({
+                  email,
+                  name:
+                    employees.find((emp) => emp.email === email)?.name ||
+                    email ||
+                    "Unknown",
+                  avatar:
+                    employees.find((emp) => emp.email === email)?.avatar || "",
+                })),
+              }
+            : task
+        )
+      );
+      showToast("Task updated successfully", "success");
     } else {
-      formDataToSend.append("taskId", formData.taskId || generateTaskId(tasks));
-    }
-    try {
-      const url = editId
-        ? `https://task-manager-backend-vqen.onrender.com/api/admin/updatetask/${taskToUpdate?.taskId}`
-        : "https://task-manager-backend-vqen.onrender.com/api/admin/createtask";
-      const method = editId ? "PATCH" : "POST";
-      const response = await fetch(url, {
-        method: method,
-        headers: {
-          Authorization: `Bearer ${token}`,
+      setTasks((prev) => [
+        ...prev,
+        {
+          ...updatedTask.task,
+          fileUrls: updatedTask.task.fileUrls || [],
+          dueDate: updatedTask.task.dueDate
+            ? updatedTask.task.dueDate.split("/").reverse().join("-")
+            : "",
+          assignedTo: updatedTask.task.assignedTo.map((email) => ({
+            email,
+            name:
+              employees.find((emp) => emp.email === email)?.name ||
+              email ||
+              "Unknown",
+            avatar:
+              employees.find((emp) => emp.email === email)?.avatar || "",
+          })),
         },
-        body: formDataToSend,
-      });
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(
-          errorData.message ||
-            (editId ? "Failed to update task" : "Failed to create task")
-        );
-      }
-      const updatedTask = await response.json();
-      if (editId) {
-        setTasks((prev) =>
-          prev.map((task) =>
-            task._id === editId
-              ? {
-                  ...updatedTask.task,
-                  fileUrls: updatedTask.task.fileUrls || [],
-                  assignedTo: updatedTask.task.assignedTo.map((email) => ({
-                    email,
-                    name:
-                      employees.find((emp) => emp.email === email)?.name ||
-                      email ||
-                      "Unknown",
-                    avatar:
-                      employees.find((emp) => emp.email === email)?.avatar ||
-                      "",
-                  })),
-                }
-              : task
-          )
-        );
-        showToast("Task updated successfully", "success");
-      } else {
-        setTasks((prev) => [
-          ...prev,
-          {
-            ...updatedTask.task,
-            fileUrls: updatedTask.task.fileUrls || [],
-            assignedTo: updatedTask.task.assignedTo.map((email) => ({
-              email,
-              name:
-                employees.find((emp) => emp.email === email)?.name ||
-                email ||
-                "Unknown",
-              avatar:
-                employees.find((emp) => emp.email === email)?.avatar || "",
-            })),
-          },
-        ]);
-        showToast("Task created successfully", "success");
-      }
-      setIsModalOpen(false);
-      setIsEditModalOpen(false);
-      setFormData(initialForm);
-      setEditId(null);
-      setSelectedFiles([]);
-      setEmployeeSearchTerm("");
-    } catch (err) {
-      setError(err.message);
-      showToast(err.message || "Failed to submit task", "error");
-    } finally {
-      setIsLoading(false);
+      ]);
+      showToast("Task created successfully", "success");
     }
-  };
-
+    setIsModalOpen(false);
+    setIsEditModalOpen(false);
+    setFormData(initialForm);
+    setEditId(null);
+    setSelectedFiles([]);
+    setEmployeeSearchTerm("");
+  } catch (err) {
+    setError(err.message);
+    showToast(err.message || "Failed to submit task", "error");
+  } finally {
+    setIsLoading(false);
+  }
+};
   const handleEditTask = (task) => {
     setFormData({
       ...task,
@@ -1790,7 +1941,7 @@ const AdmintaskPage = () => {
                         </span>
                       </div>
                       <div className="col-span-full">
-                        <span className="font-semibold ">Description:</span>{" "}
+                        <span className="font-semibold">Description:</span>{" "}
                         {task.description || "None"}
                       </div>
                     </div>

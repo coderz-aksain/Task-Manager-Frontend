@@ -1790,7 +1790,7 @@ const AdmintaskPage = () => {
                         </span>
                       </div>
                       <div className="col-span-full">
-                        <span className="font-semibold">Description:</span>{" "}
+                        <span className="font-semibold ">Description:</span>{" "}
                         {task.description || "None"}
                       </div>
                     </div>
@@ -2212,7 +2212,7 @@ const AdmintaskPage = () => {
                   </div>
                   <div className="mb-6">
                     <p className="text-sm text-gray-500 mb-2">Description</p>
-                    <p className="text-gray-800 text-sm">
+                    <p className="text-gray-800 text-sm whitespace-pre-wrap">
                       {viewTask.description || "None"}
                     </p>
                   </div>

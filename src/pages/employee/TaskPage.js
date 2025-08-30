@@ -1582,7 +1582,7 @@ const TaskPage = () => {
                   </div>
                   <div className="mb-6">
                     <p className="text-sm text-gray-500 mb-2">Description</p>
-                    <p className="text-gray-800 text-sm">
+                    <p className="text-gray-800 text-sm whitespace-pre-wrap">
                       {viewTask.description || "None"}
                     </p>
                   </div>

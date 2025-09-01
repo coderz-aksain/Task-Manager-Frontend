@@ -25,6 +25,7 @@ const statusOptions = [
   { value: "Hold", label: "Hold" },
   { value: "Complete", label: "Complete" },
   { value: "Archive", label: "Archive" },
+  { value: "Pending", label: "Pending" },
 ];
 const initialForm = {
   _id: "",

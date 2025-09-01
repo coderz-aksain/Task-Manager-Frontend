@@ -460,106 +460,219 @@ const AdmintaskPage = () => {
     //   }
     // };
 
-    const fetchTasks = async () => {
-      try {
-        const response = await fetch(
-          "https://task-manager-backend-vqen.onrender.com/api/admin/gettasks",
-          {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-        if (!response.ok) {
-          throw new Error(`Failed to fetch tasks: ${response.statusText}`);
-        }
-        const data = await response.json();
-        const validTasks = Array.isArray(data)
-          ? data
-              .map((task) => {
-                // Validate and convert dueDate from DD/MM/YYYY to YYYY-MM-DD
-                let formattedDueDate = "";
-                if (task.dueDate) {
-                  const parts = task.dueDate.split("/");
-                  if (parts.length === 3) {
-                    const [day, month, year] = parts;
-                    // Validate date components
-                    if (
-                      day.length === 2 &&
-                      month.length === 2 &&
-                      year.length === 4
-                    ) {
-                      formattedDueDate = `${year}-${month}-${day}`;
-                      // Verify date is valid
-                      const testDate = new Date(formattedDueDate);
-                      if (isNaN(testDate)) {
-                        console.warn(
-                          `Invalid dueDate for task ${task.taskId}: ${task.dueDate}`
-                        );
-                        formattedDueDate = "";
-                      }
-                    } else {
-                      console.warn(
-                        `Invalid dueDate format for task ${task.taskId}: ${task.dueDate}`
-                      );
-                    }
-                  }
-                }
+    // const fetchTasks = async () => {
+    //   try {
+    //     const response = await fetch(
+    //       "https://task-manager-backend-vqen.onrender.com/api/admin/gettasks",
+    //       {
+    //         method: "GET",
+    //         headers: {
+    //           "Content-Type": "application/json",
+    //           Authorization: `Bearer ${token}`,
+    //         },
+    //       }
+    //     );
+    //     if (!response.ok) {
+    //       throw new Error(`Failed to fetch tasks: ${response.statusText}`);
+    //     }
+    //     const data = await response.json();
+    //     const validTasks = Array.isArray(data)
+    //       ? data
+    //           .map((task) => {
+    //             // Validate and convert dueDate from DD/MM/YYYY to YYYY-MM-DD
+    //             let formattedDueDate = "";
+    //             if (task.dueDate) {
+    //               const parts = task.dueDate.split("/");
+    //               if (parts.length === 3) {
+    //                 const [day, month, year] = parts;
+    //                 // Validate date components
+    //                 if (
+    //                   day.length === 2 &&
+    //                   month.length === 2 &&
+    //                   year.length === 4
+    //                 ) {
+    //                   formattedDueDate = `${year}-${month}-${day}`;
+    //                   // Verify date is valid
+    //                   const testDate = new Date(formattedDueDate);
+    //                   if (isNaN(testDate)) {
+    //                     console.warn(
+    //                       `Invalid dueDate for task ${task.taskId}: ${task.dueDate}`
+    //                     );
+    //                     formattedDueDate = "";
+    //                   }
+    //                 } else {
+    //                   console.warn(
+    //                     `Invalid dueDate format for task ${task.taskId}: ${task.dueDate}`
+    //                   );
+    //                 }
+    //               }
+    //             }
 
-                const assignedTo = Array.isArray(task.assignedTo)
-                  ? task.assignedTo.map((email) => {
-                      const employee = employees.find(
-                        (emp) => emp.email === email
-                      );
-                      return {
-                        email: email || "",
-                        name: employee ? employee.name : email || "Unknown",
-                        avatar: employee ? employee.avatar : "",
-                      };
-                    })
-                  : [];
+    //             const assignedTo = Array.isArray(task.assignedTo)
+    //               ? task.assignedTo.map((email) => {
+    //                   const employee = employees.find(
+    //                     (emp) => emp.email === email
+    //                   );
+    //                   return {
+    //                     email: email || "",
+    //                     name: employee ? employee.name : email || "Unknown",
+    //                     avatar: employee ? employee.avatar : "",
+    //                   };
+    //                 })
+    //               : [];
+    //             return {
+    //               _id: task._id || "",
+    //               taskId: task.taskId || 0,
+    //               taskName: task.taskName || "",
+    //               description: task.description || "",
+    //               dueDate: formattedDueDate,
+    //               dueTime: task.dueTime || "N/A",
+    //               priority: task.priority || "Low",
+    //               status: task.status || "Open",
+    //               assignedBy: task.assignedBy || "admin@company.com",
+    //               assignedTo,
+    //               taskType: task.taskType || "General",
+    //               fileUrls: task.fileUrls || [],
+    //               assignedDateTime: task.assignedDateTime || "",
+    //               activityLogs: task.activityLogs || [],
+    //               comments: task.comments || [],
+    //               remark: task.remark || "",
+    //             };
+    //           })
+    //           .filter((task) => {
+    //             const isValid =
+    //               task._id &&
+    //               task.taskName &&
+    //               task.status &&
+    //               task.priority &&
+    //               task.taskType &&
+    //               task.dueDate;
+    //             if (!isValid) {
+    //               console.warn("Invalid task filtered out:", task);
+    //             }
+    //             return isValid;
+    //           })
+    //       : [];
+    //     setTasks(validTasks);
+    //     localStorage.setItem("tasks_stepper", JSON.stringify(validTasks));
+    //   } catch (err) {
+    //     setError(err.message);
+    //     console.error("Error fetching tasks:", err);
+    //   }
+    // };
+
+    const fetchTasks = async () => {
+  try {
+    const response = await fetch(
+      "https://task-manager-backend-vqen.onrender.com/api/admin/gettasks",
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    if (!response.ok) {
+      throw new Error(`Failed to fetch tasks: ${response.statusText}`);
+    }
+    const data = await response.json();
+    const months = {
+      Jan: "01",
+      Feb: "02",
+      Mar: "03",
+      Apr: "04",
+      May: "05",
+      Jun: "06",
+      Jul: "07",
+      Aug: "08",
+      Sep: "09",
+      Oct: "10",
+      Nov: "11",
+      Dec: "12",
+    };
+    const validTasks = Array.isArray(data)
+      ? data.map((task) => {
+          // Handle dueDate parsing
+          let formattedDueDate = "";
+          if (task.dueDate) {
+            // Try DD/MM/YYYY format
+            if (/^\d{2}\/\d{2}\/\d{4}$/.test(task.dueDate)) {
+              const [day, month, year] = task.dueDate.split("/");
+              formattedDueDate = `${year}-${month}-${day}`;
+              const testDate = new Date(formattedDueDate);
+              if (isNaN(testDate)) {
+                console.warn(
+                  `Invalid dueDate for task ${task.taskId}: ${task.dueDate}`
+                );
+                formattedDueDate = "Invalid Date";
+              }
+            }
+            // Try DD/MMM/YYYY format (e.g., 28/Aug/2025)
+            else if (/^\d{2}\/[A-Za-z]{3}\/\d{4}$/.test(task.dueDate)) {
+              const [day, month, year] = task.dueDate.split("/");
+              if (months[month]) {
+                formattedDueDate = `${year}-${months[month]}-${day}`;
+                const testDate = new Date(formattedDueDate);
+                if (isNaN(testDate)) {
+                  console.warn(
+                    `Invalid dueDate for task ${task.taskId}: ${task.dueDate}`
+                  );
+                  formattedDueDate = "Invalid Date";
+                }
+              } else {
+                console.warn(
+                  `Invalid month in dueDate for task ${task.taskId}: ${task.dueDate}`
+                );
+                formattedDueDate = "Invalid Date";
+              }
+            } else {
+              console.warn(
+                `Unrecognized dueDate format for task ${task.taskId}: ${task.dueDate}`
+              );
+              formattedDueDate = "Invalid Date";
+            }
+          } else {
+            formattedDueDate = "N/A"; // Handle missing dueDate
+          }
+
+          const assignedTo = Array.isArray(task.assignedTo)
+            ? task.assignedTo.map((email) => {
+                const employee = employees.find((emp) => emp.email === email);
                 return {
-                  _id: task._id || "",
-                  taskId: task.taskId || 0,
-                  taskName: task.taskName || "",
-                  description: task.description || "",
-                  dueDate: formattedDueDate,
-                  dueTime: task.dueTime || "N/A",
-                  priority: task.priority || "Low",
-                  status: task.status || "Open",
-                  assignedBy: task.assignedBy || "admin@company.com",
-                  assignedTo,
-                  taskType: task.taskType || "General",
-                  fileUrls: task.fileUrls || [],
-                  assignedDateTime: task.assignedDateTime || "",
-                  activityLogs: task.activityLogs || [],
-                  comments: task.comments || [],
-                  remark: task.remark || "",
+                  email: email || "",
+                  name: employee ? employee.name : email || "Unknown",
+                  avatar: employee ? employee.avatar : "",
                 };
               })
-              .filter((task) => {
-                const isValid =
-                  task._id &&
-                  task.taskName &&
-                  task.status &&
-                  task.priority &&
-                  task.taskType &&
-                  task.dueDate;
-                if (!isValid) {
-                  console.warn("Invalid task filtered out:", task);
-                }
-                return isValid;
-              })
-          : [];
-        setTasks(validTasks);
-        localStorage.setItem("tasks_stepper", JSON.stringify(validTasks));
-      } catch (err) {
-        setError(err.message);
-        console.error("Error fetching tasks:", err);
-      }
-    };
+            : [];
+          return {
+            _id: task._id || "",
+            taskId: task.taskId || 0,
+            taskName: task.taskName || "",
+            description: task.description || "",
+            dueDate: formattedDueDate,
+            dueTime: task.dueTime || "N/A",
+            priority: task.priority || "Low",
+            status: task.status || "Open",
+            assignedBy: task.assignedBy || "admin@company.com",
+            assignedTo,
+            taskType: task.taskType || "General",
+            fileUrls: task.fileUrls || [],
+            assignedDateTime: task.assignedDateTime || "",
+            activityLogs: task.activityLogs || [],
+            comments: task.comments || [],
+            remark: task.remark || "",
+          };
+        })
+      : [];
+    setTasks(validTasks);
+    localStorage.setItem("tasks_stepper", JSON.stringify(validTasks));
+  } catch (err) {
+    setError(err.message);
+    console.error("Error fetching tasks:", err);
+  }
+};
 
     if (token) {
       fetchEmployees().then(() => fetchTasks());

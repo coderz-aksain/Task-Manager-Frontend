@@ -4,6 +4,10 @@
 // =============================================BELOW IS THE CODE FOR MULTIPLE FILTER SELECTION=================================================
 // =============================================BELOW IS THE CODE FOR MULTIPLE FILTER SELECTION=================================================
 
+
+
+
+
 import React, { useState, useEffect, useRef } from "react";
 import {
   Search,
@@ -26,7 +30,8 @@ import AdminSidebar from "../../components/common/AdminSidebar";
 import Header from "../../components/common/Header";
 import { Link } from "react-router-dom";
 import * as XLSX from "xlsx";
-
+// Add to imports if not present
+import { ChevronUp, ChevronDown } from "lucide-react";
 // Helper functions
 const formatDisplayDate = (dateStr) => {
   if (!dateStr) return "N/A";
@@ -45,7 +50,7 @@ const statusOptions = [
   { value: "In Progress", label: "In Progress" },
   { value: "Hold", label: "Hold" },
   { value: "Complete", label: "Complete" },
-  { value: "Archived", label: "Archived" },
+  { value: "Archive", label: "Archive" },
   { value: "Pending", label: "Pending" },
 ];
 
@@ -88,19 +93,6 @@ const generateTaskId = (tasks) => {
   ).length;
   return todayCount + 1;
 };
-
-// const isOverdue = (dueDate, dueTime, status) => {
-//   if (!dueDate) return false;
-//   const due = new Date(dueDate);
-//   // Ensure dueTime is a valid string
-//   if (typeof dueTime === "string" && dueTime !== "N/A") {
-//     const [hours, minutes] = dueTime.split(":").map(Number);
-//     due.setHours(hours || 23, minutes || 59, 0, 0);
-//   } else {
-//     due.setHours(23, 59, 59, 999);
-//   }
-//   return due < new Date() && status !== "Complete";
-// };
 
 // ==================CORRECTED THE isOverdue FUNCTION TO HANDLE INVALID DUE TIME=========================
 const isOverdue = (dueDate, dueTime, status) => {
@@ -146,9 +138,6 @@ const getInitials = (name) => {
 
 const ADMIN_EMAIL = "admin@company.com";
 
-
-
-
 const AdmintaskPage = () => {
   const [showSidebar, setShowSidebar] = useState(false);
   const [tasks, setTasks] = useState([]);
@@ -181,7 +170,6 @@ const AdmintaskPage = () => {
   const [showModalEmployeeDropdown, setShowModalEmployeeDropdown] =
     useState(false); // For edit modal dropdown
 
-
  
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
 
@@ -204,6 +192,7 @@ const AdmintaskPage = () => {
     }
   });
 
+  const [sort, setSort] = useState({ column: "taskId", direction: "desc" });
   // SEPARATE REFS FOR FILTER AND MODAL DROPDOWNS
   const employeeDropdownRef = useRef(null); // For filter dropdown
   const modalEmployeeDropdownRef = useRef(null); // For edit modal dropdown
@@ -211,6 +200,9 @@ const AdmintaskPage = () => {
   const dueDateDropdownRef = useRef(null);
   const deleteModalRef = useRef(null);
   const reminderModalRef = useRef(null);
+
+  // NEW: Status tab state
+  const [currentStatusTab, setCurrentStatusTab] = useState("All");
 
    const showToast = (message, type = "success") => {
   setToast({ show: true, message, type });
@@ -227,7 +219,15 @@ const AdmintaskPage = () => {
       dueDateSort !== "none"
     );
   };
-
+  const handleSort = (column) => {
+  setSort((prev) => {
+    if (prev.column === column) {
+      return { ...prev, direction: prev.direction === "asc" ? "desc" : "asc" };
+    } else {
+      return { column, direction: "asc" };
+    }
+  });
+};
   const clearAllFilters = () => {
     setSearchTerm("");
     setFilterStatus([]);
@@ -235,6 +235,7 @@ const AdmintaskPage = () => {
     setFilterTaskType("all");
     setFilterEmployee([]);
     setDueDateSort("none");
+    setCurrentStatusTab("All");
   };
 
   const updateUnseenComments = (newState) => {
@@ -290,6 +291,76 @@ const AdmintaskPage = () => {
     showDueDateSortDropdown,
   ]);
 
+  // Filtered Tasks
+    const filteredTasks = tasks.filter((task) => {
+    const displayStatus = getDisplayStatus(task);
+    const matchesSearch =
+      (typeof task.taskName === "string"
+        ? task.taskName.toLowerCase().includes(searchTerm.toLowerCase())
+        : false) ||
+      (typeof task.description === "string"
+        ? task.description.toLowerCase().includes(searchTerm.toLowerCase())
+        : false);
+    const matchesStatus =
+      filterStatus.length === 0 || filterStatus.includes(displayStatus);
+    const matchesPriority =
+      filterPriority === "all" || task.priority === filterPriority;
+    const matchesTaskType =
+      filterTaskType === "all" || task.taskType === filterTaskType;
+    const matchesEmployee =
+      filterEmployee.length === 0 ||
+      task.assignedTo.some((emp) => filterEmployee.includes(emp.email));
+    return (
+      matchesSearch &&
+      matchesStatus &&
+      matchesPriority &&
+      matchesTaskType &&
+      matchesEmployee
+    );
+  });
+
+  const sortedTasks = [...filteredTasks].sort((a, b) => {
+  let valA, valB;
+  switch (sort.column) {
+    case "taskId":
+      valA = a.taskId;
+      valB = b.taskId;
+      return sort.direction === "asc" ? valA - valB : valB - valA;
+    case "taskName":
+      return sort.direction === "asc"
+        ? a.taskName.localeCompare(b.taskName)
+        : b.taskName.localeCompare(a.taskName);
+    case "priority":
+      const priorityOrder = { High: 3, Medium: 2, Low: 1 };
+      valA = priorityOrder[a.priority] || 0;
+      valB = priorityOrder[b.priority] || 0;
+      return sort.direction === "asc" ? valA - valB : valB - valA;
+    case "status":
+      const statusOrder = {
+        Open: 1,
+        "In Progress": 2,
+        Hold: 3,
+        Archive: 4,
+        Pending: 5,
+        Complete: 6,
+      };
+      valA = statusOrder[getDisplayStatus(a)] || 0;
+      valB = statusOrder[getDisplayStatus(b)] || 0;
+      return sort.direction === "asc" ? valA - valB : valB - valA;
+    case "assignedTo":
+      valA = a.assignedTo[0]?.name || "";
+      valB = b.assignedTo[0]?.name || "";
+      return sort.direction === "asc"
+        ? valA.localeCompare(valB)
+        : valB.localeCompare(valA);
+    case "dueDate":
+      valA = new Date(a.dueDate || "9999-12-31").getTime();
+      valB = new Date(b.dueDate || "9999-12-31").getTime();
+      return sort.direction === "asc" ? valA - valB : valB - valA;
+    default:
+      return 0;
+  }
+});
   // Reminder Modal close on outside click
   useEffect(() => {
     if (!showRemainderEmailModal) return;
@@ -385,181 +456,6 @@ const AdmintaskPage = () => {
         console.error("Error fetching employees:", err);
       }
     };
-
-    // const fetchTasks = async () => {
-    //   try {
-    //     const response = await fetch(
-    //       "https://task-manager-backend-vqen.onrender.com/api/admin/gettasks",
-    //       {
-    //         method: "GET",
-    //         headers: {
-    //           "Content-Type": "application/json",
-    //           Authorization: `Bearer ${token}`,
-    //         },
-    //       }
-    //     );
-    //     if (!response.ok) {
-    //       throw new Error(`Failed to fetch tasks: ${response.statusText}`);
-    //     }
-    //     const data = await response.json();
-    //     const validTasks = Array.isArray(data)
-    //       ? data
-    //           .map((task) => {
-    //             const assignedTo = Array.isArray(task.assignedTo)
-    //               ? task.assignedTo.map((email) => {
-    //                   const employee = employees.find(
-    //                     (emp) => emp.email === email
-    //                   );
-    //                   return {
-    //                     email: email || "",
-    //                     name: employee ? employee.name : email || "Unknown",
-    //                     avatar: employee ? employee.avatar : "",
-    //                   };
-    //                 })
-    //               : [];
-    //             return {
-    //               _id: task._id || "",
-    //               taskId: task.taskId || 0,
-    //               taskName: task.taskName || "",
-    //               description: task.description || "",
-    //               dueDate: task.dueDate
-    //                 ? task.dueDate.split("/").reverse().join("-")
-    //                 : "",
-    //               dueTime: task.dueTime || "N/A",
-    //               priority: task.priority || "Low",
-    //               status: task.status || "Open",
-    //               assignedBy: task.assignedBy || "admin@company.com",
-    //               assignedTo,
-    //               taskType: task.taskType || "General",
-    //               fileUrls: task.fileUrls || [],
-    //               assignedDateTime: task.assignedDateTime || "",
-    //               activityLogs: task.activityLogs || [],
-    //               comments: task.comments || [],
-    //               remark: task.remark || "",
-    //             };
-    //           })
-    //           .filter((task) => {
-    //             const isValid =
-    //               task._id &&
-    //               task.taskName &&
-    //               task.status &&
-    //               task.priority &&
-    //               task.taskType &&
-    //               task.dueDate;
-    //             if (!isValid) {
-    //               console.warn("Invalid task filtered out:", task);
-    //             }
-    //             return isValid;
-    //           })
-    //       : [];
-    //     setTasks(validTasks);
-    //     localStorage.setItem("tasks_stepper", JSON.stringify(validTasks));
-    //   } catch (err) {
-    //     setError(err.message);
-    //     console.error("Error fetching tasks:", err);
-    //   }
-    // };
-
-    // const fetchTasks = async () => {
-    //   try {
-    //     const response = await fetch(
-    //       "https://task-manager-backend-vqen.onrender.com/api/admin/gettasks",
-    //       {
-    //         method: "GET",
-    //         headers: {
-    //           "Content-Type": "application/json",
-    //           Authorization: `Bearer ${token}`,
-    //         },
-    //       }
-    //     );
-    //     if (!response.ok) {
-    //       throw new Error(`Failed to fetch tasks: ${response.statusText}`);
-    //     }
-    //     const data = await response.json();
-    //     const validTasks = Array.isArray(data)
-    //       ? data
-    //           .map((task) => {
-    //             // Validate and convert dueDate from DD/MM/YYYY to YYYY-MM-DD
-    //             let formattedDueDate = "";
-    //             if (task.dueDate) {
-    //               const parts = task.dueDate.split("/");
-    //               if (parts.length === 3) {
-    //                 const [day, month, year] = parts;
-    //                 // Validate date components
-    //                 if (
-    //                   day.length === 2 &&
-    //                   month.length === 2 &&
-    //                   year.length === 4
-    //                 ) {
-    //                   formattedDueDate = `${year}-${month}-${day}`;
-    //                   // Verify date is valid
-    //                   const testDate = new Date(formattedDueDate);
-    //                   if (isNaN(testDate)) {
-    //                     console.warn(
-    //                       `Invalid dueDate for task ${task.taskId}: ${task.dueDate}`
-    //                     );
-    //                     formattedDueDate = "";
-    //                   }
-    //                 } else {
-    //                   console.warn(
-    //                     `Invalid dueDate format for task ${task.taskId}: ${task.dueDate}`
-    //                   );
-    //                 }
-    //               }
-    //             }
-
-    //             const assignedTo = Array.isArray(task.assignedTo)
-    //               ? task.assignedTo.map((email) => {
-    //                   const employee = employees.find(
-    //                     (emp) => emp.email === email
-    //                   );
-    //                   return {
-    //                     email: email || "",
-    //                     name: employee ? employee.name : email || "Unknown",
-    //                     avatar: employee ? employee.avatar : "",
-    //                   };
-    //                 })
-    //               : [];
-    //             return {
-    //               _id: task._id || "",
-    //               taskId: task.taskId || 0,
-    //               taskName: task.taskName || "",
-    //               description: task.description || "",
-    //               dueDate: formattedDueDate,
-    //               dueTime: task.dueTime || "N/A",
-    //               priority: task.priority || "Low",
-    //               status: task.status || "Open",
-    //               assignedBy: task.assignedBy || "admin@company.com",
-    //               assignedTo,
-    //               taskType: task.taskType || "General",
-    //               fileUrls: task.fileUrls || [],
-    //               assignedDateTime: task.assignedDateTime || "",
-    //               activityLogs: task.activityLogs || [],
-    //               comments: task.comments || [],
-    //               remark: task.remark || "",
-    //             };
-    //           })
-    //           .filter((task) => {
-    //             const isValid =
-    //               task._id &&
-    //               task.taskName &&
-    //               task.status &&
-    //               task.priority &&
-    //               task.taskType &&
-    //               task.dueDate;
-    //             if (!isValid) {
-    //               console.warn("Invalid task filtered out:", task);
-    //             }
-    //             return isValid;
-    //           })
-    //       : [];
-    //     setTasks(validTasks);
-    //     localStorage.setItem("tasks_stepper", JSON.stringify(validTasks));
-    //   } catch (err) {
-    //     setError(err.message);
-    //     console.error("Error fetching tasks:", err);
-    //   }
-    // };
 
     const fetchTasks = async () => {
   try {
@@ -683,17 +579,33 @@ const AdmintaskPage = () => {
     // }, [token]);
   }, [token, employees]);
 
-  useEffect(() => {
-    tasks.forEach((task) => {
-      if (
-        isOverdue(task.dueDate, task.dueTime, task.status) &&
-        task.status !== "Pending" &&
-        task.status !== "Complete"
-      ) {
-        handleUpdateTaskStatus(task.taskId, "Pending");
-      }
-    });
-  }, [tasks]);
+  // useEffect(() => {
+  //   tasks.forEach((task) => {
+  //     if (
+  //       isOverdue(task.dueDate, task.dueTime, task.status) &&
+  //       task.status !== "Pending" &&
+  //       task.status !== "Complete" 
+  //       // task.status !== "Arhive" 
+  //     ) {
+  //       handleUpdateTaskStatus(task.taskId, "Pending");
+  //     }
+  //   });
+  // }, [tasks]);
+
+
+useEffect(() => {
+  tasks.forEach((task) => {
+    if (
+      isOverdue(task.dueDate, task.dueTime, task.status) &&
+      (task.status === "Open" || task.status === "In Progress") &&
+      task.status !== "Pending"
+    ) {
+      handleUpdateTaskStatus(task.taskId, "Pending");
+    }
+  });
+}, [tasks]);
+
+
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -1157,55 +1069,30 @@ const AdmintaskPage = () => {
     );
   };
 
-  const filteredTasks = tasks.filter((task) => {
-    const displayStatus = getDisplayStatus(task);
-    const matchesSearch =
-      (typeof task.taskName === "string"
-        ? task.taskName.toLowerCase().includes(searchTerm.toLowerCase())
-        : false) ||
-      (typeof task.description === "string"
-        ? task.description.toLowerCase().includes(searchTerm.toLowerCase())
-        : false);
-    const matchesStatus =
-      filterStatus.length === 0 || filterStatus.includes(displayStatus);
-    const matchesPriority =
-      filterPriority === "all" || task.priority === filterPriority;
-    const matchesTaskType =
-      filterTaskType === "all" || task.taskType === filterTaskType;
-    const matchesEmployee =
-      filterEmployee.length === 0 ||
-      task.assignedTo.some((emp) => filterEmployee.includes(emp.email));
-    return (
-      matchesSearch &&
-      matchesStatus &&
-      matchesPriority &&
-      matchesTaskType &&
-      matchesEmployee
-    );
-  });
 
-  const sortedTasks = [...filteredTasks].sort((a, b) => {
-    if (dueDateSort !== "none") {
-      const dateA = new Date(a.dueDate || 0).getTime();
-      const dateB = new Date(b.dueDate || 0).getTime();
-      return dueDateSort === "asc" ? dateA - dateB : dateB - dateA;
-    }
-    switch (sortBy) {
-      case "taskId":
-        return a.taskId - b.taskId;
-      case "priority":
-        const priorityOrder = { High: 3, Medium: 2, Low: 1 };
-        return (
-          (priorityOrder[b.priority] || 0) - (priorityOrder[a.priority] || 0)
-        );
-      case "status":
-        return (a.status || "").localeCompare(b.status || "");
-      case "taskName":
-        return (a.taskName || "").localeCompare(b.taskName || "");
-      default:
-        return a.taskId - b.taskId;
-    }
-  });
+
+  // const sortedTasks = [...filteredTasks].sort((a, b) => {
+  //   if (dueDateSort !== "none") {
+  //     const dateA = new Date(a.dueDate || 0).getTime();
+  //     const dateB = new Date(b.dueDate || 0).getTime();
+  //     return dueDateSort === "asc" ? dateA - dateB : dateB - dateA;
+  //   }
+  //   switch (sortBy) {
+  //     case "taskId":
+  //       return a.taskId - b.taskId;
+  //     case "priority":
+  //       const priorityOrder = { High: 3, Medium: 2, Low: 1 };
+  //       return (
+  //         (priorityOrder[b.priority] || 0) - (priorityOrder[a.priority] || 0)
+  //       );
+  //     case "status":
+  //       return (a.status || "").localeCompare(b.status || "");
+  //     case "taskName":
+  //       return (a.taskName || "").localeCompare(b.taskName || "");
+  //     default:
+  //       return a.taskId - b.taskId;
+  //   }
+  // });
 
   const filteredEmployeesForModal = employees.filter(
     (emp) =>
@@ -1239,7 +1126,7 @@ const AdmintaskPage = () => {
         return "bg-yellow-100 text-yellow-800";
       case "Open":
         return "bg-orange-100 text-orange-800";
-      case "Archived":
+      case "Archive":
         return "bg-gray-100 text-gray-800";
       case "Pending":
         return "bg-red-100 text-red-800";
@@ -1319,6 +1206,20 @@ const AdmintaskPage = () => {
     </span>
   );
 
+  // NEW: Handle status tab click
+  const handleStatusTabClick = (tab) => {
+    setCurrentStatusTab(tab);
+    if (tab === "All") {
+      setFilterStatus([]);
+    } else if (tab === "Open") {
+      setFilterStatus(["Open"]);
+    } else if (tab === "Not Started") {
+      setFilterStatus(["Pending", "Archive", "In Progress", "Hold"]);
+    } else if (tab === "Closed") {
+      setFilterStatus(["Complete"]);
+    }
+  };
+
   return (
     <div className="flex min-h-screen bg-white relative">
       <div className="sticky top-0 h-screen z-40">
@@ -1377,6 +1278,7 @@ const AdmintaskPage = () => {
                   )}
                 </div>
               </div>
+           
               <div className="flex flex-wrap gap-2 mb-4">
                 <button
                   onClick={() => setFilterTaskType("all")}
@@ -1407,6 +1309,57 @@ const AdmintaskPage = () => {
                     {type}
                   </button>
                 ))}
+              </div>
+                 {/* NEW: Status tabs adjacent to create button */}
+              <div className="flex overflow-x-auto gap-2 mb-4">
+                <button
+                  onClick={() => handleStatusTabClick("All")}
+                  className={`px-4 py-2 rounded-md flex items-center text-sm font-medium ${
+                    currentStatusTab === "All"
+                      ? "bg-blue-600 text-white"
+                      : "bg-blue-100 text-blue-800"
+                  }`}
+                  disabled={isLoading}
+                >
+                  <Filter className="w-4 h-4 mr-1" />
+                  All
+                </button>
+                <button
+                  onClick={() => handleStatusTabClick("Open")}
+                  className={`px-4 py-2 rounded-md flex items-center text-sm font-medium ${
+                    currentStatusTab === "Open"
+                      ? "bg-red-500 text-white"
+                      : "bg-red-100 text-red-800"
+                  }`}
+                  disabled={isLoading}
+                >
+                  <Filter className="w-4 h-4 mr-1" />
+                  New Tasks
+                </button>
+                <button
+                  onClick={() => handleStatusTabClick("Not Started")}
+                  className={`px-4 py-2 rounded-md flex items-center text-sm font-medium ${
+                    currentStatusTab === "Not Started"
+                      ? "bg-orange-400 text-white"
+                      : "bg-orange-100 text-orange-800"
+                  }`}
+                  disabled={isLoading}
+                >
+                  <Filter className="w-4 h-4 mr-1" />
+                 In Progress
+                </button>
+                <button
+                  onClick={() => handleStatusTabClick("Closed")}
+                  className={`px-4 py-2 rounded-md flex items-center text-sm font-medium ${
+                    currentStatusTab === "Closed"
+                      ? "bg-green-500 text-white"
+                      : "bg-green-100 text-green-800"
+                  }`}
+                  disabled={isLoading}
+                >
+                  <Filter className="w-4 h-4 mr-1" />
+                  Complete
+                </button>
               </div>
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4 mb-4">
                 <div className="flex-1 relative">
@@ -1645,7 +1598,7 @@ const AdmintaskPage = () => {
             <div className="hidden lg:block">
               <div className="w-full overflow-y-auto max-h-[70vh]">
                 <table className="w-full text-xs sm:text-sm table-fixed">
-                  <thead className="bg-gray-100 border-gray-700 rounded-full sticky top-0 z-10 border-b border-gray-200">
+                  {/* <thead className="bg-gray-100 border-gray-700 rounded-full sticky top-0 z-10 border-b border-gray-200">
                     <tr>
                       <th className="w-20 text-center py-3 px-2 sm:px-4 font-medium text-gray-700 whitespace-nowrap">
                         Task ID
@@ -1720,7 +1673,102 @@ const AdmintaskPage = () => {
                         Actions
                       </th>
                     </tr>
-                  </thead>
+                  </thead> */}
+
+                  <thead className="bg-gray-100 border-gray-700 rounded-full sticky top-0 z-10 border-b border-gray-200">
+  <tr>
+    <th
+      className="w-20 text-center py-3 px-2 sm:px-4 font-medium text-gray-700 whitespace-nowrap cursor-pointer"
+      onClick={() => handleSort("taskId")}
+    >
+      <div className="flex items-center justify-center">
+        Task ID
+        {sort.column === "taskId" &&
+          (sort.direction === "asc" ? (
+            <ChevronUp className="w-4 h-4 ml-1" />
+          ) : (
+            <ChevronDown className="w-4 h-4 ml-1" />
+          ))}
+      </div>
+    </th>
+    <th
+      className="w-48 text-center py-3 px-2 sm:px-4 font-medium text-gray-700 cursor-pointer"
+      onClick={() => handleSort("taskName")}
+    >
+      <div className="flex items-center justify-center">
+        Task Name
+        {sort.column === "taskName" &&
+          (sort.direction === "asc" ? (
+            <ChevronUp className="w-4 h-4 ml-1" />
+          ) : (
+            <ChevronDown className="w-4 h-4 ml-1" />
+          ))}
+      </div>
+    </th>
+    <th className="w-28 text-center py-3 px-2 sm:px-4 font-medium text-gray-700 whitespace-nowrap">
+      Task Type
+    </th>
+    <th
+      className="w-28 text-center py-3 px-2 sm:px-4 font-medium text-gray-700 whitespace-nowrap cursor-pointer"
+      onClick={() => handleSort("priority")}
+    >
+      <div className="flex items-center justify-center">
+        Priority
+        {sort.column === "priority" &&
+          (sort.direction === "asc" ? (
+            <ChevronUp className="w-4 h-4 ml-1" />
+          ) : (
+            <ChevronDown className="w-4 h-4 ml-1" />
+          ))}
+      </div>
+    </th>
+    <th
+      className="w-28 text-center py-3 px-2 sm:px-4 font-medium text-gray-700 whitespace-nowrap cursor-pointer"
+      onClick={() => handleSort("status")}
+    >
+      <div className="flex items-center justify-center">
+        Status
+        {sort.column === "status" &&
+          (sort.direction === "asc" ? (
+            <ChevronUp className="w-4 h-4 ml-1" />
+          ) : (
+            <ChevronDown className="w-4 h-4 ml-1" />
+          ))}
+      </div>
+    </th>
+    <th
+      className="w-32 text-center py-3 px-2 sm:px-4 font-medium text-gray-700 whitespace-nowrap cursor-pointer"
+      onClick={() => handleSort("assignedTo")}
+    >
+      <div className="flex items-center justify-center">
+        Assigned To
+        {sort.column === "assignedTo" &&
+          (sort.direction === "asc" ? (
+            <ChevronUp className="w-4 h-4 ml-1" />
+          ) : (
+            <ChevronDown className="w-4 h-4 ml-1" />
+          ))}
+      </div>
+    </th>
+    <th
+      className="w-32 text-center py-3 px-2 sm:px-4 font-medium text-gray-700 whitespace-nowrap cursor-pointer"
+      onClick={() => handleSort("dueDate")}
+    >
+      <div className="flex items-center justify-center">
+        Due Date
+        {sort.column === "dueDate" &&
+          (sort.direction === "asc" ? (
+            <ChevronUp className="w-4 h-4 ml-1" />
+          ) : (
+            <ChevronDown className="w-4 h-4 ml-1" />
+          ))}
+      </div>
+    </th>
+    <th className="w-40 text-center py-3 px-2 sm:px-4 font-medium text-gray-700 whitespace-nowrap">
+      Actions
+    </th>
+  </tr>
+</thead>
                   <tbody>
                     {sortedTasks.map((task) => (
                       <tr
@@ -1909,6 +1957,16 @@ const AdmintaskPage = () => {
                     ))}
                   </tbody>
                 </table>
+                 {sortedTasks.length === 0 && (
+                    <div className="text-center py-12 text-gray-500">
+                      <div className="mb-4">
+                        No tasks found matching your criteria
+                      </div>
+                      <div className="text-sm text-gray-400">
+                        Try adjusting your search or filters
+                      </div>
+                    </div>
+                  )}
               </div>
             </div>
             <div className="lg:hidden grid gap-4">

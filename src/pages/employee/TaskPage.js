@@ -10,7 +10,8 @@ import {
   Upload,
   Download,
   MessageCircle,
-  FunnelX
+  FunnelX,
+  Filter,
 } from "lucide-react";
 import Sidebar from "../../components/common/Sidebar";
 import Header from "../../components/common/Header";
@@ -70,23 +71,19 @@ const generateTaskId = (tasks) => {
 
 const isOverdue = (dueDate, status) => {
   if (!dueDate) return false;
-  if (status === "Complete" || status === "Archive") return false;
-  // Parse dueDate as yyyy-mm-dd or dd/mm/yyyy
+  if (status === "Complete" || status === "Archive" || status === "Hold")
+    return false;
   let dateObj;
   if (dueDate.includes("-")) {
-    // yyyy-mm-dd
     dateObj = new Date(dueDate);
   } else if (dueDate.includes("/")) {
-    // dd/mm/yyyy
     const [day, month, year] = dueDate.split("/");
     dateObj = new Date(`${year}-${month}-${day}`);
   } else {
     dateObj = new Date(dueDate);
   }
-  // Get today's date at midnight
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  // Compare only date part
   return dateObj < today;
 };
 
@@ -103,7 +100,7 @@ const TaskPage = () => {
   const [showSidebar, setShowSidebar] = useState(false);
   const [tasks, setTasks] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterStatus, setFilterStatus] = useState([]); // Change filterStatus to array for multi-select
+  const [filterStatus, setFilterStatus] = useState([]);
   const [filterPriority, setFilterPriority] = useState("all");
   const [filterTaskType, setFilterTaskType] = useState("all");
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -126,12 +123,24 @@ const TaskPage = () => {
   const [viewedTasks, setViewedTasks] = useState(new Set());
   const [sortBy, setSortBy] = useState("taskId");
   const [sortOrder, setSortOrder] = useState("desc");
-
-  // Add multi-select dropdown state
+  const [currentStatusTab, setCurrentStatusTab] = useState("All");
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
   const statusDropdownRef = useRef(null);
 
-  // Add useEffect for outside click to close status dropdown
+  // NEW: Handle status tab click
+  const handleStatusTabClick = (tab) => {
+    setCurrentStatusTab(tab);
+    if (tab === "All") {
+      setFilterStatus([]);
+    } else if (tab === "Open") {
+      setFilterStatus(["Open"]);
+    } else if (tab === "Not Started") {
+      setFilterStatus(["Pending", "Archive", "In Progress", "Hold"]);
+    } else if (tab === "Closed") {
+      setFilterStatus(["Complete"]);
+    }
+  };
+
   useEffect(() => {
     function handleClickOutside(event) {
       if (
@@ -407,7 +416,8 @@ const TaskPage = () => {
                       email ||
                       "Unknown",
                     avatar:
-                      employees.find((emp) => emp.email === email)?.avatar || "",
+                      employees.find((emp) => emp.email === email)?.avatar ||
+                      "",
                   })),
                 }
               : task
@@ -582,9 +592,9 @@ const TaskPage = () => {
     setFilterStatus([]);
     setFilterPriority("all");
     setFilterTaskType("all");
+    setCurrentStatusTab("All");
   };
 
-  // Multi-select toggle function
   const toggleStatus = (value) => {
     setFilterStatus((prev) =>
       prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value]
@@ -606,7 +616,9 @@ const TaskPage = () => {
         filterPriority === "all" || task.priority === filterPriority;
       const matchesTaskType =
         filterTaskType === "all" || task.taskType === filterTaskType;
-      return matchesSearch && matchesStatus && matchesPriority && matchesTaskType;
+      return (
+        matchesSearch && matchesStatus && matchesPriority && matchesTaskType
+      );
     });
   }, [tasks, searchTerm, filterStatus, filterPriority, filterTaskType]);
 
@@ -751,7 +763,6 @@ const TaskPage = () => {
     filterStatus.length > 0 ||
     filterPriority !== "all" ||
     filterTaskType !== "all";
-
   return (
     <div className="flex bg-white min-h-screen">
       <div className="sticky top-0 h-screen z-40">
@@ -774,7 +785,7 @@ const TaskPage = () => {
             )}
             {toast && (
               <div
-                className="fixed top-4 right-4 z-60 px-4 py-2 rounded-md shadow-lg max-w-md w-56 text-sm bg-blue-600 text-white"
+                className="fixed top-4 right-4 z-60 px-4 py-2 rounded-md shadow-lg max-w-md w-56 text-sm bg-green-600 text-white"
                 style={{ zIndex: 60 }}
               >
                 {toast.message}
@@ -840,6 +851,57 @@ const TaskPage = () => {
                     {type}
                   </button>
                 ))}
+              </div>
+              {/* NEW: Status tabs adjacent to create button */}
+              <div className="flex overflow-x-auto gap-2 mb-4">
+                <button
+                  onClick={() => handleStatusTabClick("All")}
+                  className={`px-4 py-2 rounded-md flex items-center text-sm font-medium ${
+                    currentStatusTab === "All"
+                      ? "bg-blue-600 text-white"
+                      : "bg-blue-100 text-blue-800"
+                  }`}
+                  disabled={isLoading}
+                >
+                  <Filter className="w-4 h-4 mr-1" />
+                  All
+                </button>
+                <button
+                  onClick={() => handleStatusTabClick("Open")}
+                  className={`px-4 py-2 rounded-md flex items-center text-sm font-medium ${
+                    currentStatusTab === "Open"
+                      ? "bg-green-500 text-white"
+                      : "bg-green-100 text-green-800"
+                  }`}
+                  disabled={isLoading}
+                >
+                  <Filter className="w-4 h-4 mr-1" />
+                  New Tasks
+                </button>
+                <button
+                  onClick={() => handleStatusTabClick("Not Started")}
+                  className={`px-4 py-2 rounded-md flex items-center text-sm font-medium ${
+                    currentStatusTab === "Not Started"
+                      ? "bg-orange-400 text-white"
+                      : "bg-orange-100 text-orange-800"
+                  }`}
+                  disabled={isLoading}
+                >
+                  <Filter className="w-4 h-4 mr-1" />
+                  In Progress
+                </button>
+                <button
+                  onClick={() => handleStatusTabClick("Closed")}
+                  className={`px-4 py-2 rounded-md flex items-center text-sm font-medium ${
+                    currentStatusTab === "Closed"
+                      ? "bg-red-500 text-white"
+                      : "bg-red-100 text-red-800"
+                  }`}
+                  disabled={isLoading}
+                >
+                  <Filter className="w-4 h-4 mr-1" />
+                  Completed
+                </button>
               </div>
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-4 mb-4">
                 <div className="flex-1 relative">
@@ -958,15 +1020,9 @@ const TaskPage = () => {
                       <th className="text-left py-3 px-2 sm:px-4 font-medium text-gray-700">
                         Task Type
                       </th>
-                      <th className="text-left py-3 px-2 sm:px-4 font-medium text-gray-700">
+                      {/* <th className="text-left py-3 px-2 sm:px-4 font-medium text-gray-700">
                         Priority
-                      </th>
-                      <th className="text-left py-3 px-2 sm:px-4 font-medium text-gray-700">
-                        Status
-                      </th>
-                      <th className="text-left py-3 px-2 sm:px-4 font-medium text-gray-700">
-                        Assigned By
-                      </th>
+                      </th> */}
                       <th className="text-left py-3 px-2 sm:px-4 font-medium text-gray-700">
                         Assigned Date
                       </th>
@@ -974,11 +1030,15 @@ const TaskPage = () => {
                         className="text-left py-3 px-2 sm:px-4 font-medium text-gray-700 cursor-pointer"
                         onClick={() => handleSort("dueDate")}
                       >
-                        Due Date{" "}
-                        <span className="text-blue-600">
-                          ↑↓
-                        </span>
+                        Due Date <span className="text-blue-600">↑↓</span>
                       </th>
+                      <th className="text-left py-3 px-2 sm:px-4 font-medium text-gray-700">
+                        Status
+                      </th>
+                      {/* <th className="text-left py-3 px-2 sm:px-4 font-medium text-gray-700">
+                        Assigned By
+                      </th> */}
+
                       <th className="text-left py-3 px-2 sm:px-4 font-medium text-gray-700">
                         Actions
                       </th>
@@ -1002,10 +1062,21 @@ const TaskPage = () => {
                             {task.taskId}
                           </td>
                           <td className="py-3 px-2 sm:px-4">
-                            <div className="font-medium text-gray-900 truncate">
-                              {task.taskName}
+                            <div className="relative group max-w-[150px]">
+                              <div className="font-medium text-gray-900 truncate cursor-pointer">
+                                {task.taskName}
+                              </div>
+                              {/* Tooltip */}
+                              <div
+                                className="absolute left-1/2 -translate-x-1/2 top-full mt-1
+                 hidden group-hover:block whitespace-nowrap
+                 bg-red-800 text-white text-xs px-2 py-1 rounded shadow-lg z-50"
+                              >
+                                {task.taskName}
+                              </div>
                             </div>
                           </td>
+
                           <td className="py-3 px-2 sm:px-4">
                             <span
                               className={`px-2 py-1 rounded-full text-xs font-medium ${getTaskTypeColor(
@@ -1015,7 +1086,7 @@ const TaskPage = () => {
                               {task.taskType}
                             </span>
                           </td>
-                          <td className="py-3 px-2 sm:px-4">
+                          {/* <td className="py-3 px-2 sm:px-4">
                             <span
                               className={`px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(
                                 task.priority
@@ -1023,29 +1094,8 @@ const TaskPage = () => {
                             >
                               {task.priority}
                             </span>
-                          </td>
-                          <td className="py-3 px-2 sm:px-4">
-                            <span
-                              className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
-                                task.status
-                              )}`}
-                            >
-                              {task.status}
-                            </span>
-                          </td>
-                          <td className="py-3 px-2 sm:px-4 text-gray-600">
-                            <div className="relative group">
-                              <div
-                                className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 text-sm font-medium"
-                                title={task.assignedBy}
-                              >
-                                {getInitials(task.assignedBy)}
-                              </div>
-                              <span className="absolute left-0 top-10 bg-gray-800 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                                {task.assignedBy}
-                              </span>
-                            </div>
-                          </td>
+                          </td> */}
+
                           <td className="py-3 px-2 sm:px-4 text-gray-600">
                             {formatDate(task.assignedDateTime)}
                           </td>
@@ -1057,7 +1107,33 @@ const TaskPage = () => {
                             )}
                           </td>
                           <td className="py-3 px-2 sm:px-4">
-                            <div className="flex items-center space-x-2" onClick={(e) => e.stopPropagation()}>
+                            <span
+                              className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
+                                task.status
+                              )}`}
+                            >
+                              {task.status}
+                            </span>
+                          </td>
+                          {/* <td className="py-3 px-2  sm:px-4 text-gray-600">
+                            <div className="relative group">
+                              <div
+                                className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 text-sm font-medium"
+                                title={task.assignedBy}
+                              >
+                                {getInitials(task.assignedBy)}
+                              </div>
+                              <span className="absolute left-0 top-10 bg-gray-800 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                                {task.assignedBy}
+                              </span>
+                            </div>
+                          </td> */}
+
+                          <td className="py-3 px-2 sm:px-4">
+                            <div
+                              className="flex items-center space-x-2"
+                              onClick={(e) => e.stopPropagation()}
+                            >
                               <button
                                 onClick={() => handleViewTask(task)}
                                 className="p-1 text-blue-600 hover:bg-blue-50 rounded"
@@ -1125,7 +1201,10 @@ const TaskPage = () => {
                           {task.taskName}
                         </span>
                       </div>
-                      <div className="flex gap-2 items-center" onClick={(e) => e.stopPropagation()}>
+                      <div
+                        className="flex gap-2 items-center"
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         <button
                           onClick={() => handleViewTask(task)}
                           className="p-1 text-blue-600 hover:bg-blue-50 rounded"
@@ -1251,7 +1330,12 @@ const TaskPage = () => {
             {(isModalOpen || isEditModalOpen) && (
               <div
                 className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
-                onClick={(e) => handleModalBackdropClick(e, isEditModalOpen ? "edit" : "create")}
+                onClick={(e) =>
+                  handleModalBackdropClick(
+                    e,
+                    isEditModalOpen ? "edit" : "create"
+                  )
+                }
               >
                 <div className="bg-white rounded-lg shadow-xl w-full max-w-7xl sm:max-w-2xl md:max-w-3xl lg:max-w-7xl p-3 sm:p-4 md:p-6 max-h-[95vh] sm:max-h-[90vh] overflow-y-auto mx-2 sm:mx-0">
                   <div className="flex items-center justify-between mb-6">
@@ -1274,9 +1358,7 @@ const TaskPage = () => {
                     </button>
                   </div>
                   <form
-                    onSubmit={(e) =>
-                      handleSubmit(e, isEditModalOpen && false)
-                    }
+                    onSubmit={(e) => handleSubmit(e, isEditModalOpen && false)}
                     className="space-y-6"
                   >
                     <div>
@@ -1320,9 +1402,7 @@ const TaskPage = () => {
                       <input
                         type="text"
                         value={employeeSearchTerm}
-                        onChange={(e) =>
-                          setEmployeeSearchTerm(e.target.value)
-                        }
+                        onChange={(e) => setEmployeeSearchTerm(e.target.value)}
                         onFocus={() => setShowEmployeeDropdown(true)}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                         placeholder="Search employee by name or department"
@@ -1564,7 +1644,7 @@ const TaskPage = () => {
                 className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
                 onClick={(e) => handleModalBackdropClick(e, "view")}
               >
-                <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl sm:max-w-3xl md:max-w-4xl lg:max-w-5xl p-4 sm:p-6 max-h-[90vh] overflow-y-auto">
+                <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl sm:max-w-3xl md:max-w-4xl lg:max-w-7xl p-4 sm:p-6 max-h-[90vh] overflow-y-auto">
                   <div className="flex justify-between items-start mb-6">
                     <div className="flex items-center space-x-2">
                       <h2 className="text-lg sm:text-xl font-semibold">
@@ -1626,9 +1706,7 @@ const TaskPage = () => {
                       </p>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-500 mb-2">
-                        Assigned To
-                      </p>
+                      <p className="text-sm text-gray-500 mb-2">Assigned To</p>
                       <div className="flex flex-wrap gap-2">
                         {Array.isArray(viewTask.assignedTo) &&
                         viewTask.assignedTo.length > 0 ? (
@@ -1648,18 +1726,14 @@ const TaskPage = () => {
                       </div>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-500 mb-2">
-                        Assigned By
-                      </p>
+                      <p className="text-sm text-gray-500 mb-2">Assigned By</p>
                       <span className="text-sm text-gray-800">
                         {viewTask.assignedBy}
                       </span>
                     </div>
                     <div>
                       <p className="text-sm text-gray-500 mb-2">Task ID</p>
-                      <p className="text-sm text-gray-800">
-                        {viewTask.taskId}
-                      </p>
+                      <p className="text-sm text-gray-800">{viewTask.taskId}</p>
                     </div>
                     <div>
                       <p className="text-sm text-gray-500 mb-2">
@@ -1672,11 +1746,9 @@ const TaskPage = () => {
                   </div>
                   <div className="mb-6">
                     <p className="text-sm text-black mb-2">Attachments</p>
-                    <div className="flex space-x-2 mb-4">
-                    </div>
+                    <div className="flex space-x-2 mb-4"></div>
                     <div className="p-4 bg-gray-50 rounded-b-md">
-                      {activeTab === "all" &&
-                      viewTask.fileUrls?.length > 0 ? (
+                      {activeTab === "all" && viewTask.fileUrls?.length > 0 ? (
                         <div className="flex flex-wrap gap-2">
                           {viewTask.fileUrls.map((att, idx) => (
                             <a
@@ -1704,9 +1776,7 @@ const TaskPage = () => {
                           ))}
                         </div>
                       ) : (
-                        <p className="text-sm text-gray-400">
-                          No attachments
-                        </p>
+                        <p className="text-sm text-gray-400">No attachments</p>
                       )}
                     </div>
                   </div>
@@ -1723,10 +1793,7 @@ const TaskPage = () => {
                     <select
                       value={viewTask.status}
                       onChange={(e) =>
-                        handleUpdateTaskStatus(
-                          viewTask.taskId,
-                          e.target.value
-                        )
+                        handleUpdateTaskStatus(viewTask.taskId, e.target.value)
                       }
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                       disabled={isLoading}
@@ -1786,10 +1853,13 @@ const TaskPage = () => {
                               <div className="flex items-start gap-2">
                                 <img
                                   src={comment.profileImage}
-                                  alt={`${comment.userName || comment.user} avatar`}
+                                  alt={`${
+                                    comment.userName || comment.user
+                                  } avatar`}
                                   className="w-8 h-8 rounded-full object-cover"
                                   onError={(e) => {
-                                    e.target.src = "https://via.placeholder.com/32";
+                                    e.target.src =
+                                      "https://via.placeholder.com/32";
                                   }}
                                 />
                                 <div>
@@ -1797,9 +1867,10 @@ const TaskPage = () => {
                                     {comment.message || "No message"}
                                   </p>
                                   <p className="text-xs text-gray-500 mt-1">
-                                    {comment.userName || comment.user || "Unknown User"}{" "}
-                                    •{" "}
-                                    {formatDate(comment.timestamp)}
+                                    {comment.userName ||
+                                      comment.user ||
+                                      "Unknown User"}{" "}
+                                    • {formatDate(comment.timestamp)}
                                   </p>
                                 </div>
                               </div>

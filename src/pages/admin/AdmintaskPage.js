@@ -18,7 +18,7 @@ import {
   Plus,
   X,
   Send,
-  Loader2,
+  Loader,
   Upload,
   Download,
   Mail,
@@ -164,6 +164,7 @@ const AdmintaskPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState(null);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
 
   // SEPARATE STATES FOR FILTER AND MODAL DROPDOWNS
   const [showEmployeeDropdown, setShowEmployeeDropdown] = useState(false); // For filter dropdown
@@ -570,14 +571,18 @@ const AdmintaskPage = () => {
   }
 };
 
-    if (token) {
-      fetchEmployees().then(() => fetchTasks());
-    } else {
-      setError("No authentication token found");
-      console.error("No token found in localStorage");
-    }
-    // }, [token]);
-  }, [token, employees]);
+   if (token) {
+        fetchEmployees().then(() => {
+            fetchTasks().then(() => {
+            setIsInitialLoading(false);
+            });
+        });
+        } else {
+        setError("No authentication token found");
+        console.error("No token found in localStorage");
+        setIsInitialLoading(false);
+        }
+    }, [token, employees]);
 
   // useEffect(() => {
   //   tasks.forEach((task) => {
@@ -1278,7 +1283,7 @@ useEffect(() => {
                   )}
                 </div>
               </div>
-           
+
               <div className="flex flex-wrap gap-2 mb-4">
                 <button
                   onClick={() => setFilterTaskType("all")}
@@ -1310,7 +1315,7 @@ useEffect(() => {
                   </button>
                 ))}
               </div>
-                 {/* NEW: Status tabs adjacent to create button */}
+              {/* NEW: Status tabs adjacent to create button */}
               <div className="flex overflow-x-auto gap-2 mb-4">
                 <button
                   onClick={() => handleStatusTabClick("All")}
@@ -1346,7 +1351,7 @@ useEffect(() => {
                   disabled={isLoading}
                 >
                   <Filter className="w-4 h-4 mr-1" />
-                 In Progress
+                  In Progress
                 </button>
                 <button
                   onClick={() => handleStatusTabClick("Closed")}
@@ -1676,288 +1681,282 @@ useEffect(() => {
                   </thead> */}
 
                   <thead className="bg-gray-100 border-gray-700 rounded-full sticky top-0 z-10 border-b border-gray-200">
-  <tr>
-    <th
-      className="w-20 text-center py-3 px-2 sm:px-4 font-medium text-gray-700 whitespace-nowrap cursor-pointer"
-      onClick={() => handleSort("taskId")}
-    >
-      <div className="flex items-center justify-center">
-        Task ID
-        {sort.column === "taskId" &&
-          (sort.direction === "asc" ? (
-            <ChevronUp className="w-4 h-4 ml-1" />
-          ) : (
-            <ChevronDown className="w-4 h-4 ml-1" />
-          ))}
-      </div>
-    </th>
-    <th
-      className="w-48 text-center py-3 px-2 sm:px-4 font-medium text-gray-700 cursor-pointer"
-      onClick={() => handleSort("taskName")}
-    >
-      <div className="flex items-center justify-center">
-        Task Name
-        {sort.column === "taskName" &&
-          (sort.direction === "asc" ? (
-            <ChevronUp className="w-4 h-4 ml-1" />
-          ) : (
-            <ChevronDown className="w-4 h-4 ml-1" />
-          ))}
-      </div>
-    </th>
-    <th className="w-28 text-center py-3 px-2 sm:px-4 font-medium text-gray-700 whitespace-nowrap">
-      Task Type
-    </th>
-    <th
-      className="w-28 text-center py-3 px-2 sm:px-4 font-medium text-gray-700 whitespace-nowrap cursor-pointer"
-      onClick={() => handleSort("priority")}
-    >
-      <div className="flex items-center justify-center">
-        Priority
-        {sort.column === "priority" &&
-          (sort.direction === "asc" ? (
-            <ChevronUp className="w-4 h-4 ml-1" />
-          ) : (
-            <ChevronDown className="w-4 h-4 ml-1" />
-          ))}
-      </div>
-    </th>
-    <th
-      className="w-28 text-center py-3 px-2 sm:px-4 font-medium text-gray-700 whitespace-nowrap cursor-pointer"
-      onClick={() => handleSort("status")}
-    >
-      <div className="flex items-center justify-center">
-        Status
-        {sort.column === "status" &&
-          (sort.direction === "asc" ? (
-            <ChevronUp className="w-4 h-4 ml-1" />
-          ) : (
-            <ChevronDown className="w-4 h-4 ml-1" />
-          ))}
-      </div>
-    </th>
-    <th
-      className="w-32 text-center py-3 px-2 sm:px-4 font-medium text-gray-700 whitespace-nowrap cursor-pointer"
-      onClick={() => handleSort("assignedTo")}
-    >
-      <div className="flex items-center justify-center">
-        Assigned To
-        {sort.column === "assignedTo" &&
-          (sort.direction === "asc" ? (
-            <ChevronUp className="w-4 h-4 ml-1" />
-          ) : (
-            <ChevronDown className="w-4 h-4 ml-1" />
-          ))}
-      </div>
-    </th>
-    <th
-      className="w-32 text-center py-3 px-2 sm:px-4 font-medium text-gray-700 whitespace-nowrap cursor-pointer"
-      onClick={() => handleSort("dueDate")}
-    >
-      <div className="flex items-center justify-center">
-        Due Date
-        {sort.column === "dueDate" &&
-          (sort.direction === "asc" ? (
-            <ChevronUp className="w-4 h-4 ml-1" />
-          ) : (
-            <ChevronDown className="w-4 h-4 ml-1" />
-          ))}
-      </div>
-    </th>
-    <th className="w-40 text-center py-3 px-2 sm:px-4 font-medium text-gray-700 whitespace-nowrap">
-      Actions
-    </th>
-  </tr>
-</thead>
-                  <tbody>
-                    {sortedTasks.map((task) => (
-                      <tr
-                        key={task._id}
-                        className={`border-b border-gray-100 hover:bg-gray-50 cursor-pointer ${
-                          isOverdue(task.dueDate, task.dueTime, task.status)
-                            ? "bg-red-50"
-                            : ""
-                        }`}
-                        onClick={() => handleViewTask(task)}
+                    <tr>
+                      <th
+                        className="w-20 text-center py-3 px-2 sm:px-4 font-medium text-gray-700 whitespace-nowrap cursor-pointer"
+                        onClick={() => handleSort("taskId")}
                       >
-                        <td className="py-4 px-2 sm:px-4 text-gray-900 text-center truncate">
-                          {task.taskId}
-                        </td>
-                        <td
-                          className="py-4 px-2 sm:px-4 text-start truncate font-normal"
-                          title={task.taskName}
-                        >
-                          {task.taskName}
-                        </td>
-                        <td className="py-4 px-2 sm:px-4 text-center">
-                          <span
-                            className={`px-2 py-1 rounded-full text-xs font-medium ${getTaskTypeColor(
-                              task.taskType
-                            )}`}
-                          >
-                            {task.taskType}
-                          </span>
-                        </td>
-                        <td className="py-4 px-2 sm:px-4 text-center">
-                          <span
-                            className={`px-2 py-1 rounded-full text-sm font-medium ${getPriorityColor(
-                              task.priority
-                            )}`}
-                          >
-                            {task.priority}
-                          </span>
-                        </td>
-                        <td className="py-4 px-2 sm:px-4 text-center">
-                          <span
-                            className={`px-2 py-1 min-w-[90px] text-center whitespace-nowrap rounded-full text-xs font-medium ${getStatusColor(
-                              getDisplayStatus(task)
-                            )}`}
-                          >
-                            {getDisplayStatus(task)}
-                          </span>
-                        </td>
-                        {/* <td className="py-4 px-2 sm:px-4 text-gray-600 text-center">
-                          <span className="flex -space-x-1 justify-center">
-                            {Array.isArray(task.assignedTo) &&
-                            task.assignedTo.length > 0 ? (
-                              task.assignedTo.map((emp) => (
-                                <div key={emp.email} className="relative group">
-                                  {emp.avatar ? (
-                                    <img
-                                      src={emp.avatar}
-                                      alt={emp.name || emp.email}
-                                      className="inline-block w-7 h-7 rounded-full border border-gray-300"
-                                    />
-                                  ) : (
-                                    <span className="inline-flex w-7 h-7 bg-gray-200 rounded-full items-center justify-center text-gray-600 text-xs font-medium">
-                                      {getInitials(emp.name || emp.email)}
-                                    </span>
-                                  )}
-                                  <span className="absolute left-1/2 transform -translate-x-1/2 top-8 bg-red-800 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none whitespace-nowrap">
-                                    { emp.email}
-                                  </span>
-                                </div>
-                              ))
+                        <div className="flex items-center justify-center">
+                          Task ID
+                          {sort.column === "taskId" &&
+                            (sort.direction === "asc" ? (
+                              <ChevronUp className="w-4 h-4 ml-1" />
                             ) : (
-                              <div className="relative group">
-                                <span className="inline-flex w-6 h-6 bg-gray-100 rounded-full items-center justify-center text-gray-600 text-xs font-medium">
-                                  UN
-                                </span>
-                                <span className="absolute left-1/2 transform -translate-x-1/2 top-8 bg-gray-800 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                                  Unassigned
-                                </span>
-                              </div>
-                            )}
-                          </span>
-                        </td> */}
-
-                        <td className="py-4 px-2 sm:px-4 text-gray-600 text-center">
-                          <span className="flex -space-x-1 justify-center">
-                            {Array.isArray(task.assignedTo) &&
-                            task.assignedTo.length > 0 ? (
-                              task.assignedTo.map((emp) => (
-                                <div key={emp.email} className="relative group">
-                                  {emp.avatar ? (
-                                    <img
-                                      src={emp.avatar}
-                                      alt={emp.name || emp.email}
-                                      className="inline-block w-7 h-7 rounded-full border border-gray-300"
-                                    />
-                                  ) : (
-                                    <span className="inline-flex w-7 h-7 bg-gray-200 rounded-full items-center justify-center text-gray-600 text-xs font-medium">
-                                      {getInitials(emp.name || emp.email)}
-                                    </span>
-                                  )}
-                                  <span className="absolute left-1/2 transform -translate-x-1/2 top-8 bg-red-800 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none whitespace-nowrap">
-                                    {emp.email
-                                      .split("@")[0]
-                                      .replace(".", " ")
-                                      .replace(/\b\w/g, (l) => l.toUpperCase())}
-                                  </span>
-                                </div>
-                              ))
+                              <ChevronDown className="w-4 h-4 ml-1" />
+                            ))}
+                        </div>
+                      </th>
+                      <th
+                        className="w-48 text-center py-3 px-2 sm:px-4 font-medium text-gray-700 cursor-pointer"
+                        onClick={() => handleSort("taskName")}
+                      >
+                        <div className="flex items-center justify-center">
+                          Task Name
+                          {sort.column === "taskName" &&
+                            (sort.direction === "asc" ? (
+                              <ChevronUp className="w-4 h-4 ml-1" />
                             ) : (
-                              <div className="relative group">
-                                <span className="inline-flex w-6 h-6 bg-gray-100 rounded-full items-center justify-center text-gray-600 text-xs font-medium">
-                                  UN
-                                </span>
-                                <span className="absolute left-1/2 transform -translate-x-1/2 top-8 bg-gray-800 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                                  Unassigned
-                                </span>
-                              </div>
-                            )}
-                          </span>
-                        </td>
+                              <ChevronDown className="w-4 h-4 ml-1" />
+                            ))}
+                        </div>
+                      </th>
+                      <th className="w-28 text-center py-3 px-2 sm:px-4 font-medium text-gray-700 whitespace-nowrap">
+                        Task Type
+                      </th>
+                      <th
+                        className="w-28 text-center py-3 px-2 sm:px-4 font-medium text-gray-700 whitespace-nowrap cursor-pointer"
+                        onClick={() => handleSort("priority")}
+                      >
+                        <div className="flex items-center justify-center">
+                          Priority
+                          {sort.column === "priority" &&
+                            (sort.direction === "asc" ? (
+                              <ChevronUp className="w-4 h-4 ml-1" />
+                            ) : (
+                              <ChevronDown className="w-4 h-4 ml-1" />
+                            ))}
+                        </div>
+                      </th>
+                      <th
+                        className="w-28 text-center py-3 px-2 sm:px-4 font-medium text-gray-700 whitespace-nowrap cursor-pointer"
+                        onClick={() => handleSort("status")}
+                      >
+                        <div className="flex items-center justify-center">
+                          Status
+                          {sort.column === "status" &&
+                            (sort.direction === "asc" ? (
+                              <ChevronUp className="w-4 h-4 ml-1" />
+                            ) : (
+                              <ChevronDown className="w-4 h-4 ml-1" />
+                            ))}
+                        </div>
+                      </th>
+                      <th
+                        className="w-32 text-center py-3 px-2 sm:px-4 font-medium text-gray-700 whitespace-nowrap cursor-pointer"
+                        onClick={() => handleSort("assignedTo")}
+                      >
+                        <div className="flex items-center justify-center">
+                          Assigned To
+                          {sort.column === "assignedTo" &&
+                            (sort.direction === "asc" ? (
+                              <ChevronUp className="w-4 h-4 ml-1" />
+                            ) : (
+                              <ChevronDown className="w-4 h-4 ml-1" />
+                            ))}
+                        </div>
+                      </th>
+                      <th
+                        className="w-32 text-center py-3 px-2 sm:px-4 font-medium text-gray-700 whitespace-nowrap cursor-pointer"
+                        onClick={() => handleSort("dueDate")}
+                      >
+                        <div className="flex items-center justify-center">
+                          Due Date
+                          {sort.column === "dueDate" &&
+                            (sort.direction === "asc" ? (
+                              <ChevronUp className="w-4 h-4 ml-1" />
+                            ) : (
+                              <ChevronDown className="w-4 h-4 ml-1" />
+                            ))}
+                        </div>
+                      </th>
+                      <th className="w-40 text-center py-3 px-2 sm:px-4 font-medium text-gray-700 whitespace-nowrap">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {isInitialLoading ? (
+                      <tr>
+                        <td colSpan="7" className="py-12 text-center">
+                          <Loader className="w-8 h-8 animate-spin text-blue-600 mx-auto" />
+                          <span className="text-gray-500">
+                              Loading Tasks... 
 
-                        <td className="py-4 px-2 sm:px-4 text-gray-600 text-center truncate">
-                          {formatDisplayDate(task.dueDate)}
-                          {task.dueTime !== "N/A" && ` ${task.dueTime}`}
-                          {isOverdue(
-                            task.dueDate,
-                            task.dueTime,
-                            task.status
-                          ) && (
-                            <AlertCircle className="inline ml-2 text-red-600 w-4 h-4" />
-                          )}
-                        </td>
-                        <td
-                          className="py-4 px-2 sm:px-4 text-center"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <div className="flex justify-center gap-2">
-                            <button
-                              onClick={() => handleViewTask(task)}
-                              className="p-1 text-blue-600 hover:bg-blue-50 rounded"
-                              title="View Details"
-                              disabled={isLoading}
-                            >
-                              <Eye className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() =>
-                                handleOpenRemainderEmailModal(task)
-                              }
-                              className="p-1 text-purple-600 hover:bg-purple-50 rounded"
-                              title="Send Reminder"
-                              disabled={isLoading}
-                            >
-                              <Mail className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => handleViewTask(task)}
-                              className="p-1 text-orange-600 hover:bg-orange-50 rounded relative"
-                              title="View Comments"
-                              disabled={isLoading}
-                            >
-                              <MessageCircle
-                                className={`w-4 h-4 ${
-                                  unseenComments[task._id] &&
-                                  unseenComments[task._id].length > 0
-                                    ? "text-orange-500 animate-pulse"
-                                    : "text-gray-600"
-                                }`}
-                              />
-                              {task.comments?.length > 0 && (
-                                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
-                                  {task.comments.length}
-                                </span>
-                              )}
-                            </button>
-                            <button
-                              onClick={() => confirmDelete(task)}
-                              className="p-1 text-red-600 hover:bg-red-50 rounded"
-                              title="Delete Task"
-                              disabled={isLoading}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
+                          </span>
                         </td>
                       </tr>
-                    ))}
+                    ) : sortedTasks.length === 0 ? (
+                      <tr>
+                        <td
+                          colSpan="7"
+                          className="py-12 text-center text-gray-500"
+                        >
+                          No tasks found matching your criteria <br />
+                          Try adjusting your filters
+                        </td>
+                       
+                      </tr>
+                    ) : (
+                      sortedTasks.map((task) => (
+                        <tr
+                          key={task._id}
+                          className={`border-b border-gray-100 hover:bg-gray-50 cursor-pointer ${
+                            isOverdue(task.dueDate, task.dueTime, task.status)
+                              ? "bg-red-50"
+                              : ""
+                          }`}
+                          onClick={() => handleViewTask(task)}
+                        >
+                          <td className="py-4 px-2 sm:px-4 text-gray-900 text-center truncate">
+                            {task.taskId}
+                          </td>
+                          <td
+                            className="py-4 px-2 sm:px-4 text-start truncate font-normal"
+                            title={task.taskName}
+                          >
+                            {task.taskName}
+                          </td>
+                          <td className="py-4 px-2 sm:px-4 text-center">
+                            <span
+                              className={`px-2 py-1 rounded-full text-xs font-medium ${getTaskTypeColor(
+                                task.taskType
+                              )}`}
+                            >
+                              {task.taskType}
+                            </span>
+                          </td>
+                          <td className="py-4 px-2 sm:px-4 text-center">
+                            <span
+                              className={`px-2 py-1 rounded-full text-sm font-medium ${getPriorityColor(
+                                task.priority
+                              )}`}
+                            >
+                              {task.priority}
+                            </span>
+                          </td>
+                          <td className="py-4 px-2 sm:px-4 text-center">
+                            <span
+                              className={`px-2 py-1 min-w-[90px] text-center whitespace-nowrap rounded-full text-xs font-medium ${getStatusColor(
+                                getDisplayStatus(task)
+                              )}`}
+                            >
+                              {getDisplayStatus(task)}
+                            </span>
+                          </td>
+
+                          <td className="py-4 px-2 sm:px-4 text-gray-600 text-center">
+                            <span className="flex -space-x-1 justify-center">
+                              {Array.isArray(task.assignedTo) &&
+                              task.assignedTo.length > 0 ? (
+                                task.assignedTo.map((emp) => (
+                                  <div
+                                    key={emp.email}
+                                    className="relative group"
+                                  >
+                                    {emp.avatar ? (
+                                      <img
+                                        src={emp.avatar}
+                                        alt={emp.name || emp.email}
+                                        className="inline-block w-7 h-7 rounded-full border border-gray-300"
+                                      />
+                                    ) : (
+                                      <span className="inline-flex w-7 h-7 bg-gray-200 rounded-full items-center justify-center text-gray-600 text-xs font-medium">
+                                        {getInitials(emp.name || emp.email)}
+                                      </span>
+                                    )}
+                                    <span className="absolute left-1/2 transform -translate-x-1/2 top-8 bg-red-800 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none whitespace-nowrap">
+                                      {emp.email
+                                        .split("@")[0]
+                                        .replace(".", " ")
+                                        .replace(/\b\w/g, (l) =>
+                                          l.toUpperCase()
+                                        )}
+                                    </span>
+                                  </div>
+                                ))
+                              ) : (
+                                <div className="relative group">
+                                  <span className="inline-flex w-6 h-6 bg-gray-100 rounded-full items-center justify-center text-gray-600 text-xs font-medium">
+                                    UN
+                                  </span>
+                                  <span className="absolute left-1/2 transform -translate-x-1/2 top-8 bg-gray-800 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                                    Unassigned
+                                  </span>
+                                </div>
+                              )}
+                            </span>
+                          </td>
+
+                          <td className="py-4 px-2 sm:px-4 text-gray-600 text-center truncate">
+                            {formatDisplayDate(task.dueDate)}
+                            {task.dueTime !== "N/A" && ` ${task.dueTime}`}
+                            {isOverdue(
+                              task.dueDate,
+                              task.dueTime,
+                              task.status
+                            ) && (
+                              <AlertCircle className="inline ml-2 text-red-600 w-4 h-4" />
+                            )}
+                          </td>
+                          <td
+                            className="py-4 px-2 sm:px-4 text-center"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <div className="flex justify-center gap-2">
+                              <button
+                                onClick={() => handleViewTask(task)}
+                                className="p-1 text-blue-600 hover:bg-blue-50 rounded"
+                                title="View Details"
+                                disabled={isLoading}
+                              >
+                                <Eye className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() =>
+                                  handleOpenRemainderEmailModal(task)
+                                }
+                                className="p-1 text-purple-600 hover:bg-purple-50 rounded"
+                                title="Send Reminder"
+                                disabled={isLoading}
+                              >
+                                <Mail className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleViewTask(task)}
+                                className="p-1 text-orange-600 hover:bg-orange-50 rounded relative"
+                                title="View Comments"
+                                disabled={isLoading}
+                              >
+                                <MessageCircle
+                                  className={`w-4 h-4 ${
+                                    unseenComments[task._id] &&
+                                    unseenComments[task._id].length > 0
+                                      ? "text-orange-500 animate-pulse"
+                                      : "text-gray-600"
+                                  }`}
+                                />
+                                {task.comments?.length > 0 && (
+                                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
+                                    {task.comments.length}
+                                  </span>
+                                )}
+                              </button>
+                              <button
+                                onClick={() => confirmDelete(task)}
+                                className="p-1 text-red-600 hover:bg-red-50 rounded"
+                                title="Delete Task"
+                                disabled={isLoading}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
-                 {sortedTasks.length === 0 && (
+                {/* {sortedTasks.length === 0 && (
                     <div className="text-center py-12 text-gray-500">
                       <div className="mb-4">
                         No tasks found matching your criteria
@@ -1966,7 +1965,7 @@ useEffect(() => {
                         Try adjusting your search or filters
                       </div>
                     </div>
-                  )}
+                  )} */}
               </div>
             </div>
             <div className="lg:hidden grid gap-4">
@@ -2482,7 +2481,7 @@ useEffect(() => {
                         disabled={isLoading}
                       >
                         {isLoading ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <Loader className="w-4 h-4 animate-spin" />
                         ) : null}
                         <span>{editId ? "Update Task" : "Create Task"}</span>
                       </button>
@@ -2936,7 +2935,7 @@ useEffect(() => {
                       disabled={isSendingRemainderEmail}
                     >
                       {isSendingRemainderEmail ? (
-                        <Loader2 className="w-5 h-5 animate-spin" />
+                        <Loader className="w-5 h-5 animate-spin" />
                       ) : (
                         <Mail className="w-5 h-5" />
                       )}
@@ -2947,23 +2946,23 @@ useEffect(() => {
               </div>
             )}
 
-           {toast.show && (
-  <div
-    className={`fixed top-0 left-1/2 transform -translate-x-1/2 z-50 transition-all duration-500 ${
-      toast.show ? 'translate-y-4' : '-translate-y-full'
-    }`}
-  >
-    <div
-      className={`p-4 rounded-md shadow-lg text-sm ${
-        toast.type === "success"
-          ? "bg-green-600 text-white"
-          : "bg-red-600 text-white"
-      }`}
-    >
-      {toast.message}
-    </div>
-  </div>
-)}
+            {toast.show && (
+              <div
+                className={`fixed top-0 left-1/2 transform -translate-x-1/2 z-50 transition-all duration-500 ${
+                  toast.show ? "translate-y-4" : "-translate-y-full"
+                }`}
+              >
+                <div
+                  className={`p-4 rounded-md shadow-lg text-sm ${
+                    toast.type === "success"
+                      ? "bg-green-600 text-white"
+                      : "bg-red-600 text-white"
+                  }`}
+                >
+                  {toast.message}
+                </div>
+              </div>
+            )}
           </div>
         </main>
       </div>

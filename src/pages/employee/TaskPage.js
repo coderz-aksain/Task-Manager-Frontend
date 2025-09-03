@@ -1988,6 +1988,8 @@ import Sidebar from "../../components/common/Sidebar";
 import Header from "../../components/common/Header";
 import { Link } from "react-router-dom";
 import * as XLSX from "xlsx";
+import Lottie from "lottie-react";
+import loaderAnimation  from "../../assets/animations/loader.json";
 
 const taskTypes = ["Auctions", "General", "Remainder"];
 const priorities = ["High", "Medium", "Low"];
@@ -2039,6 +2041,8 @@ const generateTaskId = (tasks) => {
   ).length;
   return todayCount + 1;
 };
+
+// ====================== IS OVERDUE FUNCTION TO CHECK IF TASK IS OVERDUE OR NOT ======================
 
 const isOverdue = (dueDate, status) => {
   if (!dueDate) return false;
@@ -3024,10 +3028,22 @@ const TaskPage = () => {
                   </thead>
                   <tbody>
                     {isInitialLoading ? (
+                      // <tr>
+                      //   <td colSpan="7" className="py-12 text-center">
+                      //     <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto" />
+                      //     <span className="text-gray-500">Loading tasks...</span>
+                      //   </td>
+                      // </tr>
+
+
                       <tr>
                         <td colSpan="7" className="py-12 text-center">
-                          <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto" />
-                          <span className="text-gray-500">Loading tasks...</span>
+                          <Lottie 
+                            animationData={loaderAnimation} 
+                            loop={true} 
+                            className="w-72 h-72 mx-auto" 
+                          />
+                          {/* <span className="text-gray-500 animate-pulse">Loading Tasks...</span> */}
                         </td>
                       </tr>
                     ) : sortedTasks.length === 0 ? (

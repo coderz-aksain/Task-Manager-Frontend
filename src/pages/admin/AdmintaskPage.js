@@ -4,10 +4,6 @@
 // =============================================BELOW IS THE CODE FOR MULTIPLE FILTER SELECTION=================================================
 // =============================================BELOW IS THE CODE FOR MULTIPLE FILTER SELECTION=================================================
 
-
-
-
-
 import React, { useState, useEffect, useRef } from "react";
 import {
   Search,
@@ -26,12 +22,15 @@ import {
   Filter,
   FunnelX,
 } from "lucide-react";
+import Lottie from "lottie-react";
+
 import AdminSidebar from "../../components/common/AdminSidebar";
 import Header from "../../components/common/Header";
 import { Link } from "react-router-dom";
 import * as XLSX from "xlsx";
 // Add to imports if not present
 import { ChevronUp, ChevronDown } from "lucide-react";
+import loaderAnimation  from "../../assets/animations/loader.json";
 // Helper functions
 const formatDisplayDate = (dateStr) => {
   if (!dateStr) return "N/A";
@@ -97,7 +96,8 @@ const generateTaskId = (tasks) => {
 // ==================CORRECTED THE isOverdue FUNCTION TO HANDLE INVALID DUE TIME=========================
 const isOverdue = (dueDate, dueTime, status) => {
   if (!dueDate) return false;
-
+  if (status === "Complete" || status === "Archive" || status === "Hold")
+    return false;
   // Ensure dueDate is in YYYY-MM-DD format
   let due;
   try {
@@ -171,7 +171,6 @@ const AdmintaskPage = () => {
   const [showModalEmployeeDropdown, setShowModalEmployeeDropdown] =
     useState(false); // For edit modal dropdown
 
- 
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
 
   const [employeeSearchTerm, setEmployeeSearchTerm] = useState("");
@@ -205,10 +204,10 @@ const AdmintaskPage = () => {
   // NEW: Status tab state
   const [currentStatusTab, setCurrentStatusTab] = useState("All");
 
-   const showToast = (message, type = "success") => {
-  setToast({ show: true, message, type });
-  setTimeout(() => setToast({ show: false, message: "", type }), 3000);
-};
+  const showToast = (message, type = "success") => {
+    setToast({ show: true, message, type });
+    setTimeout(() => setToast({ show: false, message: "", type }), 3000);
+  };
 
   const isFilterApplied = () => {
     return (
@@ -221,14 +220,17 @@ const AdmintaskPage = () => {
     );
   };
   const handleSort = (column) => {
-  setSort((prev) => {
-    if (prev.column === column) {
-      return { ...prev, direction: prev.direction === "asc" ? "desc" : "asc" };
-    } else {
-      return { column, direction: "asc" };
-    }
-  });
-};
+    setSort((prev) => {
+      if (prev.column === column) {
+        return {
+          ...prev,
+          direction: prev.direction === "asc" ? "desc" : "asc",
+        };
+      } else {
+        return { column, direction: "asc" };
+      }
+    });
+  };
   const clearAllFilters = () => {
     setSearchTerm("");
     setFilterStatus([]);
@@ -293,7 +295,7 @@ const AdmintaskPage = () => {
   ]);
 
   // Filtered Tasks
-    const filteredTasks = tasks.filter((task) => {
+  const filteredTasks = tasks.filter((task) => {
     const displayStatus = getDisplayStatus(task);
     const matchesSearch =
       (typeof task.taskName === "string"
@@ -321,47 +323,47 @@ const AdmintaskPage = () => {
   });
 
   const sortedTasks = [...filteredTasks].sort((a, b) => {
-  let valA, valB;
-  switch (sort.column) {
-    case "taskId":
-      valA = a.taskId;
-      valB = b.taskId;
-      return sort.direction === "asc" ? valA - valB : valB - valA;
-    case "taskName":
-      return sort.direction === "asc"
-        ? a.taskName.localeCompare(b.taskName)
-        : b.taskName.localeCompare(a.taskName);
-    case "priority":
-      const priorityOrder = { High: 3, Medium: 2, Low: 1 };
-      valA = priorityOrder[a.priority] || 0;
-      valB = priorityOrder[b.priority] || 0;
-      return sort.direction === "asc" ? valA - valB : valB - valA;
-    case "status":
-      const statusOrder = {
-        Open: 1,
-        "In Progress": 2,
-        Hold: 3,
-        Archive: 4,
-        Pending: 5,
-        Complete: 6,
-      };
-      valA = statusOrder[getDisplayStatus(a)] || 0;
-      valB = statusOrder[getDisplayStatus(b)] || 0;
-      return sort.direction === "asc" ? valA - valB : valB - valA;
-    case "assignedTo":
-      valA = a.assignedTo[0]?.name || "";
-      valB = b.assignedTo[0]?.name || "";
-      return sort.direction === "asc"
-        ? valA.localeCompare(valB)
-        : valB.localeCompare(valA);
-    case "dueDate":
-      valA = new Date(a.dueDate || "9999-12-31").getTime();
-      valB = new Date(b.dueDate || "9999-12-31").getTime();
-      return sort.direction === "asc" ? valA - valB : valB - valA;
-    default:
-      return 0;
-  }
-});
+    let valA, valB;
+    switch (sort.column) {
+      case "taskId":
+        valA = a.taskId;
+        valB = b.taskId;
+        return sort.direction === "asc" ? valA - valB : valB - valA;
+      case "taskName":
+        return sort.direction === "asc"
+          ? a.taskName.localeCompare(b.taskName)
+          : b.taskName.localeCompare(a.taskName);
+      case "priority":
+        const priorityOrder = { High: 3, Medium: 2, Low: 1 };
+        valA = priorityOrder[a.priority] || 0;
+        valB = priorityOrder[b.priority] || 0;
+        return sort.direction === "asc" ? valA - valB : valB - valA;
+      case "status":
+        const statusOrder = {
+          Open: 1,
+          "In Progress": 2,
+          Hold: 3,
+          Archive: 4,
+          Pending: 5,
+          Complete: 6,
+        };
+        valA = statusOrder[getDisplayStatus(a)] || 0;
+        valB = statusOrder[getDisplayStatus(b)] || 0;
+        return sort.direction === "asc" ? valA - valB : valB - valA;
+      case "assignedTo":
+        valA = a.assignedTo[0]?.name || "";
+        valB = b.assignedTo[0]?.name || "";
+        return sort.direction === "asc"
+          ? valA.localeCompare(valB)
+          : valB.localeCompare(valA);
+      case "dueDate":
+        valA = new Date(a.dueDate || "9999-12-31").getTime();
+        valB = new Date(b.dueDate || "9999-12-31").getTime();
+        return sort.direction === "asc" ? valA - valB : valB - valA;
+      default:
+        return 0;
+    }
+  });
   // Reminder Modal close on outside click
   useEffect(() => {
     if (!showRemainderEmailModal) return;
@@ -459,158 +461,157 @@ const AdmintaskPage = () => {
     };
 
     const fetchTasks = async () => {
-  try {
-    const response = await fetch(
-      "https://task-manager-backend-vqen.onrender.com/api/admin/gettasks",
-      {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
-    if (!response.ok) {
-      throw new Error(`Failed to fetch tasks: ${response.statusText}`);
-    }
-    const data = await response.json();
-    const months = {
-      Jan: "01",
-      Feb: "02",
-      Mar: "03",
-      Apr: "04",
-      May: "05",
-      Jun: "06",
-      Jul: "07",
-      Aug: "08",
-      Sep: "09",
-      Oct: "10",
-      Nov: "11",
-      Dec: "12",
-    };
-    const validTasks = Array.isArray(data)
-      ? data.map((task) => {
-          // Handle dueDate parsing
-          let formattedDueDate = "";
-          if (task.dueDate) {
-            // Try DD/MM/YYYY format
-            if (/^\d{2}\/\d{2}\/\d{4}$/.test(task.dueDate)) {
-              const [day, month, year] = task.dueDate.split("/");
-              formattedDueDate = `${year}-${month}-${day}`;
-              const testDate = new Date(formattedDueDate);
-              if (isNaN(testDate)) {
-                console.warn(
-                  `Invalid dueDate for task ${task.taskId}: ${task.dueDate}`
-                );
-                formattedDueDate = "Invalid Date";
-              }
-            }
-            // Try DD/MMM/YYYY format (e.g., 28/Aug/2025)
-            else if (/^\d{2}\/[A-Za-z]{3}\/\d{4}$/.test(task.dueDate)) {
-              const [day, month, year] = task.dueDate.split("/");
-              if (months[month]) {
-                formattedDueDate = `${year}-${months[month]}-${day}`;
-                const testDate = new Date(formattedDueDate);
-                if (isNaN(testDate)) {
+      try {
+        const response = await fetch(
+          "https://task-manager-backend-vqen.onrender.com/api/admin/gettasks",
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        if (!response.ok) {
+          throw new Error(`Failed to fetch tasks: ${response.statusText}`);
+        }
+        const data = await response.json();
+        const months = {
+          Jan: "01",
+          Feb: "02",
+          Mar: "03",
+          Apr: "04",
+          May: "05",
+          Jun: "06",
+          Jul: "07",
+          Aug: "08",
+          Sep: "09",
+          Oct: "10",
+          Nov: "11",
+          Dec: "12",
+        };
+        const validTasks = Array.isArray(data)
+          ? data.map((task) => {
+              // Handle dueDate parsing
+              let formattedDueDate = "";
+              if (task.dueDate) {
+                // Try DD/MM/YYYY format
+                if (/^\d{2}\/\d{2}\/\d{4}$/.test(task.dueDate)) {
+                  const [day, month, year] = task.dueDate.split("/");
+                  formattedDueDate = `${year}-${month}-${day}`;
+                  const testDate = new Date(formattedDueDate);
+                  if (isNaN(testDate)) {
+                    console.warn(
+                      `Invalid dueDate for task ${task.taskId}: ${task.dueDate}`
+                    );
+                    formattedDueDate = "Invalid Date";
+                  }
+                }
+                // Try DD/MMM/YYYY format (e.g., 28/Aug/2025)
+                else if (/^\d{2}\/[A-Za-z]{3}\/\d{4}$/.test(task.dueDate)) {
+                  const [day, month, year] = task.dueDate.split("/");
+                  if (months[month]) {
+                    formattedDueDate = `${year}-${months[month]}-${day}`;
+                    const testDate = new Date(formattedDueDate);
+                    if (isNaN(testDate)) {
+                      console.warn(
+                        `Invalid dueDate for task ${task.taskId}: ${task.dueDate}`
+                      );
+                      formattedDueDate = "Invalid Date";
+                    }
+                  } else {
+                    console.warn(
+                      `Invalid month in dueDate for task ${task.taskId}: ${task.dueDate}`
+                    );
+                    formattedDueDate = "Invalid Date";
+                  }
+                } else {
                   console.warn(
-                    `Invalid dueDate for task ${task.taskId}: ${task.dueDate}`
+                    `Unrecognized dueDate format for task ${task.taskId}: ${task.dueDate}`
                   );
                   formattedDueDate = "Invalid Date";
                 }
               } else {
-                console.warn(
-                  `Invalid month in dueDate for task ${task.taskId}: ${task.dueDate}`
-                );
-                formattedDueDate = "Invalid Date";
+                formattedDueDate = "N/A"; // Handle missing dueDate
               }
-            } else {
-              console.warn(
-                `Unrecognized dueDate format for task ${task.taskId}: ${task.dueDate}`
-              );
-              formattedDueDate = "Invalid Date";
-            }
-          } else {
-            formattedDueDate = "N/A"; // Handle missing dueDate
-          }
 
-          const assignedTo = Array.isArray(task.assignedTo)
-            ? task.assignedTo.map((email) => {
-                const employee = employees.find((emp) => emp.email === email);
-                return {
-                  email: email || "",
-                  name: employee ? employee.name : email || "Unknown",
-                  avatar: employee ? employee.avatar : "",
-                };
-              })
-            : [];
-          return {
-            _id: task._id || "",
-            taskId: task.taskId || 0,
-            taskName: task.taskName || "",
-            description: task.description || "",
-            dueDate: formattedDueDate,
-            dueTime: task.dueTime || "N/A",
-            priority: task.priority || "Low",
-            status: task.status || "Open",
-            assignedBy: task.assignedBy || "admin@company.com",
-            assignedTo,
-            taskType: task.taskType || "General",
-            fileUrls: task.fileUrls || [],
-            assignedDateTime: task.assignedDateTime || "",
-            activityLogs: task.activityLogs || [],
-            comments: task.comments || [],
-            remark: task.remark || "",
-          };
-        })
-      : [];
-    setTasks(validTasks);
-    localStorage.setItem("tasks_stepper", JSON.stringify(validTasks));
-  } catch (err) {
-    setError(err.message);
-    console.error("Error fetching tasks:", err);
-  }
-};
+              const assignedTo = Array.isArray(task.assignedTo)
+                ? task.assignedTo.map((email) => {
+                    const employee = employees.find(
+                      (emp) => emp.email === email
+                    );
+                    return {
+                      email: email || "",
+                      name: employee ? employee.name : email || "Unknown",
+                      avatar: employee ? employee.avatar : "",
+                    };
+                  })
+                : [];
+              return {
+                _id: task._id || "",
+                taskId: task.taskId || 0,
+                taskName: task.taskName || "",
+                description: task.description || "",
+                dueDate: formattedDueDate,
+                dueTime: task.dueTime || "N/A",
+                priority: task.priority || "Low",
+                status: task.status || "Open",
+                assignedBy: task.assignedBy || "admin@company.com",
+                assignedTo,
+                taskType: task.taskType || "General",
+                fileUrls: task.fileUrls || [],
+                assignedDateTime: task.assignedDateTime || "",
+                activityLogs: task.activityLogs || [],
+                comments: task.comments || [],
+                remark: task.remark || "",
+              };
+            })
+          : [];
+        setTasks(validTasks);
+        localStorage.setItem("tasks_stepper", JSON.stringify(validTasks));
+      } catch (err) {
+        setError(err.message);
+        console.error("Error fetching tasks:", err);
+      }
+    };
 
-   if (token) {
-        fetchEmployees().then(() => {
-            fetchTasks().then(() => {
-            setIsInitialLoading(false);
-            });
+    if (token) {
+      fetchEmployees().then(() => {
+        fetchTasks().then(() => {
+          setIsInitialLoading(false);
         });
-        } else {
-        setError("No authentication token found");
-        console.error("No token found in localStorage");
-        setIsInitialLoading(false);
-        }
-    }, [token, employees]);
+      });
+    } else {
+      setError("No authentication token found");
+      console.error("No token found in localStorage");
+      setIsInitialLoading(false);
+    }
+  }, [token, employees]);
 
   // useEffect(() => {
   //   tasks.forEach((task) => {
   //     if (
   //       isOverdue(task.dueDate, task.dueTime, task.status) &&
   //       task.status !== "Pending" &&
-  //       task.status !== "Complete" 
-  //       // task.status !== "Arhive" 
+  //       task.status !== "Complete"
+  //       // task.status !== "Arhive"
   //     ) {
   //       handleUpdateTaskStatus(task.taskId, "Pending");
   //     }
   //   });
   // }, [tasks]);
 
-
-useEffect(() => {
-  tasks.forEach((task) => {
-    if (
-      isOverdue(task.dueDate, task.dueTime, task.status) &&
-      (task.status === "Open" || task.status === "In Progress") &&
-      task.status !== "Pending"
-    ) {
-      handleUpdateTaskStatus(task.taskId, "Pending");
-    }
-  });
-}, [tasks]);
-
-
+  useEffect(() => {
+    tasks.forEach((task) => {
+      if (
+        isOverdue(task.dueDate, task.dueTime, task.status) &&
+        (task.status === "Open" || task.status === "In Progress") &&
+        task.status !== "Pending"
+      ) {
+        handleUpdateTaskStatus(task.taskId, "Pending");
+      }
+    });
+  }, [tasks]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -1073,8 +1074,6 @@ useEffect(() => {
       prev.includes(email) ? prev.filter((e) => e !== email) : [...prev, email]
     );
   };
-
-
 
   // const sortedTasks = [...filteredTasks].sort((a, b) => {
   //   if (dueDateSort !== "none") {
@@ -1776,15 +1775,22 @@ useEffect(() => {
                   </thead>
                   <tbody>
                     {isInitialLoading ? (
-                      <tr>
-                        <td colSpan="7" className="py-12 text-center">
-                          <Loader className="w-8 h-8 animate-spin text-blue-600 mx-auto" />
-                          <span className="text-gray-500">
-                              Loading Tasks... 
+                    
 
-                          </span>
-                        </td>
-                      </tr>
+                  
+
+
+<tr>
+  <td colSpan="8" className="py-12 text-center">
+    <Lottie 
+      animationData={loaderAnimation} 
+      loop={true} 
+      className="w-72 h-72 mx-auto" 
+    />
+    {/* <span className="text-gray-500 animate-pulse">Loading Tasks...</span> */}
+  </td>
+</tr>
+
                     ) : sortedTasks.length === 0 ? (
                       <tr>
                         <td
@@ -1794,7 +1800,6 @@ useEffect(() => {
                           No tasks found matching your criteria <br />
                           Try adjusting your filters
                         </td>
-                       
                       </tr>
                     ) : (
                       sortedTasks.map((task) => (

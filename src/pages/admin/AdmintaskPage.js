@@ -30,7 +30,7 @@ import { Link } from "react-router-dom";
 import * as XLSX from "xlsx";
 // Add to imports if not present
 import { ChevronUp, ChevronDown } from "lucide-react";
-import loaderAnimation  from "../../assets/animations/loader.json";
+import loaderAnimation from "../../assets/animations/loader.json";
 // Helper functions
 const formatDisplayDate = (dateStr) => {
   if (!dateStr) return "N/A";
@@ -1775,22 +1775,16 @@ const AdmintaskPage = () => {
                   </thead>
                   <tbody>
                     {isInitialLoading ? (
-                    
-
-                  
-
-
-<tr>
-  <td colSpan="8" className="py-12 text-center">
-    <Lottie 
-      animationData={loaderAnimation} 
-      loop={true} 
-      className="w-72 h-72 mx-auto" 
-    />
-    {/* <span className="text-gray-500 animate-pulse">Loading Tasks...</span> */}
-  </td>
-</tr>
-
+                      <tr>
+                        <td colSpan="8" className="py-12 text-center">
+                          <Lottie
+                            animationData={loaderAnimation}
+                            loop={true}
+                            className="w-72 h-72 mx-auto"
+                          />
+                          {/* <span className="text-gray-500 animate-pulse">Loading Tasks...</span> */}
+                        </td>
+                      </tr>
                     ) : sortedTasks.length === 0 ? (
                       <tr>
                         <td
@@ -1815,12 +1809,34 @@ const AdmintaskPage = () => {
                           <td className="py-4 px-2 sm:px-4 text-gray-900 text-center truncate">
                             {task.taskId}
                           </td>
-                          <td
+                         
+
+                          {/* <td
                             className="py-4 px-2 sm:px-4 text-start truncate font-normal"
-                            title={task.taskName}
+                            title={`Task Name: ${task.taskName}\n Task Description: ${task.description}`}
                           >
                             {task.taskName}
+                          </td> */}
+   <td className="py-3 px-2 sm:px-4">
+                            <div className="relative group max-w-[150px]">
+                              <div className="font-medium text-gray-900 truncate cursor-pointer">
+                                {task.taskName}
+                              </div>
+                             <div
+  className="absolute left-1/2 -translate-x-1/2 top-full mt-1 w-80
+             hidden group-hover:block 
+             bg-red-800 text-white text-xs px-2 py-1 rounded shadow-lg z-50"
+>
+  <span className="text-yellow-300">Task Name:</span>
+   {task.taskName}
+  <br />
+  <span className="text-yellow-300">Task Description:</span>
+   {task.description}
+</div>
+
+                            </div>
                           </td>
+
                           <td className="py-4 px-2 sm:px-4 text-center">
                             <span
                               className={`px-2 py-1 rounded-full text-xs font-medium ${getTaskTypeColor(
@@ -1908,7 +1924,7 @@ const AdmintaskPage = () => {
                             onClick={(e) => e.stopPropagation()}
                           >
                             <div className="flex justify-center gap-2">
-                              <button
+                              {/* <button
                                 onClick={() => handleViewTask(task)}
                                 className="p-1 text-blue-600 hover:bg-blue-50 rounded"
                                 title="View Details"
@@ -1925,7 +1941,7 @@ const AdmintaskPage = () => {
                                 disabled={isLoading}
                               >
                                 <Mail className="w-4 h-4" />
-                              </button>
+                              </button> */}
                               <button
                                 onClick={() => handleViewTask(task)}
                                 className="p-1 text-orange-600 hover:bg-orange-50 rounded relative"

@@ -2679,6 +2679,8 @@ const TaskPage = () => {
         return "bg-orange-100 text-orange-800";
       case "Archive":
         return "bg-gray-100 text-gray-800";
+      case "Pending":
+        return "bg-gray-100 text-gray-800";
       default:
         return "bg-gray-100 text-gray-800";
     }
@@ -3071,13 +3073,18 @@ const TaskPage = () => {
                               <div className="font-medium text-gray-900 truncate cursor-pointer">
                                 {task.taskName}
                               </div>
-                              <div
-                                className="absolute left-1/2 -translate-x-1/2 top-full mt-1
-                 hidden group-hover:block whitespace-nowrap
-                 bg-red-800 text-white text-xs px-2 py-1 rounded shadow-lg z-50"
-                              >
-                                {task.taskName}
-                              </div>
+                             <div
+  className="absolute left-1/2 -translate-x-1/2 top-full mt-1 w-80
+             hidden group-hover:block 
+             bg-red-800 text-white text-xs px-2 py-1 rounded shadow-lg z-50"
+>
+  <span className="text-yellow-300">Task Name:</span>
+   {task.taskName}
+  <br />
+  <span className="text-yellow-300">Task Description:</span>
+   {task.description}
+</div>
+
                             </div>
                           </td>
                           <td className="py-3 px-2 sm:px-4">

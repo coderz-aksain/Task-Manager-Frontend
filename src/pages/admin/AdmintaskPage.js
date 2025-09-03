@@ -569,6 +569,9 @@ const AdmintaskPage = () => {
           : [];
         setTasks(validTasks);
         localStorage.setItem("tasks_stepper", JSON.stringify(validTasks));
+        console.log("valid tasks are here check this out:", validTasks);
+        const storedTasks = JSON.parse(localStorage.getItem("tasks_stepper"));
+        console.log("tasks from localStorage:", storedTasks);
       } catch (err) {
         setError(err.message);
         console.error("Error fetching tasks:", err);
@@ -2758,8 +2761,10 @@ const AdmintaskPage = () => {
                     </div>
                     {activeTab === "all" && (
                       <div className="space-y-4">
-                        {(viewTask.comments || [])
-                          .concat(viewTask.activityLogs || [])
+                        {/* {(viewTask.comments || [])
+                          .concat(viewTask.activityLogs || []) */}
+
+                        {(viewTask.activityLogs || [])
                           .sort(
                             (a, b) =>
                               new Date(b.timestamp) - new Date(a.timestamp)

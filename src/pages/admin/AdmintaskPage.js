@@ -232,7 +232,6 @@
 //     });
 //   };
 
-  
 //   const clearAllFilters = () => {
 //     setSearchTerm("");
 //     setFilterStatus([]);
@@ -1606,7 +1605,7 @@
 //             </div>
 //             <div className="hidden lg:block">
 //               <div className="w-full overflow-y-auto max-h-[70vh]">
-//                 <table className="w-full text-xs sm:text-sm table-fixed">  
+//                 <table className="w-full text-xs sm:text-sm table-fixed">
 //                 <thead className="bg-gray-100 border-gray-700 rounded-full sticky top-0 z-10 border-b border-gray-200">
 //                     <tr>
 //                       <th
@@ -1702,7 +1701,6 @@
 //                     </tr>
 //                   </thead>
 
-
 import React, { useState, useEffect, useRef } from "react";
 import {
   Search,
@@ -1721,7 +1719,7 @@ import {
   Filter,
   FunnelX,
   ChevronUp,
-  ChevronDown
+  ChevronDown,
 } from "lucide-react";
 import Lottie from "lottie-react";
 import AdminSidebar from "../../components/common/AdminSidebar";
@@ -1862,7 +1860,8 @@ const AdmintaskPage = () => {
   const [taskToDelete, setTaskToDelete] = useState(null);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [showEmployeeDropdown, setShowEmployeeDropdown] = useState(false);
-  const [showModalEmployeeDropdown, setShowModalEmployeeDropdown] = useState(false);
+  const [showModalEmployeeDropdown, setShowModalEmployeeDropdown] =
+    useState(false);
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
   const [employeeSearchTerm, setEmployeeSearchTerm] = useState("");
   const [filterEmployeeSearch, setFilterEmployeeSearch] = useState("");
@@ -1878,12 +1877,20 @@ const AdmintaskPage = () => {
     }
   });
   const [sort, setSort] = useState({ column: "taskId", direction: "desc" });
-  const [dueDateFilter, setDueDateFilter] = useState('none');
+  const [dueDateFilter, setDueDateFilter] = useState("none");
   const [customDueDate, setCustomDueDate] = useState(null);
-  const [showDueDateFilterDropdown, setShowDueDateFilterDropdown] = useState(false);
+  const [showDueDateFilterDropdown, setShowDueDateFilterDropdown] =
+    useState(false);
   const [showCustomDateModal, setShowCustomDateModal] = useState(false);
-  const [customDateRange, setCustomDateRange] = useState({ start: '', end: '' });
-  const [toast, setToast] = useState({ show: false, message: "", type: "success" });
+  const [customDateRange, setCustomDateRange] = useState({
+    start: "",
+    end: "",
+  });
+  const [toast, setToast] = useState({
+    show: false,
+    message: "",
+    type: "success",
+  });
   const [currentStatusTab, setCurrentStatusTab] = useState("All");
   const employeeDropdownRef = useRef(null);
   const modalEmployeeDropdownRef = useRef(null);
@@ -1907,7 +1914,7 @@ const AdmintaskPage = () => {
       filterTaskType !== "all" ||
       filterEmployee.length > 0 ||
       dueDateSort !== "none" ||
-      dueDateFilter !== 'none'
+      dueDateFilter !== "none"
     );
   };
 
@@ -1931,9 +1938,9 @@ const AdmintaskPage = () => {
     setFilterTaskType("all");
     setFilterEmployee([]);
     setDueDateSort("none");
-    setDueDateFilter('none');
+    setDueDateFilter("none");
     setCustomDueDate(null);
-    setCustomDateRange({ start: '', end: '' });
+    setCustomDateRange({ start: "", end: "" });
     setCurrentStatusTab("All");
   };
 
@@ -1995,12 +2002,17 @@ const AdmintaskPage = () => {
     showStatusDropdown,
     showDueDateSortDropdown,
     showDueDateFilterDropdown,
-    showCustomDateModal
+    showCustomDateModal,
   ]);
 
   const matchesDueDate = (task) => {
-    if (dueDateFilter === 'none') return true;
-    if (!task.dueDate || task.dueDate === 'N/A' || task.dueDate === 'Invalid Date') return false;
+    if (dueDateFilter === "none") return true;
+    if (
+      !task.dueDate ||
+      task.dueDate === "N/A" ||
+      task.dueDate === "Invalid Date"
+    )
+      return false;
     let taskDate;
     try {
       taskDate = new Date(task.dueDate);
@@ -2012,26 +2024,34 @@ const AdmintaskPage = () => {
     let start = new Date();
     let end = new Date();
     switch (dueDateFilter) {
-      case 'today':
+      case "today":
         start.setHours(0, 0, 0, 0);
         end.setHours(23, 59, 59, 999);
         break;
-      case 'week':
+      case "week":
         const day = now.getDay();
         start.setDate(now.getDate() - day);
         start.setHours(0, 0, 0, 0);
         end.setDate(start.getDate() + 6);
         end.setHours(23, 59, 59, 999);
         break;
-      case 'month':
+      case "month":
         start = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
-        end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+        end = new Date(
+          now.getFullYear(),
+          now.getMonth() + 1,
+          0,
+          23,
+          59,
+          59,
+          999
+        );
         break;
-      case 'year':
+      case "year":
         start = new Date(now.getFullYear(), 0, 1, 0, 0, 0, 0);
         end = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999);
         break;
-      case 'custom':
+      case "custom":
         if (!customDateRange.start || !customDateRange.end) return false;
         try {
           start = new Date(customDateRange.start);
@@ -2258,8 +2278,7 @@ const AdmintaskPage = () => {
                     );
                     formattedDueDate = "Invalid Date";
                   }
-                }
-                else if (/^\d{2}\/[A-Za-z]{3}\/\d{4}$/.test(task.dueDate)) {
+                } else if (/^\d{2}\/[A-Za-z]{3}\/\d{4}$/.test(task.dueDate)) {
                   const [day, month, year] = task.dueDate.split("/");
                   if (months[month]) {
                     formattedDueDate = `${year}-${months[month]}-${day}`;
@@ -2675,8 +2694,7 @@ const AdmintaskPage = () => {
                     email ||
                     "Unknown",
                   avatar:
-                    employees.find((emp) => emp.email === email)?.avatar ||
-                    "",
+                    employees.find((emp) => emp.email === email)?.avatar || "",
                 })),
               }
             : task
@@ -2941,7 +2959,7 @@ const AdmintaskPage = () => {
 
   const handleCustomDateSubmit = () => {
     if (customDateRange.start && customDateRange.end) {
-      setDueDateFilter('custom');
+      setDueDateFilter("custom");
       setShowCustomDateModal(false);
       setShowDueDateFilterDropdown(false);
     } else {
@@ -3398,7 +3416,9 @@ const AdmintaskPage = () => {
                             className="w-4 h-4 ml-2 cursor-pointer text-gray-500 hover:text-gray-700"
                             onClick={(e) => {
                               e.stopPropagation();
-                              setShowDueDateFilterDropdown(!showDueDateFilterDropdown);
+                              setShowDueDateFilterDropdown(
+                                !showDueDateFilterDropdown
+                              );
                             }}
                           />
                         </div>
@@ -3412,8 +3432,8 @@ const AdmintaskPage = () => {
                                 <input
                                   type="radio"
                                   name="dueFilter"
-                                  checked={dueDateFilter === 'none'}
-                                  onChange={() => setDueDateFilter('none')}
+                                  checked={dueDateFilter === "none"}
+                                  onChange={() => setDueDateFilter("none")}
                                   className="mr-2"
                                 />
                                 No Filter
@@ -3422,8 +3442,8 @@ const AdmintaskPage = () => {
                                 <input
                                   type="radio"
                                   name="dueFilter"
-                                  checked={dueDateFilter === 'today'}
-                                  onChange={() => setDueDateFilter('today')}
+                                  checked={dueDateFilter === "today"}
+                                  onChange={() => setDueDateFilter("today")}
                                   className="mr-2"
                                 />
                                 Today
@@ -3432,8 +3452,8 @@ const AdmintaskPage = () => {
                                 <input
                                   type="radio"
                                   name="dueFilter"
-                                  checked={dueDateFilter === 'week'}
-                                  onChange={() => setDueDateFilter('week')}
+                                  checked={dueDateFilter === "week"}
+                                  onChange={() => setDueDateFilter("week")}
                                   className="mr-2"
                                 />
                                 This Week
@@ -3442,8 +3462,8 @@ const AdmintaskPage = () => {
                                 <input
                                   type="radio"
                                   name="dueFilter"
-                                  checked={dueDateFilter === 'month'}
-                                  onChange={() => setDueDateFilter('month')}
+                                  checked={dueDateFilter === "month"}
+                                  onChange={() => setDueDateFilter("month")}
                                   className="mr-2"
                                 />
                                 This Month
@@ -3452,8 +3472,8 @@ const AdmintaskPage = () => {
                                 <input
                                   type="radio"
                                   name="dueFilter"
-                                  checked={dueDateFilter === 'year'}
-                                  onChange={() => setDueDateFilter('year')}
+                                  checked={dueDateFilter === "year"}
+                                  onChange={() => setDueDateFilter("year")}
                                   className="mr-2"
                                 />
                                 This Year
@@ -3462,9 +3482,9 @@ const AdmintaskPage = () => {
                                 <input
                                   type="radio"
                                   name="dueFilter"
-                                  checked={dueDateFilter === 'custom'}
+                                  checked={dueDateFilter === "custom"}
                                   onChange={() => {
-                                    setDueDateFilter('custom');
+                                    setDueDateFilter("custom");
                                     setShowCustomDateModal(true);
                                   }}
                                   className="mr-2"
@@ -3516,7 +3536,6 @@ const AdmintaskPage = () => {
                           <td className="py-4 px-2 sm:px-4 text-gray-900 text-center truncate">
                             {task.taskId}
                           </td>
-                         
 
                           {/* <td
                             className="py-4 px-2 sm:px-4 text-start truncate font-normal"
@@ -3524,23 +3543,26 @@ const AdmintaskPage = () => {
                           >
                             {task.taskName}
                           </td> */}
-   <td className="py-3 px-2 sm:px-4">
+                          <td className="py-3 px-2 sm:px-4">
                             <div className="relative group max-w-[150px]">
                               <div className="font-medium text-gray-900 truncate cursor-pointer">
                                 {task.taskName}
                               </div>
-                             <div
-  className="absolute left-1/2 -translate-x-1/2 top-full mt-1 w-80
+                              <div
+                                className="absolute left-1/2 -translate-x-1/2 top-full mt-1 w-80
              hidden group-hover:block 
              bg-red-800 text-white text-xs px-2 py-1 rounded shadow-lg z-50"
->
-  <span className="text-yellow-300">Task Name:</span>
-   {task.taskName}
-  <br />
-  <span className="text-yellow-300">Task Description:</span>
-   {task.description}
-</div>
-
+                              >
+                                <span className="text-yellow-300">
+                                  Task Name:
+                                </span>
+                                {task.taskName}
+                                <br />
+                                <span className="text-yellow-300">
+                                  Task Description:
+                                </span>
+                                {task.description}
+                              </div>
                             </div>
                           </td>
 
@@ -3696,173 +3718,179 @@ const AdmintaskPage = () => {
                   )} */}
               </div>
             </div>
-            <div className="lg:hidden grid gap-4">
-              {sortedTasks.length === 0 ? (
-                <div className="text-center py-12 text-gray-500">
-                  <div className="mb-4">
-                    No tasks found matching your criteria
-                  </div>
-                  <div className="text-sm text-gray-400">
-                    Try adjusting your search or filters
-                  </div>
-                </div>
-              ) : (
-                sortedTasks.map((task) => (
-                  <div
-                    key={task?._id}
-                    className={`border rounded-lg p-4 shadow-md bg-white hover:shadow-lg transition-shadow duration-200 ${
-                      isOverdue(task.dueDate, task.dueTime, task.status)
-                        ? "bg-red-50"
-                        : ""
-                    }`}
-                    onClick={() => handleViewTask(task)}
-                  >
-                    <div className="flex justify-between items-start">
-                      <div className="flex items-center gap-2">
-                        <span
-                          className="font-bold text-sm sm:text-base"
-                          title={task.taskName}
-                        >
-                          {task.taskName}
-                        </span>
-                      </div>
-                      <div
-                        className="flex gap-2"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <button
-                          onClick={() => handleViewTask(task)}
-                          className="p-1 text-blue-600 hover:bg-blue-50 rounded"
-                          disabled={isLoading}
-                        >
-                          <Eye className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleOpenRemainderEmailModal(task)}
-                          className="p-1 text-purple-600 hover:bg-purple-50 rounded"
-                          disabled={isLoading}
-                        >
-                          <Mail className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleViewTask(task)}
-                          className="p-1 text-orange-600 hover:bg-orange-50 rounded relative"
-                          disabled={isLoading}
-                        >
-                          <MessageCircle
-                            className={`w-4 h-4 ${
-                              unseenComments[task._id] &&
-                              unseenComments[task._id].length > 0
-                                ? "text-orange-500 animate-pulse"
-                                : "text-gray-600"
-                            }`}
-                          />
-                          {task.comments?.length > 0 && (
-                            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
-                              {task.comments.length}
-                            </span>
-                          )}
-                        </button>
-                        <button
-                          onClick={() => confirmDelete(task)}
-                          className="p-1 text-red-600 hover:bg-red-50 rounded"
-                          disabled={isLoading}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                    <div className="mt-3 text-xs sm:text-sm grid grid-cols-1 sm:grid-cols-2 gap-3 bg-gray-50 p-3 rounded-md">
-                      <div>
-                        <span className="font-semibold">Task ID:</span>{" "}
-                        {task.taskId}
-                      </div>
-                      <div>
-                        <span className="font-semibold">Assigned Date:</span>{" "}
-                        {formatDisplayDate(task.assignedDateTime)}
-                      </div>
-                      <div>
-                        <span className="font-semibold">Status:</span>
-                        <span
-                          className={`ml-1 px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
-                            getDisplayStatus(task)
-                          )}`}
-                        >
-                          {getDisplayStatus(task)}
-                        </span>
-                      </div>
-                      <div>
-                        <span className="font-semibold">Due Date:</span>{" "}
-                        {formatDisplayDate(task.dueDate)}{" "}
-                        {task.dueTime !== "N/A" && task.dueTime}{" "}
-                        {isOverdue(task.dueDate, task.dueTime, task.status) && (
-                          <AlertCircle className="inline ml-1 text-red-600 w-4 h-4" />
-                        )}
-                      </div>
-                      <div>
-                        <span className="font-semibold">Assigned To:</span>{" "}
-                        <span className="flex -space-x-1 justify-start">
-                          {Array.isArray(task.assignedTo) &&
-                          task.assignedTo.length > 0 ? (
-                            task.assignedTo.map((emp) => (
-                              <div key={emp.email} className="relative group">
-                                {emp.avatar ? (
-                                  <img
-                                    src={emp.avatar}
-                                    alt={emp.name || emp.email}
-                                    className="inline-block w-6 h-6 rounded-full border border-gray-300"
-                                  />
-                                ) : (
-                                  <span className="inline-flex w-6 h-6 bg-gray-200 rounded-full items-center justify-center text-gray-600 text-xs font-medium">
-                                    {getInitials(emp.name || emp.email)}
-                                  </span>
-                                )}
-                                <span className="absolute left-1/2 transform -translate-x-1/2 top-8 bg-gray-800 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none whitespace-nowrap">
-                                  {emp.name || emp.email}
-                                </span>
-                              </div>
-                            ))
-                          ) : (
-                            <div className="relative group">
-                              <span className="inline-flex w-6 h-6 bg-gray-100 rounded-full items-center justify-center text-gray-600 text-xs font-medium">
-                                UN
-                              </span>
-                              <span className="absolute left-1/2 transform -translate-x-1/2 top-8 bg-gray-800 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                                Unassigned
-                              </span>
-                            </div>
-                          )}
-                        </span>
-                      </div>
-                      <div>
-                        <span className="font-semibold">Task Type:</span>{" "}
-                        <span
-                          className={`ml-1 px-2 py-1 rounded-full text-xs font-medium ${getTaskTypeColor(
-                            task.taskType
-                          )}`}
-                        >
-                          {task.taskType}
-                        </span>
-                      </div>
-                      <div>
-                        <span className="font-semibold">Priority:</span>{" "}
-                        <span
-                          className={`ml-1 px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(
-                            task.priority
-                          )}`}
-                        >
-                          {task.priority}
-                        </span>
-                      </div>
-                      <div className="col-span-full">
-                        <span className="font-semibold">Description:</span>{" "}
-                        {task.description || "None"}
-                      </div>
-                    </div>
+         <div className="lg:hidden grid gap-4">
+  {isInitialLoading ? (
+    <div className="py-12 text-center">
+      <Lottie
+        animationData={loaderAnimation}
+        loop={true}
+        className="w-72 h-72 mx-auto"
+      />
+      {/* <span className="text-gray-500 animate-pulse">Loading Tasks...</span> */}
+    </div>
+  ) : sortedTasks.length === 0 ? (
+    <div className="text-center py-12 text-gray-500">
+      <div className="mb-4">No tasks found matching your criteria</div>
+      <div className="text-sm text-gray-400">
+        Try adjusting your search or filters
+      </div>
+    </div>
+  ) : (
+    sortedTasks.map((task) => (
+      <div
+        key={task?._id}
+        className={`border rounded-lg p-4 shadow-md bg-white hover:shadow-lg transition-shadow duration-200 ${
+          isOverdue(task.dueDate, task.dueTime, task.status) ? "bg-red-50" : ""
+        }`}
+        onClick={() => handleViewTask(task)}
+      >
+        <div className="flex justify-between items-start">
+          <div className="flex items-center gap-2">
+            <span
+              className="font-bold text-sm sm:text-base"
+              title={task.taskName}
+            >
+              {task.taskName}
+            </span>
+          </div>
+          <div
+            className="flex gap-2"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => handleViewTask(task)}
+              className="p-1 text-blue-600 hover:bg-blue-50 rounded"
+              disabled={isLoading}
+            >
+              <Eye className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => handleOpenRemainderEmailModal(task)}
+              className="p-1 text-purple-600 hover:bg-purple-50 rounded"
+              disabled={isLoading}
+            >
+              <Mail className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => handleViewTask(task)}
+              className="p-1 text-orange-600 hover:bg-orange-50 rounded relative"
+              disabled={isLoading}
+            >
+              <MessageCircle
+                className={`w-4 h-4 ${
+                  unseenComments[task._id] &&
+                  unseenComments[task._id].length > 0
+                    ? "text-orange-500 animate-pulse"
+                    : "text-gray-600"
+                }`}
+              />
+              {task.comments?.length > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
+                  {task.comments.length}
+                </span>
+              )}
+            </button>
+            <button
+              onClick={() => confirmDelete(task)}
+              className="p-1 text-red-600 hover:bg-red-50 rounded"
+              disabled={isLoading}
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
+        {/* Task details */}
+        <div className="mt-3 text-xs sm:text-sm grid grid-cols-1 sm:grid-cols-2 gap-3 bg-gray-50 p-3 rounded-md">
+          <div>
+            <span className="font-semibold">Task ID:</span> {task.taskId}
+          </div>
+          <div>
+            <span className="font-semibold">Assigned Date:</span>{" "}
+            {formatDisplayDate(task.assignedDateTime)}
+          </div>
+          <div>
+            <span className="font-semibold">Status:</span>
+            <span
+              className={`ml-1 px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
+                getDisplayStatus(task)
+              )}`}
+            >
+              {getDisplayStatus(task)}
+            </span>
+          </div>
+          <div>
+            <span className="font-semibold">Due Date:</span>{" "}
+            {formatDisplayDate(task.dueDate)}{" "}
+            {task.dueTime !== "N/A" && task.dueTime}{" "}
+            {isOverdue(task.dueDate, task.dueTime, task.status) && (
+              <AlertCircle className="inline ml-1 text-red-600 w-4 h-4" />
+            )}
+          </div>
+          <div>
+            <span className="font-semibold">Assigned To:</span>{" "}
+            <span className="flex -space-x-1 justify-start">
+              {Array.isArray(task.assignedTo) && task.assignedTo.length > 0 ? (
+                task.assignedTo.map((emp) => (
+                  <div key={emp.email} className="relative group">
+                    {emp.avatar ? (
+                      <img
+                        src={emp.avatar}
+                        alt={emp.name || emp.email}
+                        className="inline-block w-6 h-6 rounded-full border border-gray-300"
+                      />
+                    ) : (
+                      <span className="inline-flex w-6 h-6 bg-gray-200 rounded-full items-center justify-center text-gray-600 text-xs font-medium">
+                        {getInitials(emp.name || emp.email)}
+                      </span>
+                    )}
+                    <span className="absolute left-1/2 transform -translate-x-1/2 top-8 bg-gray-800 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none whitespace-nowrap">
+                      {emp.name || emp.email}
+                    </span>
                   </div>
                 ))
+              ) : (
+                <div className="relative group">
+                  <span className="inline-flex w-6 h-6 bg-gray-100 rounded-full items-center justify-center text-gray-600 text-xs font-medium">
+                    UN
+                  </span>
+                  <span className="absolute left-1/2 transform -translate-x-1/2 top-8 bg-gray-800 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                    Unassigned
+                  </span>
+                </div>
               )}
-            </div>
+            </span>
+          </div>
+          <div>
+            <span className="font-semibold">Task Type:</span>{" "}
+            <span
+              className={`ml-1 px-2 py-1 rounded-full text-xs font-medium ${getTaskTypeColor(
+                task.taskType
+              )}`}
+            >
+              {task.taskType}
+            </span>
+          </div>
+          <div>
+            <span className="font-semibold">Priority:</span>{" "}
+            <span
+              className={`ml-1 px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(
+                task.priority
+              )}`}
+            >
+              {task.priority}
+            </span>
+          </div>
+          <div className="col-span-full">
+            <span className="font-semibold">Description:</span>{" "}
+            {task.description || "None"}
+          </div>
+        </div>
+      </div>
+    ))
+  )}
+</div>
+
             {/* Create/Edit Task Modal */}
             {(isModalOpen || isEditModalOpen) && (
               <div
@@ -4676,8 +4704,7 @@ const AdmintaskPage = () => {
               </div>
             )}
 
-
-               {showCustomDateModal && (
+            {showCustomDateModal && (
               <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                 <div
                   ref={customDateModalRef}
@@ -4702,7 +4729,7 @@ const AdmintaskPage = () => {
                       onChange={(e) =>
                         setCustomDateRange((prev) => ({
                           ...prev,
-                          start: e.target.value
+                          start: e.target.value,
                         }))
                       }
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -4718,7 +4745,7 @@ const AdmintaskPage = () => {
                       onChange={(e) =>
                         setCustomDateRange((prev) => ({
                           ...prev,
-                          end: e.target.value
+                          end: e.target.value,
                         }))
                       }
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"

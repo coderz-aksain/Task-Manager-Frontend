@@ -3247,16 +3247,23 @@ const handleUpdateTaskStatus = async (taskId, dueDate, status) => {
               </div>    
             </div>
              <div className="lg:hidden grid gap-4">
-              {sortedTasks.length === 0 ? (
-                <div className="text-center py-12 text-gray-500">
-                  <div className="mb-4">
-                    No tasks found matching your criteria
-                  </div>
-                  <div className="text-sm text-gray-400">
-                    Try adjusting your search or filters
-                  </div>
-                </div>
-              ) : (
+               {isInitialLoading ? (
+    <div className="py-12 text-center">
+      <Lottie
+        animationData={loaderAnimation}
+        loop={true}
+        className="w-72 h-72 mx-auto"
+      />
+      {/* <span className="text-gray-500 animate-pulse">Loading Tasks...</span> */}
+    </div>
+  ) : sortedTasks.length === 0 ? (
+    <div className="text-center py-12 text-gray-500">
+      <div className="mb-4">No tasks found matching your criteria</div>
+      <div className="text-sm text-gray-400">
+        Try adjusting your search or filters
+      </div>
+    </div>
+  ) : (
                 sortedTasks.map((task) => (
                   <div
                     key={task._id}

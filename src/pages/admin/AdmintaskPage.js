@@ -1791,7 +1791,7 @@ const AdmintaskPage = () => {
                     ) : sortedTasks.length === 0 ? (
                       <tr>
                         <td
-                          colSpan="7"
+                          colSpan="8"
                           className="py-12 text-center text-gray-500"
                         >
                           No tasks found matching your criteria <br />

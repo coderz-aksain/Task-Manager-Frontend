@@ -242,6 +242,14 @@ const AppRoutes = () => {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/employee/createtask"
+        element={
+          <ProtectedRoute allowedRoles={["employee"]}>
+            <CreateTasksEmployee />
+          </ProtectedRoute>
+        }
+      />
 
       {/* Admin Pages Routes */}
       <Route

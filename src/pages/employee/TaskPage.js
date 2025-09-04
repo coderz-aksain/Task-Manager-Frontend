@@ -1999,8 +1999,18 @@ const statusOptions = [
   { value: "Hold", label: "Hold" },
   { value: "Complete", label: "Complete" },
   { value: "Archive", label: "Archive" },
-  { value: "Pending", label: "Pending" },
+    { value: "Pending", label: "Pending" },
+
 ];
+const statusOptionsToUpdate = [
+  { value: "Open", label: "Open" },
+  { value: "In Progress", label: "In Progress" },
+  { value: "Hold", label: "Hold" },
+  { value: "Complete", label: "Complete" },
+  { value: "Archive", label: "Archive" },
+];
+
+
 const initialForm = {
   _id: "",
   taskId: 0,
@@ -2455,64 +2465,149 @@ const TaskPage = () => {
     setViewedTasks((prev) => new Set([...prev, task._id]));
   };
 
-  const handleUpdateTaskStatus = async (taskId, status) => {
-    setIsLoading(true);
-    try {
-      const response = await fetch(
-        `https://task-manager-backend-vqen.onrender.com/api/tasks/${taskId}/status`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ status }),
-        }
-      );
-      if (!response.ok) {
-        throw new Error("Failed to update task status");
+
+
+
+  // const handleUpdateTaskStatus = async (taskId, status) => {
+  //   setIsLoading(true);
+  //   try {
+  //     const response = await fetch(
+  //       `https://task-manager-backend-vqen.onrender.com/api/tasks/${taskId}/status`,
+  //       {
+  //         method: "PUT",
+  //         headers: {
+  //           "Content-Type": "application/json",
+  //           Authorization: `Bearer ${token}`,
+  //         },
+  //         body: JSON.stringify({ status }),
+  //       }
+  //     );
+  //     if (!response.ok) {
+  //       throw new Error("Failed to update task status");
+  //     }
+  //     const updatedTask = await response.json();
+  //     setTasks((prev) =>
+  //       prev.map((task) =>
+  //         task._id === updatedTask.task._id
+  //           ? {
+  //               ...updatedTask.task,
+  //               fileUrls: updatedTask.task.fileUrls || [],
+  //               assignedTo: updatedTask.task.assignedTo.map((email) => ({
+  //                 email,
+  //                 name:
+  //                   employees.find((emp) => emp.email === email)?.name ||
+  //                   email ||
+  //                   "Unknown",
+  //                 avatar:
+  //                   employees.find((emp) => emp.email === email)?.avatar || "",
+  //               })),
+  //             }
+  //           : task
+  //       )
+  //     );
+  //     setViewTask((prev) => ({
+  //       ...prev,
+  //       status: updatedTask.task.status,
+  //     }));
+  //     setToast({
+  //       message: `Task status updated to ${status}`,
+  //       type: "success",
+  //     });
+  //     setTimeout(() => setToast(null), 3000);
+  //   } catch (err) {
+  //     setError(err.message);
+  //     console.error("Error updating task status:", err);
+  //     setToast({
+  //       message: "Failed to update task status",
+  //       type: "error",
+  //     });
+  //     setTimeout(() => setToast(null), 3000);
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // };
+
+
+const handleUpdateTaskStatus = async (taskId, dueDate, status) => {
+  setIsLoading(true);
+  setError(null); // clear previous error
+
+  try {
+    if (isOverdue(dueDate, status)) {
+      const allowedStatuses = ["Complete", "Hold", "Archive"];
+      if (!allowedStatuses.includes(status)) {
+        setError(
+          `Cannot change overdue task to "${status}". Allowed: ${allowedStatuses.join(", ")}. Kindly contact your manager to update due date first.`
+          
+        );
+        setTimeout(() => setError(null), 3000);
+        setIsLoading(false);
+        return;
       }
-      const updatedTask = await response.json();
-      setTasks((prev) =>
-        prev.map((task) =>
-          task._id === updatedTask.task._id
-            ? {
-                ...updatedTask.task,
-                fileUrls: updatedTask.task.fileUrls || [],
-                assignedTo: updatedTask.task.assignedTo.map((email) => ({
-                  email,
-                  name:
-                    employees.find((emp) => emp.email === email)?.name ||
-                    email ||
-                    "Unknown",
-                  avatar:
-                    employees.find((emp) => emp.email === email)?.avatar || "",
-                })),
-              }
-            : task
-        )
-      );
-      setViewTask((prev) => ({
-        ...prev,
-        status: updatedTask.task.status,
-      }));
-      setToast({
+    }
+
+    const response = await fetch(
+      `https://task-manager-backend-vqen.onrender.com/api/tasks/${taskId}/status`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ status }),
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error("Failed to update task status");
+    }
+
+    const updatedTask = await response.json();
+    setTasks((prev) =>
+      prev.map((task) =>
+        task._id === updatedTask.task._id
+          ? {
+              ...updatedTask.task,
+              fileUrls: updatedTask.task.fileUrls || [],
+              assignedTo: updatedTask.task.assignedTo.map((email) => ({
+                email,
+                name:
+                  employees.find((emp) => emp.email === email)?.name ||
+                  email ||
+                  "Unknown",
+                avatar:
+                  employees.find((emp) => emp.email === email)?.avatar || "",
+              })),
+            }
+          : task
+      )
+    );
+
+    setViewTask((prev) => ({
+      ...prev,
+      status: updatedTask.task.status,
+    }));
+    setToast({
         message: `Task status updated to ${status}`,
         type: "success",
       });
       setTimeout(() => setToast(null), 3000);
-    } catch (err) {
-      setError(err.message);
-      console.error("Error updating task status:", err);
-      setToast({
+
+  } catch (err) {
+    setError(err.message); // show error inline
+    console.error("Error updating task status:", err);
+    setToast({
         message: "Failed to update task status",
         type: "error",
       });
       setTimeout(() => setToast(null), 3000);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  } finally {
+    setIsLoading(false);
+  }
+};
+
+
+
 
   const handleAddComment = async (e, commentText = null) => {
     if (e) e.preventDefault();
@@ -2680,7 +2775,7 @@ const TaskPage = () => {
       case "Archive":
         return "bg-gray-100 text-gray-800";
       case "Pending":
-        return "bg-gray-100 text-gray-800";
+        return "bg-red-100 text-red-800";
       default:
         return "bg-gray-100 text-gray-800";
     }
@@ -2771,19 +2866,20 @@ const TaskPage = () => {
         />
         <main className="flex-1 p-4 sm:p-6 overflow-hidden">
           <div className="max-w-full mx-auto">
-            {error && (
+            {/* {error && (
               <div className="mb-4 p-4 bg-red-100 text-red-800 rounded">
                 {error}
               </div>
-            )}
-            {toast && (
-              <div
-                className="fixed top-4 right-4 z-60 px-4 py-2 rounded-md shadow-lg max-w-md w-56 text-sm bg-green-600 text-white"
-                style={{ zIndex: 60 }}
-              >
-                {toast.message}
-              </div>
-            )}
+            )} */}
+           {toast && (
+  <div
+    className="fixed top-4 left-1/2 transform -translate-x-1/2 z-60 px-4 py-2 rounded-md shadow-lg max-w-md w-56 text-sm bg-green-600 text-white text-center"
+    style={{ zIndex: 60 }}
+  >
+    {toast.message}
+  </div>
+)}
+
             <div className="mb-6">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-4">
                 <h2 className="text-xl sm:text-2xl font-bold text-blue-600">
@@ -3762,25 +3858,35 @@ const TaskPage = () => {
                       {viewTask.remark || "None"}
                     </p>
                   </div>
-                  <div className="mb-6">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Update Status
-                    </label>
-                    <select
-                      value={viewTask.status}
-                      onChange={(e) =>
-                        handleUpdateTaskStatus(viewTask.taskId, e.target.value)
-                      }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                      disabled={isLoading}
-                    >
-                      {statusOptions.map((opt) => (
-                        <option key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                 <div className="mb-6">
+  <label className="block text-sm font-medium text-gray-700 mb-2">
+    Update Status
+  </label>
+  <select
+    value={viewTask.status}
+    onChange={(e) =>
+      handleUpdateTaskStatus(
+        viewTask.taskId,
+        viewTask.dueDate,
+        e.target.value
+      )
+    }
+    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+    disabled={isLoading}
+  >
+    {statusOptionsToUpdate.map((opt) => (
+      <option key={opt.value} value={opt.value}>
+        {opt.label}
+      </option>
+    ))}
+  </select>
+
+  {/* Show error message below dropdown */}
+  {error && (
+    <p className="mt-2 text-sm text-red-600">{error}</p>
+  )}
+</div>
+
                   <div className="mb-6">
                     <p className="text-sm text-gray-500 mb-2">Comments</p>
                     <form

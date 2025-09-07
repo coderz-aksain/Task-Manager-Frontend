@@ -1735,11 +1735,11 @@ console.log("Paginated tasks:", paginatedTasks);
       </div>
       <div className="flex-1 flex flex-col">
         <Header isLoggedIn={!!token} onToggleSidebar={toggleSidebar} />
-        <main className="flex-1 p-2 sm:p-4 md:p-6 overflow-auto">
+        <main className="flex-1 p-2 sm:p-4 md:p-6 ">
           <div className="max-w-8xl mx-auto">
             <div className="mb-6">
                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-4">
-                <h2 className="text-lg sm:text-xl md:text-4xl font-bold text-blue-600">
+                <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-blue-600">
                   My Tasks (Total: {totalTasks})
                 </h2>
                 <div className="flex flex-col sm:flex-row gap-2">

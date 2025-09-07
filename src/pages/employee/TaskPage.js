@@ -11816,7 +11816,7 @@ const TaskPage = () => {
                   }`}
                   disabled={isLoading}
                 >
-                  <Filter className="w-4 h-4 mr-1" />
+                  {/* <Filter className="w-4 h-4 mr-1" /> */}
                   All
                 </button>
                 <button
@@ -11828,7 +11828,7 @@ const TaskPage = () => {
                   }`}
                   disabled={isLoading}
                 >
-                  <Filter className="w-4 h-4 mr-1" />
+                  {/* <Filter className="w-4 h-4 mr-1" /> */}
                   New Tasks
                 </button>
                 <button
@@ -11840,7 +11840,7 @@ const TaskPage = () => {
                   }`}
                   disabled={isLoading}
                 >
-                  <Filter className="w-4 h-4 mr-1" />
+                  {/* <Filter className="w-4 h-4 mr-1" /> */}
                   In Progress
                 </button>
                 <button
@@ -11852,7 +11852,7 @@ const TaskPage = () => {
                   }`}
                   disabled={isLoading}
                 >
-                  <Filter className="w-4 h-4 mr-1" />
+                  {/* <Filter className="w-4 h-4 mr-1" /> */}
                   Completed
                 </button>
               </div>
@@ -11992,7 +11992,7 @@ const TaskPage = () => {
                   <tbody>
                     {isInitialLoading ? (
                       <tr>
-                        <td colSpan="7" className="py-12 text-center">
+                        <td colSpan="6" className="py-12 text-center">
                           <Lottie 
                             animationData={loaderAnimation} 
                             loop={true} 
@@ -12003,7 +12003,7 @@ const TaskPage = () => {
                       </tr>
                     ) : paginatedTasks.length === 0 ? (
                       <tr>
-                        <td colSpan="7" className="py-12 text-center text-gray-500">
+                        <td colSpan="6" className="py-12 text-center text-gray-500">
                           No tasks found matching your criteria
                         </td>
                       </tr>

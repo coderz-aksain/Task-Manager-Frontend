@@ -90,8 +90,8 @@ const Header = ({ isLoggedIn = false, onToggleSidebar, title }) => {
           {/* Notifications - only show when logged in */}
           {isLoggedIn && (
             <button className="relative p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors">
-              <Bell className="h-5 w-5" />
-              <span className="absolute top-1 right-1 h-2 w-2 bg-red-500 rounded-full"></span>
+              {/* <Bell className="h-5 w-5" /> */}
+              {/* <span className="absolute top-1 right-1 h-2 w-2 bg-red-500 rounded-full"></span> */}
             </button>
           )}
 

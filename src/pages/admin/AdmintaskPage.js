@@ -28,7 +28,7 @@ import Header from "../../components/common/Header";
 import { Link, useLocation, useNavigate  } from "react-router-dom";
 import * as XLSX from "xlsx";
 import loaderAnimation from "../../assets/animations/loader.json";
-
+import { RefreshCw } from "lucide-react";
 // Helper functions
 const formatDisplayDate = (dateStr) => {
   if (!dateStr) return "N/A";
@@ -543,6 +543,290 @@ const AdmintaskPage = () => {
 //   // }, [token, currentPage, pageSize]);
 //   }, [token, employees, currentPage, pageSize]);
 
+// useEffect(() => {
+//   const fetchEmployees = async () => {
+//     try {
+//       const response = await fetch(
+//         "https://task-manager-backend-vqen.onrender.com/api/admin/allemployees",
+//         {
+//           method: "GET",
+//           headers: {
+//             "Content-Type": "application/json",
+//             Authorization: `Bearer ${token}`,
+//           },
+//         }
+//       );
+//       if (!response.ok) {
+//         throw new Error(`Failed to fetch employees: ${response.statusText}`);
+//       }
+//       const data = await response.json();
+//       const validEmployees = Array.isArray(data)
+//         ? data.map((emp) => ({
+//             id: emp.id || emp._id || "",
+//             name: emp.firstName || emp.name || "Unknown",
+//             email: emp.email || "",
+//             department: emp.department || "Unknown",
+//             position: emp.position || "Employee",
+//             avatar: emp.profileImage || "",
+//           }))
+//         : [];
+//       setEmployees(validEmployees);
+//     } catch (err) {
+//       setError(err.message);
+//       console.error("Error fetching employees:", err);
+//     }
+//   };
+
+//   const fetchTasks = async () => {
+//     setIsPageLoading(true); // Set page loading to true
+//     try {
+//       const response = await fetch(
+//         `https://task-manager-backend-vqen.onrender.com/api/admin/gettasks?limit=${pageSize}&page=${currentPage}`,
+//         {
+//           method: "GET",
+//           headers: {
+//             "Content-Type": "application/json",
+//             Authorization: `Bearer ${token}`,
+//           },
+//         }
+//       );
+//       if (!response.ok) {
+//         throw new Error(`Failed to fetch tasks: ${response.statusText}`);
+//       }
+//       const data = await response.json();
+
+//       console.log("Raw tasks data from API:", data);
+//       const months = {
+//         Jan: "01",
+//         Feb: "02",
+//         Mar: "03",
+//         Apr: "04",
+//         May: "05",
+//         Jun: "06",
+//         Jul: "07",
+//         Aug: "08",
+//         Sep: "09",
+//         Oct: "10",
+//         Nov: "11",
+//         Dec: "12",
+//       };
+//       const validTasks = Array.isArray(data.tasks)
+//         ? data.tasks.map((task) => {
+//             let formattedDueDate = "";
+//             if (task.dueDate) {
+//               if (/^\d{2}\/\d{2}\/\d{4}$/.test(task.dueDate)) {
+//                 const [day, month, year] = task.dueDate.split("/");
+//                 formattedDueDate = `${year}-${month}-${day}`;
+//                 const testDate = new Date(formattedDueDate);
+//                 if (isNaN(testDate)) {
+//                   console.warn(
+//                     `Invalid dueDate for task ${task.taskId}: ${task.dueDate}`
+//                   );
+//                   formattedDueDate = "Invalid Date";
+//                 }
+//               } else if (/^\d{2}\/[A-Za-z]{3}\/\d{4}$/.test(task.dueDate)) {
+//                 const [day, month, year] = task.dueDate.split("/");
+//                 if (months[month]) {
+//                   formattedDueDate = `${year}-${months[month]}-${day}`;
+//                   const testDate = new Date(formattedDueDate);
+//                   if (isNaN(testDate)) {
+//                     console.warn(
+//                       `Invalid dueDate for task ${task.taskId}: ${task.dueDate}`
+//                     );
+//                     formattedDueDate = "Invalid Date";
+//                   }
+//                 } else {
+//                   console.warn(
+//                     `Invalid month in dueDate for task ${task.taskId}: ${task.dueDate}`
+//                   );
+//                   formattedDueDate = "Invalid Date";
+//                 }
+//               } else {
+//                 console.warn(
+//                   `Unrecognized dueDate format for task ${task.taskId}: ${task.dueDate}`
+//                 );
+//                 formattedDueDate = "Invalid Date";
+//               }
+//             } else {
+//               formattedDueDate = "N/A";
+//             }
+
+//             const assignedTo = Array.isArray(task.assignedTo)
+//               ? task.assignedTo.map((email) => {
+//                   const employee = employees.find((emp) => emp.email === email);
+//                   return {
+//                     email: email || "",
+//                     name: employee ? employee.name : email || "Unknown",
+//                     avatar: employee ? employee.avatar : "",
+//                   };
+//                 })
+//               : [];
+//             return {
+//               _id: task._id || "",
+//               taskId: task.taskId || 0,
+//               taskName: task.taskName || "",
+//               description: task.description || "",
+//               dueDate: formattedDueDate,
+//               dueTime: task.dueTime || "N/A",
+//               priority: task.priority || "Low",
+//               status: task.status || "Open",
+//               assignedBy: task.assignedBy || "admin@company.com",
+//               assignedTo,
+//               taskType: task.taskType || "General",
+//               fileUrls: task.fileUrls || [],
+//               assignedDateTime: task.assignedDateTime || "",
+//               activityLogs: task.activityLogs || [],
+//               comments: task.comments || [],
+//               remark: task.remark || "",
+//             };
+//           })
+//         : [];
+//       console.log("Valid tasks:", validTasks);
+//       setTasks(validTasks);
+//       setTotalTasks(data.pagination.total || validTasks.length);
+//       console.log("Total tasks from API:", data.pagination.total || validTasks.length);
+//       localStorage.setItem("tasks_stepper", JSON.stringify(validTasks));
+//     } catch (err) {
+//       setError(err.message);
+//       console.error("Error fetching tasks:", err);
+//     } finally {
+//       setIsInitialLoading(false);
+//       setIsPageLoading(false); // Set page loading to false when data is received
+//     }
+//   };
+
+//   if (token) {
+//     fetchEmployees().then(() => {
+//       fetchTasks();
+//     });
+//   } else {
+//     setError("No authentication token found");
+//     console.error("No token found in localStorage");
+//     setIsInitialLoading(false);
+//     setIsPageLoading(false);
+//   }
+// }, [token, currentPage, pageSize]);
+
+// Move fetchTasks outside of useEffect
+const fetchTasks = async () => {
+  setIsPageLoading(true); // Set page loading to true
+  try {
+    const response = await fetch(
+      `https://task-manager-backend-vqen.onrender.com/api/admin/gettasks?limit=${pageSize}&page=${currentPage}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    if (!response.ok) {
+      throw new Error(`Failed to fetch tasks: ${response.statusText}`);
+    }
+    const data = await response.json();
+
+    console.log("Raw tasks data from API:", data);
+    const months = {
+      Jan: "01",
+      Feb: "02",
+      Mar: "03",
+      Apr: "04",
+      May: "05",
+      Jun: "06",
+      Jul: "07",
+      Aug: "08",
+      Sep: "09",
+      Oct: "10",
+      Nov: "11",
+      Dec: "12",
+    };
+    const validTasks = Array.isArray(data.tasks)
+      ? data.tasks.map((task) => {
+          let formattedDueDate = "";
+          if (task.dueDate) {
+            if (/^\d{2}\/\d{2}\/\d{4}$/.test(task.dueDate)) {
+              const [day, month, year] = task.dueDate.split("/");
+              formattedDueDate = `${year}-${month}-${day}`;
+              const testDate = new Date(formattedDueDate);
+              if (isNaN(testDate)) {
+                console.warn(
+                  `Invalid dueDate for task ${task.taskId}: ${task.dueDate}`
+                );
+                formattedDueDate = "Invalid Date";
+              }
+            } else if (/^\d{2}\/[A-Za-z]{3}\/\d{4}$/.test(task.dueDate)) {
+              const [day, month, year] = task.dueDate.split("/");
+              if (months[month]) {
+                formattedDueDate = `${year}-${months[month]}-${day}`;
+                const testDate = new Date(formattedDueDate);
+                if (isNaN(testDate)) {
+                  console.warn(
+                    `Invalid dueDate for task ${task.taskId}: ${task.dueDate}`
+                  );
+                  formattedDueDate = "Invalid Date";
+                }
+              } else {
+                console.warn(
+                  `Invalid month in dueDate for task ${task.taskId}: ${task.dueDate}`
+                );
+                formattedDueDate = "Invalid Date";
+              }
+            } else {
+              console.warn(
+                `Unrecognized dueDate format for task ${task.taskId}: ${task.dueDate}`
+              );
+              formattedDueDate = "Invalid Date";
+            }
+          } else {
+            formattedDueDate = "N/A";
+          }
+
+          const assignedTo = Array.isArray(task.assignedTo)
+            ? task.assignedTo.map((email) => {
+                const employee = employees.find((emp) => emp.email === email);
+                return {
+                  email: email || "",
+                  name: employee ? employee.name : email || "Unknown",
+                  avatar: employee ? employee.avatar : "",
+                };
+              })
+            : [];
+          return {
+            _id: task._id || "",
+            taskId: task.taskId || 0,
+            taskName: task.taskName || "",
+            description: task.description || "",
+            dueDate: formattedDueDate,
+            dueTime: task.dueTime || "N/A",
+            priority: task.priority || "Low",
+            status: task.status || "Open",
+            assignedBy: task.assignedBy || "admin@company.com",
+            assignedTo,
+            taskType: task.taskType || "General",
+            fileUrls: task.fileUrls || [],
+            assignedDateTime: task.assignedDateTime || "",
+            activityLogs: task.activityLogs || [],
+            comments: task.comments || [],
+            remark: task.remark || "",
+          };
+        })
+      : [];
+    console.log("Valid tasks:", validTasks);
+    setTasks(validTasks);
+    setTotalTasks(data.pagination.total || validTasks.length);
+    console.log("Total tasks from API:", data.pagination.total || validTasks.length);
+    localStorage.setItem("tasks_stepper", JSON.stringify(validTasks));
+  } catch (err) {
+    setError(err.message);
+    console.error("Error fetching tasks:", err);
+  } finally {
+    setIsInitialLoading(false);
+    setIsPageLoading(false); // Set page loading to false when data is received
+  }
+};
+
+// Update the useEffect to use the fetchTasks function
 useEffect(() => {
   const fetchEmployees = async () => {
     try {
@@ -574,124 +858,6 @@ useEffect(() => {
     } catch (err) {
       setError(err.message);
       console.error("Error fetching employees:", err);
-    }
-  };
-
-  const fetchTasks = async () => {
-    setIsPageLoading(true); // Set page loading to true
-    try {
-      const response = await fetch(
-        `https://task-manager-backend-vqen.onrender.com/api/admin/gettasks?limit=${pageSize}&page=${currentPage}`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      if (!response.ok) {
-        throw new Error(`Failed to fetch tasks: ${response.statusText}`);
-      }
-      const data = await response.json();
-
-      console.log("Raw tasks data from API:", data);
-      const months = {
-        Jan: "01",
-        Feb: "02",
-        Mar: "03",
-        Apr: "04",
-        May: "05",
-        Jun: "06",
-        Jul: "07",
-        Aug: "08",
-        Sep: "09",
-        Oct: "10",
-        Nov: "11",
-        Dec: "12",
-      };
-      const validTasks = Array.isArray(data.tasks)
-        ? data.tasks.map((task) => {
-            let formattedDueDate = "";
-            if (task.dueDate) {
-              if (/^\d{2}\/\d{2}\/\d{4}$/.test(task.dueDate)) {
-                const [day, month, year] = task.dueDate.split("/");
-                formattedDueDate = `${year}-${month}-${day}`;
-                const testDate = new Date(formattedDueDate);
-                if (isNaN(testDate)) {
-                  console.warn(
-                    `Invalid dueDate for task ${task.taskId}: ${task.dueDate}`
-                  );
-                  formattedDueDate = "Invalid Date";
-                }
-              } else if (/^\d{2}\/[A-Za-z]{3}\/\d{4}$/.test(task.dueDate)) {
-                const [day, month, year] = task.dueDate.split("/");
-                if (months[month]) {
-                  formattedDueDate = `${year}-${months[month]}-${day}`;
-                  const testDate = new Date(formattedDueDate);
-                  if (isNaN(testDate)) {
-                    console.warn(
-                      `Invalid dueDate for task ${task.taskId}: ${task.dueDate}`
-                    );
-                    formattedDueDate = "Invalid Date";
-                  }
-                } else {
-                  console.warn(
-                    `Invalid month in dueDate for task ${task.taskId}: ${task.dueDate}`
-                  );
-                  formattedDueDate = "Invalid Date";
-                }
-              } else {
-                console.warn(
-                  `Unrecognized dueDate format for task ${task.taskId}: ${task.dueDate}`
-                );
-                formattedDueDate = "Invalid Date";
-              }
-            } else {
-              formattedDueDate = "N/A";
-            }
-
-            const assignedTo = Array.isArray(task.assignedTo)
-              ? task.assignedTo.map((email) => {
-                  const employee = employees.find((emp) => emp.email === email);
-                  return {
-                    email: email || "",
-                    name: employee ? employee.name : email || "Unknown",
-                    avatar: employee ? employee.avatar : "",
-                  };
-                })
-              : [];
-            return {
-              _id: task._id || "",
-              taskId: task.taskId || 0,
-              taskName: task.taskName || "",
-              description: task.description || "",
-              dueDate: formattedDueDate,
-              dueTime: task.dueTime || "N/A",
-              priority: task.priority || "Low",
-              status: task.status || "Open",
-              assignedBy: task.assignedBy || "admin@company.com",
-              assignedTo,
-              taskType: task.taskType || "General",
-              fileUrls: task.fileUrls || [],
-              assignedDateTime: task.assignedDateTime || "",
-              activityLogs: task.activityLogs || [],
-              comments: task.comments || [],
-              remark: task.remark || "",
-            };
-          })
-        : [];
-      console.log("Valid tasks:", validTasks);
-      setTasks(validTasks);
-      setTotalTasks(data.pagination.total || validTasks.length);
-      console.log("Total tasks from API:", data.pagination.total || validTasks.length);
-      localStorage.setItem("tasks_stepper", JSON.stringify(validTasks));
-    } catch (err) {
-      setError(err.message);
-      console.error("Error fetching tasks:", err);
-    } finally {
-      setIsInitialLoading(false);
-      setIsPageLoading(false); // Set page loading to false when data is received
     }
   };
 
@@ -1742,46 +1908,60 @@ console.log("Paginated tasks:", paginatedTasks);
                 <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-blue-600">
                   My Tasks (Total: {totalTasks})
                 </h2>
-                <div className="flex flex-col sm:flex-row gap-2">
-                  <Link to="/admin/createtasks">
-                    <button
-                      className="p-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center justify-center text-sm sm:text-base w-full sm:w-10 h-10"
-                      title="Create Task"
-                    >
-                      <Plus className="w-5 h-5" />
-                    </button>
-                  </Link>
-                  <button
-                    onClick={exportToExcel}
-                    className="p-2 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center justify-center text-sm sm:text-base w-full sm:w-10 h-10"
-                    title="Export to Excel"
-                    disabled={isLoading}
-                  >
-                    <Download className="w-5 h-5" />
-                  </button>
-                  {isFilterApplied() && (
-                    <button
-                      onClick={clearAllFilters}
-                      className="p-2 bg-red-600 text-white rounded-md hover:bg-gray-700 flex items-center justify-center text-sm sm:text-base w-full sm:w-auto h-10"
-                      title="Clear Filters"
-                      disabled={isLoading}
-                    >
-                      <FunnelX />
-                    </button>
-                  )}
-                  <select
-                    value={pageSize}
-                    onChange={(e) => handleLimitChange(Number(e.target.value))}
-                    className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                    disabled={isLoading}
-                  >
-                    <option value={25}>25 per page</option>
-                    <option value={50}>50 per page</option>
-                    <option value={75}>75 per page</option>
-                    <option value={100}>100 per page</option>
-                    <option value={500}>500 per page</option>
-                  </select>
-                </div>
+<div className="flex flex-col sm:flex-row gap-2">
+  <Link to="/admin/createtasks">
+    <button
+      className="p-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center justify-center text-sm sm:text-base w-full sm:w-10 h-10"
+      title="Create Task"
+    >
+      <Plus className="w-5 h-5" />
+    </button>
+  </Link>
+  <button
+    onClick={exportToExcel}
+    className="p-2 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center justify-center text-sm sm:text-base w-full sm:w-10 h-10"
+    title="Export to Excel"
+    disabled={isLoading}
+  >
+    <Download className="w-5 h-5" />
+  </button>
+  <button
+    onClick={() => {
+      setIsPageLoading(true);
+      fetchTasks();
+    }}
+    className="p-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 flex items-center justify-center text-sm sm:text-base w-full sm:w-10 h-10 relative group"
+    title="Refresh Tasks"
+    disabled={isLoading}
+  >
+    <RefreshCw className="w-5 h-5" />
+    <span className="absolute left-1/2 transform -translate-x-1/2 -top-7 bg-black text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity z-50 whitespace-nowrap pointer-events-none">
+      Refresh Tasks
+    </span>
+  </button>
+  {isFilterApplied() && (
+    <button
+      onClick={clearAllFilters}
+      className="p-2 bg-red-600 text-white rounded-md hover:bg-gray-700 flex items-center justify-center text-sm sm:text-base w-full sm:w-auto h-10"
+      title="Clear Filters"
+      disabled={isLoading}
+    >
+      <FunnelX />
+    </button>
+  )}
+  <select
+    value={pageSize}
+    onChange={(e) => handleLimitChange(Number(e.target.value))}
+    className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+    disabled={isLoading}
+  >
+    <option value={25}>25 per page</option>
+    <option value={50}>50 per page</option>
+    <option value={75}>75 per page</option>
+    <option value={100}>100 per page</option>
+    <option value={500}>500 per page</option>
+  </select>
+</div>
               </div>
 
               <div className="flex flex-wrap gap-2 mb-4">

@@ -3346,7 +3346,7 @@ console.log("Paginated tasks:", paginatedTasks);
                               })
                               .replace(/ /g, "/") // replaces spaces with "/"
                           : "N/A"}
-                        {viewTask.dueTime !== "N/A" && ` ${viewTask.dueTime}`}
+                        {/* {viewTask.dueTime !== "N/A" && ` ${viewTask.dueTime}`} */}
                       </p>
                     </div>
 

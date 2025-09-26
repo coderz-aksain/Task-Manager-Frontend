@@ -383,7 +383,7 @@ const AdmintaskPage = () => {
 //     const fetchEmployees = async () => {
 //       try {
 //         const response = await fetch(
-//           "https://task-manager-backend-vqen.onrender.com/api/admin/allemployees",
+//           "https://task-manager-backend-xs5s.onrender.com/api/admin/allemployees",
 //           {
 //             method: "GET",
 //             headers: {
@@ -416,7 +416,7 @@ const AdmintaskPage = () => {
 // const fetchTasks = async () => {
 //   try {
 //     const response = await fetch(
-//       `https://task-manager-backend-vqen.onrender.com/api/admin/gettasks?limit=${pageSize}&page=${currentPage}`,
+//       `https://task-manager-backend-xs5s.onrender.com/api/admin/gettasks?limit=${pageSize}&page=${currentPage}`,
 //       {
 //         method: "GET",
 //         headers: {
@@ -547,7 +547,7 @@ const AdmintaskPage = () => {
 //   const fetchEmployees = async () => {
 //     try {
 //       const response = await fetch(
-//         "https://task-manager-backend-vqen.onrender.com/api/admin/allemployees",
+//         "https://task-manager-backend-xs5s.onrender.com/api/admin/allemployees",
 //         {
 //           method: "GET",
 //           headers: {
@@ -581,7 +581,7 @@ const AdmintaskPage = () => {
 //     setIsPageLoading(true); // Set page loading to true
 //     try {
 //       const response = await fetch(
-//         `https://task-manager-backend-vqen.onrender.com/api/admin/gettasks?limit=${pageSize}&page=${currentPage}`,
+//         `https://task-manager-backend-xs5s.onrender.com/api/admin/gettasks?limit=${pageSize}&page=${currentPage}`,
 //         {
 //           method: "GET",
 //           headers: {
@@ -712,7 +712,7 @@ const fetchTasks = async () => {
   setIsPageLoading(true); // Set page loading to true
   try {
     const response = await fetch(
-      `https://task-manager-backend-vqen.onrender.com/api/admin/gettasks?limit=${pageSize}&page=${currentPage}`,
+      `https://task-manager-backend-xs5s.onrender.com/api/admin/gettasks?limit=${pageSize}&page=${currentPage}`,
       {
         method: "GET",
         headers: {
@@ -831,7 +831,7 @@ useEffect(() => {
   const fetchEmployees = async () => {
     try {
       const response = await fetch(
-        "https://task-manager-backend-vqen.onrender.com/api/admin/allemployees",
+        "https://task-manager-backend-xs5s.onrender.com/api/admin/allemployees",
         {
           method: "GET",
           headers: {
@@ -1033,8 +1033,8 @@ useEffect(() => {
   //   }
   //   try {
   //     const url = editId
-  //       ? `https://task-manager-backend-vqen.onrender.com/api/admin/updatetask/${taskToUpdate?.taskId}`
-  //       : "https://task-manager-backend-vqen.onrender.com/api/admin/createtask";
+  //       ? `https://task-manager-backend-xs5s.onrender.com/api/admin/updatetask/${taskToUpdate?.taskId}`
+  //       : "https://task-manager-backend-xs5s.onrender.com/api/admin/createtask";
   //     const method = editId ? "PATCH" : "POST";
   //     const response = await fetch(url, {
   //       method: method,
@@ -1208,8 +1208,8 @@ useEffect(() => {
 
   try {
     const url = editId
-      ? `https://task-manager-backend-vqen.onrender.com/api/admin/updatetask/${taskToUpdate?.taskId}`
-      : "https://task-manager-backend-vqen.onrender.com/api/admin/createtask";
+      ? `https://task-manager-backend-xs5s.onrender.com/api/admin/updatetask/${taskToUpdate?.taskId}`
+      : "https://task-manager-backend-xs5s.onrender.com/api/admin/createtask";
     const method = editId ? "PATCH" : "POST";
 
     const response = await fetch(url, {
@@ -1306,7 +1306,7 @@ useEffect(() => {
     setIsLoading(true);
     try {
       const response = await fetch(
-        `https://task-manager-backend-vqen.onrender.com/api/admin/deletetask/${taskId}`,
+        `https://task-manager-backend-xs5s.onrender.com/api/admin/deletetask/${taskId}`,
         {
           method: "DELETE",
           headers: {
@@ -1355,7 +1355,7 @@ useEffect(() => {
     setIsLoading(true);
     try {
       const response = await fetch(
-        `https://task-manager-backend-vqen.onrender.com/api/admin/updatetask/${taskId}`,
+        `https://task-manager-backend-xs5s.onrender.com/api/admin/updatetask/${taskId}`,
         {
           method: "PATCH",
           headers: {
@@ -1412,7 +1412,7 @@ useEffect(() => {
     };
     try {
       const response = await fetch(
-        `https://task-manager-backend-vqen.onrender.com/api/tasks/${viewTask.taskId}/comments`,
+        `https://task-manager-backend-xs5s.onrender.com/api/tasks/${viewTask.taskId}/comments`,
         {
           method: "POST",
           headers: {
@@ -1477,7 +1477,7 @@ useEffect(() => {
     setError(null);
     try {
       const response = await fetch(
-        "https://task-manager-backend-vqen.onrender.com/api/admin/remainderemail",
+        "https://task-manager-backend-xs5s.onrender.com/api/admin/remainderemail",
         {
           method: "POST",
           headers: {

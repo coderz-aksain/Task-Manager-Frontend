@@ -2,7 +2,7 @@ import axios from 'axios';
 
 export const verifyToken = async (token) => {
   try {
-    const response = await axios.get("https://task-manager-backend-vqen.onrender.com/api/verify-token", {
+    const response = await axios.get("https://task-manager-backend-xs5s.onrender.com/api/verify-token", {
       headers: {
         Authorization: `Bearer ${token}`,
       },

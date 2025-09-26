@@ -146,7 +146,7 @@ const AdminProfile = () => {
   const [error, setError] = useState('');
   const [toast, setToast] = useState({ show: false, message: '', type: '' });
 
-  const BASE_URL = "https://task-manager-backend-vqen.onrender.com/api";
+  const BASE_URL = "https://task-manager-backend-xs5s.onrender.com/api";
 
   // Fetch profile data on mount
   useEffect(() => {

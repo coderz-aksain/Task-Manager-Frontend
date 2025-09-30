@@ -21,6 +21,8 @@ import {
   FunnelX,
   ChevronUp,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import Lottie from "lottie-react";
 import AdminSidebar from "../../components/common/AdminSidebar";
@@ -2512,7 +2514,7 @@ console.log("Paginated tasks:", paginatedTasks);
                       className="inline-block w-7 h-7 rounded-full border border-gray-300"
                     />
                   ) : (
-                    <span className="inline-flex w-7 h-7 bg-gray-200 rounded-full items-center justify-center text-gray-600 text-xs font-medium">
+                    <span className="inline-flex w-7 h-7 bg-gray-200 rounded-full items-center justify-center text-xs text-gray-600">
                       {getInitials(emp.name || emp.email)}
                     </span>
                   )}
@@ -2723,7 +2725,7 @@ console.log("Paginated tasks:", paginatedTasks);
                         className="inline-block w-6 h-6 rounded-full border border-gray-300"
                       />
                     ) : (
-                      <span className="inline-flex w-6 h-6 bg-gray-200 rounded-full items-center justify-center text-gray-600 text-xs font-medium">
+                      <span className="inline-flex w-6 h-6 bg-gray-200 rounded-full items-center justify-center text-xs text-gray-600">
                         {getInitials(emp.name || emp.email)}
                       </span>
                     )}
@@ -2775,39 +2777,6 @@ console.log("Paginated tasks:", paginatedTasks);
 </div>
 
             {/* Pagination */}
-            {/* {totalPages > 1 && (
-              <div className="flex justify-center mt-4 space-x-2">
-                <button
-                  onClick={() => handlePageChange(currentPage - 1)}
-                  disabled={currentPage === 1}
-                  className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md disabled:opacity-50"
-                >
-                  Previous
-                </button>
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                  <button
-                    key={page}
-                    onClick={() => handlePageChange(page)}
-                    className={`px-4 py-2 rounded-md ${
-                      currentPage === page
-                        ? "bg-blue-600 text-white"
-                        : "bg-gray-200 text-gray-800"
-                    }`}
-                  >
-                    {page}
-                  </button>
-                ))}
-                <button
-                  onClick={() => handlePageChange(currentPage + 1)}
-                  disabled={currentPage === totalPages}
-                  className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md disabled:opacity-50"
-                >
-                  Next
-                </button>
-              </div>
-            )} */}
-
-                    {/* Pagination */}
             {totalPages > 1 && (
               <div className="flex flex-col sm:flex-row justify-between items-center mt-4 space-y-4 sm:space-y-0 sm:space-x-2">
                 <div className="text-sm text-gray-600">
@@ -2821,36 +2790,76 @@ console.log("Paginated tasks:", paginatedTasks);
                     disabled={currentPage === 1}
                     className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md disabled:opacity-50"
                   >
-                    Previous
+                  <ChevronLeft/>
+                    
                   </button>
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                    (page) => (
-                      <button
-                        key={page}
-                        onClick={() => handlePageChange(page)}
-                        className={`px-4 py-2 rounded-md ${
-                          currentPage === page
-                            ? "bg-blue-600 text-white"
-                            : "bg-gray-200 text-gray-800"
-                        }`}
-                      >
-                        {page}
-                      </button>
-                    )
-                  )}
+                  {/* Windowed pagination logic */}
+                  {(() => {
+                    const pageButtons = [];
+                    const windowSize = 5;
+                    let startPage = Math.max(1, currentPage - Math.floor(windowSize / 2));
+                    let endPage = startPage + windowSize - 1;
+                    if (endPage > totalPages) {
+                      endPage = totalPages;
+                      startPage = Math.max(1, endPage - windowSize + 1);
+                    }
+                    // Always show first page
+                    if (startPage > 1) {
+                      pageButtons.push(
+                        <button
+                          key={1}
+                          onClick={() => handlePageChange(1)}
+                          className={`px-4 py-2 rounded-md ${currentPage === 1 ? "bg-blue-600 text-white" : "bg-gray-200 text-gray-800"}`}
+                        >
+                          1
+                        </button>
+                      );
+                      if (startPage > 2) {
+                        pageButtons.push(
+                          <span key="start-ellipsis" className="px-2 py-2 text-gray-500">...</span>
+                        );
+                      }
+                    }
+                    for (let page = startPage; page <= endPage; page++) {
+                      pageButtons.push(
+                        <button
+                          key={page}
+                          onClick={() => handlePageChange(page)}
+                          className={`px-4 py-2 rounded-md ${currentPage === page ? "bg-blue-600 text-white" : "bg-gray-200 text-gray-800"}`}
+                        >
+                          {page}
+                        </button>
+                      );
+                    }
+                    // Always show last page
+                    if (endPage < totalPages) {
+                      if (endPage < totalPages - 1) {
+                        pageButtons.push(
+                          <span key="end-ellipsis" className="px-2 py-2 text-gray-500">...</span>
+                        );
+                      }
+                      pageButtons.push(
+                        <button
+                          key={totalPages}
+                          onClick={() => handlePageChange(totalPages)}
+                          className={`px-4 py-2 rounded-md ${currentPage === totalPages ? "bg-blue-600 text-white" : "bg-gray-200 text-gray-800"}`}
+                        >
+                          {totalPages}
+                        </button>
+                      );
+                    }
+                    return pageButtons;
+                  })()}
                   <button
                     onClick={() => handlePageChange(currentPage + 1)}
                     disabled={currentPage === totalPages}
                     className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md disabled:opacity-50"
                   >
-                    Next
+                    <ChevronRight />
                   </button>
                 </div>
               </div>
             )}
-
-
-
 
             {/* Create/Edit Task Modal */}
             {(isModalOpen || isEditModalOpen) && (
@@ -3011,7 +3020,7 @@ console.log("Paginated tasks:", paginatedTasks);
                         </p>
                       )}
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 mb-6">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           Task Type *
@@ -3223,7 +3232,7 @@ console.log("Paginated tasks:", paginatedTasks);
                   <button
                     onClick={() => setIsViewModalOpen(false)}
                     disabled={isLoading}
-                    className="text-gray-500 hover:text-black absolute top-2 right-2 z-50"
+                    className="text-gray-500 hover:text-gray-700 absolute top-2 right-2 z-50"
                     aria-label="Close modal"
                   >
                     <X className="w-6 h-6" />

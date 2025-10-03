@@ -1592,31 +1592,32 @@ useEffect(() => {
   };
 
   const exportToExcel = () => {
-    const ws = XLSX.utils.json_to_sheet(
-      tasks.map((task) => ({
-        "Task ID": task.taskId,
-        "Task Name": task.taskName,
-        Description: task.description,
-        "Due Date": formatDisplayDate(task.dueDate),
-        "Due Time": task.dueTime,
-        Priority: task.priority,
-        Status: task.status,
-        "Assigned To":
-          Array.isArray(task.assignedTo) && task.assignedTo.length > 0
-            ? task.assignedTo.map((emp) => emp.name).join(", ")
-            : "Unassigned",
-        "Task Type": task.taskType,
-        "File URLs": task.fileUrls.join(", "),
-        "Assigned DateTime": task.assignedDateTime
-          ? new Date(task.assignedDateTime).toLocaleString()
-          : "N/A",
-        Remark: task.remark,
-      }))
-    );
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Tasks");
-    XLSX.writeFile(wb, "tasks_export.xlsx");
-  };
+  const ws = XLSX.utils.json_to_sheet(
+    sortedTasks.map((task) => ({
+      "Task ID": task.taskId,
+      "Task Name": task.taskName,
+      Description: task.description,
+      "Due Date": formatDisplayDate(task.dueDate),
+      "Due Time": task.dueTime,
+      Priority: task.priority,
+      Status: task.status,
+      "Assigned To":
+        Array.isArray(task.assignedTo) && task.assignedTo.length > 0
+          ? task.assignedTo.map((emp) => emp.name).join(", ")
+          : "Unassigned",
+      "Task Type": task.taskType,
+      "File URLs": task.fileUrls.join(", "),
+      "Assigned DateTime": task.assignedDateTime
+        ? new Date(task.assignedDateTime).toLocaleString()
+        : "N/A",
+      Remark: task.remark,
+    }))
+  );
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Tasks");
+  XLSX.writeFile(wb, "tasks_export.xlsx");
+};
+
 
   const toggleSidebar = () => {
     setShowSidebar((prev) => !prev);

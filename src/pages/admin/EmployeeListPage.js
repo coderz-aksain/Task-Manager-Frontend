@@ -461,104 +461,98 @@ const EmployeeListPage = () => {
               ) : (
                 <>
                   <div className="hidden lg:block">
-                    {/* Responsive: Table header and columns always aligned, only tbody scrolls, modal overlays above */}
-                    <div className="relative w-full">
-                      <div className="w-full overflow-x-auto">
-                        <div className="border rounded-lg">
-                          <table className="min-w-full text-xs sm:text-sm">
-                            <thead className="sticky top-0 z-10 bg-gray-200">
-                              <tr className="text-black">
-                                {tableColumns.map((col) => (
-                                  <th
-                                    key={col.key}
-                                    className="p-2 sm:p-3 text-left font-semibold whitespace-nowrap bg-gray-200"
-                                    style={{ position: 'sticky', top: 0, zIndex: 1 }}
-                                  >
-                                    {col.label}
-                                  </th>
-                                ))}
+                    {/* Fix: Table header and body always aligned by using a single table with sticky header */}
+                    <div className="relative w-full overflow-x-auto border rounded-lg">
+                      <div className="max-h-[75vh] overflow-y-auto w-full">
+                        <table className="min-w-full text-xs sm:text-sm table-fixed">
+                          <colgroup>
+                            <col style={{ width: "5%" }} />
+                            <col style={{ width: "10%" }} />
+                            <col style={{ width: "20%" }} />
+                            <col style={{ width: "25%" }} />
+                            <col style={{ width: "15%" }} />
+                            <col style={{ width: "15%" }} />
+                            <col style={{ width: "10%" }} />
+                          </colgroup>
+                          <thead className="sticky top-0 z-10 bg-gray-200">
+                            <tr className="text-black">
+                              {tableColumns.map((col) => (
+                                <th
+                                  key={col.key}
+                                  className="p-2 sm:p-3 text-left font-semibold whitespace-nowrap bg-gray-200"
+                                  style={{ position: 'sticky', top: 0, zIndex: 1 }}
+                                >
+                                  {col.label}
+                                </th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {filteredEmployees.map((emp, idx) => (
+                              <tr
+                                key={emp._id || `emp-${idx}`}
+                                className={idx % 2 === 0 ? 'bg-gray-50' : 'bg-white hover:bg-blue-50 transition cursor-pointer'}
+                                onClick={() => {
+                                  openModal('view', emp, idx);
+                                }}
+                              >
+                                <td className="p-2 sm:p-3">{idx + 1}</td>
+                                <td className="p-2 sm:p-3">
+                                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full overflow-hidden flex items-center justify-center">
+                                    {emp.profileImage ? (
+                                      <img src={emp.profileImage} alt="Profile" className="w-full h-full object-cover" />
+                                    ) : (
+                                      <FaUser size={16} className="text-blue-500" />
+                                    )}
+                                  </div>
+                                </td>
+                                <td className="p-2 sm:p-3 font-semibold">
+                                  {emp.firstName} {emp.lastName}
+                                </td>
+                                <td className="p-2 sm:p-3 truncate max-w-[150px] sm:max-w-[200px]">
+                                  {emp.email || 'N/A'}
+                                </td>
+                                <td className="p-2 sm:p-3">{emp.department || 'N/A'}</td>
+                                <td className="p-2 sm:p-3">{emp.position || 'N/A'}</td>
+                                <td className="p-2 sm:p-3">
+                                  <div className="flex gap-2 flex-wrap">
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        openModal('view', emp, idx);
+                                      }}
+                                      className="p-1 sm:p-2 rounded bg-blue-200 hover:bg-blue-300 text-blue-700"
+                                      title="View"
+                                    >
+                                      <Eye size={12} />
+                                    </button>
+                                    {/* <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        openModal('view', emp, idx);
+                                        setIsEditing(true);
+                                      }}
+                                      className="p-1 sm:p-2 rounded bg-green-200 hover:bg-green-300 text-green-700"
+                                      title="Edit"
+                                    >
+                                      <Edit size={12} />
+                                    </button> */}
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setDeleteIndex(idx);
+                                      }}
+                                      className="p-1 sm:p-2 rounded bg-red-200 hover:bg-red-300 text-red-700"
+                                      title="Delete"
+                                    >
+                                      <Trash2 size={12} />
+                                    </button>
+                                  </div>
+                                </td>
                               </tr>
-                            </thead>
-                          </table>
-                          <div className="max-h-[75vh] overflow-y-auto w-full">
-                            <table className="min-w-full text-xs sm:text-sm">
-                              {/* <colgroup>
-                                <col style={{ width: "10%" }} />
-                                <col style={{ width: "1%" }} />
-                                <col style={{ width: "20%" }} />
-                                <col style={{ width: "25%" }} />
-                                <col style={{ width: "15%" }} />
-                                <col style={{ width: "15%" }} />
-                                <col style={{ width: "10%" }} />
-                              </colgroup> */}
-                              <tbody>
-                                {filteredEmployees.map((emp, idx) => (
-                                  <tr
-                                    key={emp._id || `emp-${idx}`}
-                                    className={idx % 2 === 0 ? 'bg-gray-50' : 'bg-white hover:bg-blue-50 transition cursor-pointer'}
-                                    onClick={() => {
-                                      openModal('view', emp, idx);
-                                    }}
-                                  >
-                                    <td className="p-2 sm:p-3">{idx + 1}</td>
-                                    <td className="p-2 sm:p-3">
-                                      <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full overflow-hidden flex items-center justify-center">
-                                        {emp.profileImage ? (
-                                          <img src={emp.profileImage} alt="Profile" className="w-full h-full object-cover" />
-                                        ) : (
-                                          <FaUser size={16} className="text-blue-500" />
-                                        )}
-                                      </div>
-                                    </td>
-                                    <td className="p-2 sm:p-3 font-semibold">
-                                      {emp.firstName} {emp.lastName}
-                                    </td>
-                                    <td className="p-2 sm:p-3 truncate max-w-[150px] sm:max-w-[200px]">
-                                      {emp.email || 'N/A'}
-                                    </td>
-                                    <td className="p-2 sm:p-3">{emp.department || 'N/A'}</td>
-                                    <td className="p-2 sm:p-3">{emp.position || 'N/A'}</td>
-                                    <td className="p-2 sm:p-3">
-                                      <div className="flex gap-2 flex-wrap">
-                                        <button
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            openModal('view', emp, idx);
-                                          }}
-                                          className="p-1 sm:p-2 rounded bg-blue-200 hover:bg-blue-300 text-blue-700"
-                                          title="View"
-                                        >
-                                          <Eye size={12} />
-                                        </button>
-                                        <button
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            openModal('view', emp, idx);
-                                            setIsEditing(true);
-                                          }}
-                                          className="p-1 sm:p-2 rounded bg-green-200 hover:bg-green-300 text-green-700"
-                                          title="Edit"
-                                        >
-                                          <Edit size={12} />
-                                        </button>
-                                        <button
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            setDeleteIndex(idx);
-                                          }}
-                                          className="p-1 sm:p-2 rounded bg-red-200 hover:bg-red-300 text-red-700"
-                                          title="Delete"
-                                        >
-                                          <Trash2 size={12} />
-                                        </button>
-                                      </div>
-                                    </td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          </div>
-                        </div>
+                            ))}
+                          </tbody>
+                        </table>
                       </div>
                     </div>
                   </div>

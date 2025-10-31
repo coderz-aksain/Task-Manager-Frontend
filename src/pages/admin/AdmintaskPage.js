@@ -1365,8 +1365,8 @@ const AdmintaskPage = () => {
             <div className="mb-6">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-4">
                 <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-blue-600">
-                    Welcome Back Admin! This is just a tesing commit  <br/>
-                    (Total Tasks: {totalTasks})
+                    Welcome Back Admin!  <br/>
+                    Tasks in System: {totalTasks}
                 </h2>
                 <div className="flex flex-col sm:flex-row gap-2">
                   <Link to="/admin/createtasks">

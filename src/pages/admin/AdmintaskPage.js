@@ -1,3 +1,4 @@
+// (removed duplicate showFilterDrawer)
 // // // =============================================BELOW IS THE CODE FOR MULTIPLE FILTER SELECTION=================================================
 // // // =============================================BELOW IS THE CODE FOR MULTIPLE FILTER SELECTION=================================================
 // // // =============================================BELOW IS THE CODE FOR MULTIPLE FILTER SELECTION=================================================
@@ -23,14 +24,20 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  IdCard,
+  Table
 } from "lucide-react";
+
 import Lottie from "lottie-react";
 import AdminSidebar from "../../components/common/AdminSidebar";
 import Header from "../../components/common/Header";
-import { Link, useLocation, useNavigate  } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import * as XLSX from "xlsx";
 import loaderAnimation from "../../assets/animations/loader.json";
 import { RefreshCw } from "lucide-react";
+import AuctionTable from "../../components/layout/AuctionTable";
+import EmployeeCardsView from "../../components/layout/EmployeeCardsView";
+import TaskFilterDrawer from "../../components/layout/TaskFilterDrawer";
 // Helper functions
 const formatDisplayDate = (dateStr) => {
   if (!dateStr) return "N/A";
@@ -136,6 +143,8 @@ const getInitials = (name) => {
 const ADMIN_EMAIL = "admin@company.com";
 
 const AdmintaskPage = () => {
+    const [showFilterDrawer, setShowFilterDrawer] = useState(false);
+
   const [showSidebar, setShowSidebar] = useState(false);
   const [tasks, setTasks] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -163,8 +172,7 @@ const AdmintaskPage = () => {
   const [taskToDelete, setTaskToDelete] = useState(null);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [showEmployeeDropdown, setShowEmployeeDropdown] = useState(false);
-  const [showModalEmployeeDropdown, setShowModalEmployeeDropdown] =
-    useState(false);
+  const [showModalEmployeeDropdown, setShowModalEmployeeDropdown] =useState(false);
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
   const [employeeSearchTerm, setEmployeeSearchTerm] = useState("");
   const [filterEmployeeSearch, setFilterEmployeeSearch] = useState("");
@@ -181,6 +189,7 @@ const AdmintaskPage = () => {
   });
 
   const [isPageLoading, setIsPageLoading] = useState(false);
+  const [viewMode, setViewMode] = useState("table");
 
   // const [sort, setSort] = useState({ column: "taskId", direction: "desc" });
   const [sort, setSort] = useState({ column: null, direction: "asc" });
@@ -203,7 +212,7 @@ const AdmintaskPage = () => {
   const [totalTasks, setTotalTasks] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const location = useLocation();
-  const history = useNavigate ();
+  const history = useNavigate();
   const queryParams = new URLSearchParams(location.search);
   const initialLimit = parseInt(queryParams.get("limit")) || 25;
   const initialPage = parseInt(queryParams.get("page")) || 1;
@@ -381,459 +390,12 @@ const AdmintaskPage = () => {
     updateUnseenComments(newUnseen);
   }, [tasks]);
 
-//   useEffect(() => {
-//     const fetchEmployees = async () => {
-//       try {
-//         const response = await fetch(
-//           "https://task-manager-backend-xs5s.onrender.com/api/admin/allemployees",
-//           {
-//             method: "GET",
-//             headers: {
-//               "Content-Type": "application/json",
-//               Authorization: `Bearer ${token}`,
-//             },
-//           }
-//         );
-//         if (!response.ok) {
-//           throw new Error(`Failed to fetch employees: ${response.statusText}`);
-//         }
-//         const data = await response.json();
-//         const validEmployees = Array.isArray(data)
-//           ? data.map((emp) => ({
-//               id: emp.id || emp._id || "",
-//               name: emp.firstName || emp.name || "Unknown",
-//               email: emp.email || "",
-//               department: emp.department || "Unknown",
-//               position: emp.position || "Employee",
-//               avatar: emp.profileImage || "",
-//             }))
-//           : [];
-//         setEmployees(validEmployees);
-//       } catch (err) {
-//         setError(err.message);
-//         console.error("Error fetching employees:", err);
-//       }
-//     };
-
-// const fetchTasks = async () => {
-//   try {
-//     const response = await fetch(
-//       `https://task-manager-backend-xs5s.onrender.com/api/admin/gettasks?limit=${pageSize}&page=${currentPage}`,
-//       {
-//         method: "GET",
-//         headers: {
-//           "Content-Type": "application/json",
-//           Authorization: `Bearer ${token}`,
-//         },
-//       }
-//     );
-//     if (!response.ok) {
-//       throw new Error(`Failed to fetch tasks: ${response.statusText}`);
-//     }
-//     const data = await response.json();
-
-//     console.log("Raw tasks data from API:", data);
-//     const months = {
-//       Jan: "01",
-//       Feb: "02",
-//       Mar: "03",
-//       Apr: "04",
-//       May: "05",
-//       Jun: "06",
-//       Jul: "07",
-//       Aug: "08",
-//       Sep: "09",
-//       Oct: "10",
-//       Nov: "11",
-//       Dec: "12",
-//     };
-//     const validTasks = Array.isArray(data.tasks)
-//       ? data.tasks.map((task) => {
-//           let formattedDueDate = "";
-//           if (task.dueDate) {
-//             if (/^\d{2}\/\d{2}\/\d{4}$/.test(task.dueDate)) {
-//               const [day, month, year] = task.dueDate.split("/");
-//               formattedDueDate = `${year}-${month}-${day}`;
-//               const testDate = new Date(formattedDueDate);
-//               if (isNaN(testDate)) {
-//                 console.warn(
-//                   `Invalid dueDate for task ${task.taskId}: ${task.dueDate}`
-//                 );
-//                 formattedDueDate = "Invalid Date";
-//               }
-//             } else if (/^\d{2}\/[A-Za-z]{3}\/\d{4}$/.test(task.dueDate)) {
-//               const [day, month, year] = task.dueDate.split("/");
-//               if (months[month]) {
-//                 formattedDueDate = `${year}-${months[month]}-${day}`;
-//                 const testDate = new Date(formattedDueDate);
-//                 if (isNaN(testDate)) {
-//                   console.warn(
-//                     `Invalid dueDate for task ${task.taskId}: ${task.dueDate}`
-//                   );
-//                   formattedDueDate = "Invalid Date";
-//                 }
-//               } else {
-//                 console.warn(
-//                   `Invalid month in dueDate for task ${task.taskId}: ${task.dueDate}`
-//                 );
-//                 formattedDueDate = "Invalid Date";
-//               }
-//             } else {
-//               console.warn(
-//                 `Unrecognized dueDate format for task ${task.taskId}: ${task.dueDate}`
-//               );
-//               formattedDueDate = "Invalid Date";
-//             }
-//           } else {
-//             formattedDueDate = "N/A";
-//           }
-
-//           const assignedTo = Array.isArray(task.assignedTo)
-//             ? task.assignedTo.map((email) => {
-//                 const employee = employees.find((emp) => emp.email === email);
-//                 return {
-//                   email: email || "",
-//                   name: employee ? employee.name : email || "Unknown",
-//                   avatar: employee ? employee.avatar : "",
-//                 };
-//               })
-//             : [];
-//           return {
-//             _id: task._id || "",
-//             taskId: task.taskId || 0,
-//             taskName: task.taskName || "",
-//             description: task.description || "",
-//             dueDate: formattedDueDate,
-//             dueTime: task.dueTime || "N/A",
-//             priority: task.priority || "Low",
-//             status: task.status || "Open",
-//             assignedBy: task.assignedBy || "admin@company.com",
-//             assignedTo,
-//             taskType: task.taskType || "General",
-//             fileUrls: task.fileUrls || [],
-//             assignedDateTime: task.assignedDateTime || "",
-//             activityLogs: task.activityLogs || [],
-//             comments: task.comments || [],
-//             remark: task.remark || "",
-//           };
-//         })
-//       : [];
-//     console.log("valid tasks are here check this out:", validTasks);
-//     setTasks(validTasks);
-//     setTotalTasks(data.pagination.total || validTasks.length); // Use data.pagination.total
-//     console.log("Total tasks from API:", data.pagination.total || validTasks.length);
-//     localStorage.setItem("tasks_stepper", JSON.stringify(validTasks));
-//     console.log("tasks from localStorage:", JSON.parse(localStorage.getItem("tasks_stepper")));
-//   } catch (err) {
-//     setError(err.message);
-//     console.error("Error fetching tasks:", err);
-//   } finally {
-//     setIsInitialLoading(false);
-//   }
-// };
-//     if (token) {
-//       fetchEmployees().then(() => {
-//         fetchTasks().then(() => {
-//           setIsInitialLoading(false);
-//         });
-//       });
-//     } else {
-//       setError("No authentication token found");
-//       console.error("No token found in localStorage");
-//       setIsInitialLoading(false);
-//     }
-//   // }, [token, currentPage, pageSize]);
-//   }, [token, employees, currentPage, pageSize]);
-
-// useEffect(() => {
-//   const fetchEmployees = async () => {
-//     try {
-//       const response = await fetch(
-//         "https://task-manager-backend-xs5s.onrender.com/api/admin/allemployees",
-//         {
-//           method: "GET",
-//           headers: {
-//             "Content-Type": "application/json",
-//             Authorization: `Bearer ${token}`,
-//           },
-//         }
-//       );
-//       if (!response.ok) {
-//         throw new Error(`Failed to fetch employees: ${response.statusText}`);
-//       }
-//       const data = await response.json();
-//       const validEmployees = Array.isArray(data)
-//         ? data.map((emp) => ({
-//             id: emp.id || emp._id || "",
-//             name: emp.firstName || emp.name || "Unknown",
-//             email: emp.email || "",
-//             department: emp.department || "Unknown",
-//             position: emp.position || "Employee",
-//             avatar: emp.profileImage || "",
-//           }))
-//         : [];
-//       setEmployees(validEmployees);
-//     } catch (err) {
-//       setError(err.message);
-//       console.error("Error fetching employees:", err);
-//     }
-//   };
-
-//   const fetchTasks = async () => {
-//     setIsPageLoading(true); // Set page loading to true
-//     try {
-//       const response = await fetch(
-//         `https://task-manager-backend-xs5s.onrender.com/api/admin/gettasks?limit=${pageSize}&page=${currentPage}`,
-//         {
-//           method: "GET",
-//           headers: {
-//             "Content-Type": "application/json",
-//             Authorization: `Bearer ${token}`,
-//           },
-//         }
-//       );
-//       if (!response.ok) {
-//         throw new Error(`Failed to fetch tasks: ${response.statusText}`);
-//       }
-//       const data = await response.json();
-
-//       console.log("Raw tasks data from API:", data);
-//       const months = {
-//         Jan: "01",
-//         Feb: "02",
-//         Mar: "03",
-//         Apr: "04",
-//         May: "05",
-//         Jun: "06",
-//         Jul: "07",
-//         Aug: "08",
-//         Sep: "09",
-//         Oct: "10",
-//         Nov: "11",
-//         Dec: "12",
-//       };
-//       const validTasks = Array.isArray(data.tasks)
-//         ? data.tasks.map((task) => {
-//             let formattedDueDate = "";
-//             if (task.dueDate) {
-//               if (/^\d{2}\/\d{2}\/\d{4}$/.test(task.dueDate)) {
-//                 const [day, month, year] = task.dueDate.split("/");
-//                 formattedDueDate = `${year}-${month}-${day}`;
-//                 const testDate = new Date(formattedDueDate);
-//                 if (isNaN(testDate)) {
-//                   console.warn(
-//                     `Invalid dueDate for task ${task.taskId}: ${task.dueDate}`
-//                   );
-//                   formattedDueDate = "Invalid Date";
-//                 }
-//               } else if (/^\d{2}\/[A-Za-z]{3}\/\d{4}$/.test(task.dueDate)) {
-//                 const [day, month, year] = task.dueDate.split("/");
-//                 if (months[month]) {
-//                   formattedDueDate = `${year}-${months[month]}-${day}`;
-//                   const testDate = new Date(formattedDueDate);
-//                   if (isNaN(testDate)) {
-//                     console.warn(
-//                       `Invalid dueDate for task ${task.taskId}: ${task.dueDate}`
-//                     );
-//                     formattedDueDate = "Invalid Date";
-//                   }
-//                 } else {
-//                   console.warn(
-//                     `Invalid month in dueDate for task ${task.taskId}: ${task.dueDate}`
-//                   );
-//                   formattedDueDate = "Invalid Date";
-//                 }
-//               } else {
-//                 console.warn(
-//                   `Unrecognized dueDate format for task ${task.taskId}: ${task.dueDate}`
-//                 );
-//                 formattedDueDate = "Invalid Date";
-//               }
-//             } else {
-//               formattedDueDate = "N/A";
-//             }
-
-//             const assignedTo = Array.isArray(task.assignedTo)
-//               ? task.assignedTo.map((email) => {
-//                   const employee = employees.find((emp) => emp.email === email);
-//                   return {
-//                     email: email || "",
-//                     name: employee ? employee.name : email || "Unknown",
-//                     avatar: employee ? employee.avatar : "",
-//                   };
-//                 })
-//               : [];
-//             return {
-//               _id: task._id || "",
-//               taskId: task.taskId || 0,
-//               taskName: task.taskName || "",
-//               description: task.description || "",
-//               dueDate: formattedDueDate,
-//               dueTime: task.dueTime || "N/A",
-//               priority: task.priority || "Low",
-//               status: task.status || "Open",
-//               assignedBy: task.assignedBy || "admin@company.com",
-//               assignedTo,
-//               taskType: task.taskType || "General",
-//               fileUrls: task.fileUrls || [],
-//               assignedDateTime: task.assignedDateTime || "",
-//               activityLogs: task.activityLogs || [],
-//               comments: task.comments || [],
-//               remark: task.remark || "",
-//             };
-//           })
-//         : [];
-//       console.log("Valid tasks:", validTasks);
-//       setTasks(validTasks);
-//       setTotalTasks(data.pagination.total || validTasks.length);
-//       console.log("Total tasks from API:", data.pagination.total || validTasks.length);
-//       localStorage.setItem("tasks_stepper", JSON.stringify(validTasks));
-//     } catch (err) {
-//       setError(err.message);
-//       console.error("Error fetching tasks:", err);
-//     } finally {
-//       setIsInitialLoading(false);
-//       setIsPageLoading(false); // Set page loading to false when data is received
-//     }
-//   };
-
-//   if (token) {
-//     fetchEmployees().then(() => {
-//       fetchTasks();
-//     });
-//   } else {
-//     setError("No authentication token found");
-//     console.error("No token found in localStorage");
-//     setIsInitialLoading(false);
-//     setIsPageLoading(false);
-//   }
-// }, [token, currentPage, pageSize]);
-
-// Move fetchTasks outside of useEffect
-const fetchTasks = async () => {
-  setIsPageLoading(true); // Set page loading to true
-  try {
-    const response = await fetch(
-      `https://task-manager-backend-xs5s.onrender.com/api/admin/gettasks?limit=${pageSize}&page=${currentPage}`,
-      {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
-    if (!response.ok) {
-      throw new Error(`Failed to fetch tasks: ${response.statusText}`);
-    }
-    const data = await response.json();
-
-    console.log("Raw tasks data from API:", data);
-    const months = {
-      Jan: "01",
-      Feb: "02",
-      Mar: "03",
-      Apr: "04",
-      May: "05",
-      Jun: "06",
-      Jul: "07",
-      Aug: "08",
-      Sep: "09",
-      Oct: "10",
-      Nov: "11",
-      Dec: "12",
-    };
-    const validTasks = Array.isArray(data.tasks)
-      ? data.tasks.map((task) => {
-          let formattedDueDate = "";
-          if (task.dueDate) {
-            if (/^\d{2}\/\d{2}\/\d{4}$/.test(task.dueDate)) {
-              const [day, month, year] = task.dueDate.split("/");
-              formattedDueDate = `${year}-${month}-${day}`;
-              const testDate = new Date(formattedDueDate);
-              if (isNaN(testDate)) {
-                console.warn(
-                  `Invalid dueDate for task ${task.taskId}: ${task.dueDate}`
-                );
-                formattedDueDate = "Invalid Date";
-              }
-            } else if (/^\d{2}\/[A-Za-z]{3}\/\d{4}$/.test(task.dueDate)) {
-              const [day, month, year] = task.dueDate.split("/");
-              if (months[month]) {
-                formattedDueDate = `${year}-${months[month]}-${day}`;
-                const testDate = new Date(formattedDueDate);
-                if (isNaN(testDate)) {
-                  console.warn(
-                    `Invalid dueDate for task ${task.taskId}: ${task.dueDate}`
-                  );
-                  formattedDueDate = "Invalid Date";
-                }
-              } else {
-                console.warn(
-                  `Invalid month in dueDate for task ${task.taskId}: ${task.dueDate}`
-                );
-                formattedDueDate = "Invalid Date";
-              }
-            } else {
-              console.warn(
-                `Unrecognized dueDate format for task ${task.taskId}: ${task.dueDate}`
-              );
-              formattedDueDate = "Invalid Date";
-            }
-          } else {
-            formattedDueDate = "N/A";
-          }
-
-          const assignedTo = Array.isArray(task.assignedTo)
-            ? task.assignedTo.map((email) => {
-                const employee = employees.find((emp) => emp.email === email);
-                return {
-                  email: email || "",
-                  name: employee ? employee.name : email || "Unknown",
-                  avatar: employee ? employee.avatar : "",
-                };
-              })
-            : [];
-          return {
-            _id: task._id || "",
-            taskId: task.taskId || 0,
-            taskName: task.taskName || "",
-            description: task.description || "",
-            dueDate: formattedDueDate,
-            dueTime: task.dueTime || "N/A",
-            priority: task.priority || "Low",
-            status: task.status || "Open",
-            assignedBy: task.assignedBy || "admin@company.com",
-            assignedTo,
-            taskType: task.taskType || "General",
-            fileUrls: task.fileUrls || [],
-            assignedDateTime: task.assignedDateTime || "",
-            activityLogs: task.activityLogs || [],
-            comments: task.comments || [],
-            remark: task.remark || "",
-          };
-        })
-      : [];
-    console.log("Valid tasks:", validTasks);
-    setTasks(validTasks);
-    setTotalTasks(data.pagination.total || validTasks.length);
-    console.log("Total tasks from API:", data.pagination.total || validTasks.length);
-    localStorage.setItem("tasks_stepper", JSON.stringify(validTasks));
-  } catch (err) {
-    setError(err.message);
-    console.error("Error fetching tasks:", err);
-  } finally {
-    setIsInitialLoading(false);
-    setIsPageLoading(false); // Set page loading to false when data is received
-  }
-};
-
-// Update the useEffect to use the fetchTasks function
-useEffect(() => {
-  const fetchEmployees = async () => {
+  // Move fetchTasks outside of useEffect
+  const fetchTasks = async () => {
+    setIsPageLoading(true); // Set page loading to true
     try {
       const response = await fetch(
-        "https://task-manager-backend-xs5s.onrender.com/api/admin/allemployees",
+        `https://task-manager-backend-xs5s.onrender.com/api/admin/gettasks?limit=${pageSize}&page=${currentPage}`,
         {
           method: "GET",
           headers: {
@@ -843,37 +405,159 @@ useEffect(() => {
         }
       );
       if (!response.ok) {
-        throw new Error(`Failed to fetch employees: ${response.statusText}`);
+        throw new Error(`Failed to fetch tasks: ${response.statusText}`);
       }
       const data = await response.json();
-      const validEmployees = Array.isArray(data)
-        ? data.map((emp) => ({
-            id: emp.id || emp._id || "",
-            name: emp.firstName || emp.name || "Unknown",
-            email: emp.email || "",
-            department: emp.department || "Unknown",
-            position: emp.position || "Employee",
-            avatar: emp.profileImage || "",
-          }))
+
+      console.log("Raw tasks data from API:", data);
+      const months = {
+        Jan: "01",
+        Feb: "02",
+        Mar: "03",
+        Apr: "04",
+        May: "05",
+        Jun: "06",
+        Jul: "07",
+        Aug: "08",
+        Sep: "09",
+        Oct: "10",
+        Nov: "11",
+        Dec: "12",
+      };
+      const validTasks = Array.isArray(data.tasks)
+        ? data.tasks.map((task) => {
+            let formattedDueDate = "";
+            if (task.dueDate) {
+              if (/^\d{2}\/\d{2}\/\d{4}$/.test(task.dueDate)) {
+                const [day, month, year] = task.dueDate.split("/");
+                formattedDueDate = `${year}-${month}-${day}`;
+                const testDate = new Date(formattedDueDate);
+                if (isNaN(testDate)) {
+                  console.warn(
+                    `Invalid dueDate for task ${task.taskId}: ${task.dueDate}`
+                  );
+                  formattedDueDate = "Invalid Date";
+                }
+              } else if (/^\d{2}\/[A-Za-z]{3}\/\d{4}$/.test(task.dueDate)) {
+                const [day, month, year] = task.dueDate.split("/");
+                if (months[month]) {
+                  formattedDueDate = `${year}-${months[month]}-${day}`;
+                  const testDate = new Date(formattedDueDate);
+                  if (isNaN(testDate)) {
+                    console.warn(
+                      `Invalid dueDate for task ${task.taskId}: ${task.dueDate}`
+                    );
+                    formattedDueDate = "Invalid Date";
+                  }
+                } else {
+                  console.warn(
+                    `Invalid month in dueDate for task ${task.taskId}: ${task.dueDate}`
+                  );
+                  formattedDueDate = "Invalid Date";
+                }
+              } else {
+                console.warn(
+                  `Unrecognized dueDate format for task ${task.taskId}: ${task.dueDate}`
+                );
+                formattedDueDate = "Invalid Date";
+              }
+            } else {
+              formattedDueDate = "N/A";
+            }
+
+            const assignedTo = Array.isArray(task.assignedTo)
+              ? task.assignedTo.map((email) => {
+                  const employee = employees.find((emp) => emp.email === email);
+                  return {
+                    email: email || "",
+                    name: employee ? employee.name : email || "Unknown",
+                    avatar: employee ? employee.avatar : "",
+                  };
+                })
+              : [];
+            return {
+              _id: task._id || "",
+              taskId: task.taskId || 0,
+              taskName: task.taskName || "",
+              description: task.description || "",
+              dueDate: formattedDueDate,
+              dueTime: task.dueTime || "N/A",
+              priority: task.priority || "Low",
+              status: task.status || "Open",
+              assignedBy: task.assignedBy || "admin@company.com",
+              assignedTo,
+              taskType: task.taskType || "General",
+              fileUrls: task.fileUrls || [],
+              assignedDateTime: task.assignedDateTime || "",
+              activityLogs: task.activityLogs || [],
+              comments: task.comments || [],
+              remark: task.remark || "",
+            };
+          })
         : [];
-      setEmployees(validEmployees);
+      console.log("Valid tasks:", validTasks);
+      setTasks(validTasks);
+      setTotalTasks(data.pagination.total || validTasks.length);
+      console.log(
+        "Total tasks from API:",
+        data.pagination.total || validTasks.length
+      );
+      localStorage.setItem("tasks_stepper", JSON.stringify(validTasks));
     } catch (err) {
       setError(err.message);
-      console.error("Error fetching employees:", err);
+      console.error("Error fetching tasks:", err);
+    } finally {
+      setIsInitialLoading(false);
+      setIsPageLoading(false); // Set page loading to false when data is received
     }
   };
 
-  if (token) {
-    fetchEmployees().then(() => {
-      fetchTasks();
-    });
-  } else {
-    setError("No authentication token found");
-    console.error("No token found in localStorage");
-    setIsInitialLoading(false);
-    setIsPageLoading(false);
-  }
-}, [token, currentPage, pageSize]);
+  // Update the useEffect to use the fetchTasks function
+  useEffect(() => {
+    const fetchEmployees = async () => {
+      try {
+        const response = await fetch(
+          "https://task-manager-backend-xs5s.onrender.com/api/admin/allemployees",
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        if (!response.ok) {
+          throw new Error(`Failed to fetch employees: ${response.statusText}`);
+        }
+        const data = await response.json();
+        const validEmployees = Array.isArray(data)
+          ? data.map((emp) => ({
+              id: emp.id || emp._id || "",
+              name: emp.firstName || emp.name || "Unknown",
+              email: emp.email || "",
+              department: emp.department || "Unknown",
+              position: emp.position || "Employee",
+              avatar: emp.profileImage || "",
+            }))
+          : [];
+        setEmployees(validEmployees);
+      } catch (err) {
+        setError(err.message);
+        console.error("Error fetching employees:", err);
+      }
+    };
+
+    if (token) {
+      fetchEmployees().then(() => {
+        fetchTasks();
+      });
+    } else {
+      setError("No authentication token found");
+      console.error("No token found in localStorage");
+      setIsInitialLoading(false);
+      setIsPageLoading(false);
+    }
+  }, [token, currentPage, pageSize]);
 
   useEffect(() => {
     tasks.forEach((task) => {
@@ -956,342 +640,184 @@ useEffect(() => {
     return errors;
   };
 
-  // const handleSubmit = async (e, isDraft = false) => {
-  //   e.preventDefault();
-  //   const errors = validateForm();
-  //   const isEditing = !!editId;
-  //   const wasPending =
-  //     isEditing &&
-  //     isOverdue(formData.dueDate, formData.dueTime, formData.status) &&
-  //     getDisplayStatus(formData) === "Pending";
-  //   const statusChanged =
-  //     isEditing &&
-  //     formData.status !== "Pending" &&
-  //     formData.status !== getDisplayStatus(formData);
-
-  //   let formattedDueDate = "";
-  //   if (formData.dueDate) {
-  //     const date = new Date(formData.dueDate);
-  //     if (!isNaN(date)) {
-  //       const day = String(date.getDate()).padStart(2, "0");
-  //       const month = String(date.getMonth() + 1).padStart(2, "0");
-  //       const year = date.getFullYear();
-  //       formattedDueDate = `${day}-${month}-${year}`;
-  //     } else {
-  //       errors.dueDate = "Invalid due date format";
-  //     }
-  //   }
-
-  //   if (
-  //     wasPending &&
-  //     statusChanged &&
-  //     (!formData.dueDate || new Date(formData.dueDate) <= new Date())
-  //   ) {
-  //     errors.dueDate =
-  //       "To update the status of an overdue task, please select a new future due date.";
-  //   }
-  //   if (Object.keys(errors).length > 0) {
-  //     setFormData((prev) => ({ ...prev, errors }));
-  //     return;
-  //   }
-  //   setIsLoading(true);
-  //   const now = new Date();
-  //   const assignedDateTime = now.toISOString();
-  //   const formDataToSend = new FormData();
-  //   formDataToSend.append("taskTitle", formData.taskName);
-  //   formDataToSend.append("description", formData.description);
-  //   formDataToSend.append("dueDate", formattedDueDate);
-  //   formDataToSend.append("dueTime", formData.dueTime);
-  //   formDataToSend.append("priority", formData.priority);
-  //   formDataToSend.append("status", isDraft ? "Draft" : formData.status);
-  //   formDataToSend.append("assignedBy", formData.assignedBy);
-  //   formDataToSend.append(
-  //     "assignedTo",
-  //     JSON.stringify(formData.assignedTo.map((emp) => emp.email))
-  //   );
-  //   formDataToSend.append("taskType", formData.taskType);
-  //   formDataToSend.append("remark", formData.remark || "");
-  //   formDataToSend.append("assignedDateTime", assignedDateTime);
-  //   selectedFiles.forEach((file, index) => {
-  //     if (file instanceof File) {
-  //       formDataToSend.append("file", file);
-  //     } else {
-  //       console.error(`Invalid file at index ${index}:`, file);
-  //     }
-  //   });
-  //   if (editId && formData.fileUrls.length > 0) {
-  //     formDataToSend.append("fileUrls", JSON.stringify(formData.fileUrls));
-  //   }
-  //   let taskToUpdate = null;
-  //   if (editId) {
-  //     taskToUpdate = tasks.find((task) => task._id === editId);
-  //     if (!taskToUpdate) {
-  //       setError("Task not found for the given editId");
-  //       setIsLoading(false);
-  //       return;
-  //     }
-  //   } else {
-  //     formDataToSend.append("taskId", formData.taskId || generateTaskId(tasks));
-  //   }
-  //   try {
-  //     const url = editId
-  //       ? `https://task-manager-backend-xs5s.onrender.com/api/admin/updatetask/${taskToUpdate?.taskId}`
-  //       : "https://task-manager-backend-xs5s.onrender.com/api/admin/createtask";
-  //     const method = editId ? "PATCH" : "POST";
-  //     const response = await fetch(url, {
-  //       method: method,
-  //       headers: {
-  //         Authorization: `Bearer ${token}`,
-  //       },
-  //       body: formDataToSend,
-  //     });
-  //     if (!response.ok) {
-  //       const errorData = await response.json();
-  //       throw new Error(
-  //         errorData.message ||
-  //           (editId ? "Failed to update task" : "Failed to create task")
-  //       );
-  //     }
-  //     const updatedTask = await response.json();
-  //     if (editId) {
-  //       setTasks((prev) =>
-  //         prev.map((task) =>
-  //           task._id === editId
-  //             ? {
-  //                 ...updatedTask.task,
-  //                 fileUrls: updatedTask.task.fileUrls || [],
-  //                 dueDate: updatedTask.task.dueDate
-  //                   ? updatedTask.task.dueDate.split("/").reverse().join("-")
-  //                   : "",
-  //                 assignedTo: updatedTask.task.assignedTo.map((email) => ({
-  //                   email,
-  //                   name:
-  //                     employees.find((emp) => emp.email === email)?.name ||
-  //                     email ||
-  //                     "Unknown",
-  //                   avatar:
-  //                     employees.find((emp) => emp.email === email)?.avatar ||
-  //                     "",
-  //                 })),
-  //               }
-  //             : task
-  //         )
-  //       );
-  //       showToast("Task updated successfully", "success");
-  //     } else {
-  //       setTasks((prev) => [
-  //         ...prev,
-  //         {
-  //           ...updatedTask.task,
-  //           fileUrls: updatedTask.task.fileUrls || [],
-  //           dueDate: updatedTask.task.dueDate
-  //             ? updatedTask.task.dueDate.split("/").reverse().join("-")
-  //             : "",
-  //           assignedTo: updatedTask.task.assignedTo.map((email) => ({
-  //             email,
-  //             name:
-  //               employees.find((emp) => emp.email === email)?.name ||
-  //               email ||
-  //               "Unknown",
-  //             avatar:
-  //               employees.find((emp) => emp.email === email)?.avatar || "",
-  //           })),
-  //         },
-  //       ]);
-  //       showToast("Task created successfully", "success");
-  //     }
-  //     setIsModalOpen(false);
-  //     setIsEditModalOpen(false);
-  //     setFormData(initialForm);
-  //     setEditId(null);
-  //     setSelectedFiles([]);
-  //     setEmployeeSearchTerm("");
-  //   } catch (err) {
-  //     setError(err.message);
-  //     showToast(err.message || "Failed to submit task", "error");
-  //   } finally {
-  //     setIsLoading(false);
-  //   }
-  // };
-
-
   const handleSubmit = async (e, isDraft = false) => {
-  e.preventDefault();
-  const errors = validateForm();
-  const isEditing = !!editId;
-  const wasPending =
-    isEditing &&
-    isOverdue(formData.dueDate, formData.dueTime, formData.status) &&
-    getDisplayStatus(formData) === "Pending";
-  const statusChanged =
-    isEditing &&
-    formData.status !== "Pending" &&
-    formData.status !== getDisplayStatus(formData);
+    e.preventDefault();
+    const errors = validateForm();
+    const isEditing = !!editId;
+    const wasPending =
+      isEditing &&
+      isOverdue(formData.dueDate, formData.dueTime, formData.status) &&
+      getDisplayStatus(formData) === "Pending";
+    const statusChanged =
+      isEditing &&
+      formData.status !== "Pending" &&
+      formData.status !== getDisplayStatus(formData);
 
-  let formattedDueDate = "";
-  if (formData.dueDate) {
-    const date = new Date(formData.dueDate);
-    if (!isNaN(date)) {
-      const day = String(date.getDate()).padStart(2, "0");
-      const month = String(date.getMonth() + 1).padStart(2, "0");
-      const year = date.getFullYear();
-      formattedDueDate = `${day}-${month}-${year}`;
-    } else {
-      errors.dueDate = "Invalid due date format";
+    let formattedDueDate = "";
+    if (formData.dueDate) {
+      const date = new Date(formData.dueDate);
+      if (!isNaN(date)) {
+        const day = String(date.getDate()).padStart(2, "0");
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const year = date.getFullYear();
+        formattedDueDate = `${day}-${month}-${year}`;
+      } else {
+        errors.dueDate = "Invalid due date format";
+      }
     }
-  }
 
-  if (
-    wasPending &&
-    statusChanged &&
-    (!formData.dueDate || new Date(formData.dueDate) <= new Date())
-  ) {
-    errors.dueDate =
-      "To update the status of an overdue task, please select a new future due date.";
-  }
-  if (Object.keys(errors).length > 0) {
-    setFormData((prev) => ({ ...prev, errors }));
-    return;
-  }
-
-  setIsLoading(true);
-  const now = new Date();
-  const assignedDateTime = now.toISOString();
-
-  const formDataToSend = new FormData();
-  formDataToSend.append("taskTitle", formData.taskName);
-  formDataToSend.append("description", formData.description);
-  formDataToSend.append("dueDate", formattedDueDate);
-  formDataToSend.append("dueTime", formData.dueTime);
-  formDataToSend.append("priority", formData.priority);
-  formDataToSend.append("status", isDraft ? "Draft" : formData.status);
-  formDataToSend.append("assignedBy", formData.assignedBy);
-  formDataToSend.append(
-    "assignedTo",
-    JSON.stringify(formData.assignedTo.map((emp) => emp.email))
-  );
-  formDataToSend.append("taskType", formData.taskType);
-  formDataToSend.append("remark", formData.remark || "");
-  formDataToSend.append("assignedDateTime", assignedDateTime);
-
-  selectedFiles.forEach((file, index) => {
-    if (file instanceof File) {
-      formDataToSend.append("file", file);
-    } else {
-      console.error(`Invalid file at index ${index}:`, file);
+    if (
+      wasPending &&
+      statusChanged &&
+      (!formData.dueDate || new Date(formData.dueDate) <= new Date())
+    ) {
+      errors.dueDate =
+        "To update the status of an overdue task, please select a new future due date.";
     }
-  });
-
-  if (editId && formData.fileUrls.length > 0) {
-    formDataToSend.append("fileUrls", JSON.stringify(formData.fileUrls));
-  }
-
-  // 🔍 Debug Logging
-  console.log("---- Task Submission Debug ----");
-  console.log("Raw Due Date (formData.dueDate):", formData.dueDate);
-  console.log("Formatted Due Date (sent to API):", formattedDueDate);
-  console.log("Complete Payload being sent:");
-  for (let [key, value] of formDataToSend.entries()) {
-    console.log(`${key}:`, value);
-  }
-  console.log("--------------------------------");
-
-  let taskToUpdate = null;
-  if (editId) {
-    taskToUpdate = tasks.find((task) => task._id === editId);
-    if (!taskToUpdate) {
-      setError("Task not found for the given editId");
-      setIsLoading(false);
+    if (Object.keys(errors).length > 0) {
+      setFormData((prev) => ({ ...prev, errors }));
       return;
     }
-  } else {
-    formDataToSend.append("taskId", formData.taskId || generateTaskId(tasks));
-  }
 
-  try {
-    const url = editId
-      ? `https://task-manager-backend-xs5s.onrender.com/api/admin/updatetask/${taskToUpdate?.taskId}`
-      : "https://task-manager-backend-xs5s.onrender.com/api/admin/createtask";
-    const method = editId ? "PATCH" : "POST";
+    setIsLoading(true);
+    const now = new Date();
+    const assignedDateTime = now.toISOString();
 
-    const response = await fetch(url, {
-      method: method,
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-      body: formDataToSend,
+    const formDataToSend = new FormData();
+    formDataToSend.append("taskTitle", formData.taskName);
+    formDataToSend.append("description", formData.description);
+    formDataToSend.append("dueDate", formattedDueDate);
+    formDataToSend.append("dueTime", formData.dueTime);
+    formDataToSend.append("priority", formData.priority);
+    formDataToSend.append("status", isDraft ? "Draft" : formData.status);
+    formDataToSend.append("assignedBy", formData.assignedBy);
+    formDataToSend.append(
+      "assignedTo",
+      JSON.stringify(formData.assignedTo.map((emp) => emp.email))
+    );
+    formDataToSend.append("taskType", formData.taskType);
+    formDataToSend.append("remark", formData.remark || "");
+    formDataToSend.append("assignedDateTime", assignedDateTime);
+
+    selectedFiles.forEach((file, index) => {
+      if (file instanceof File) {
+        formDataToSend.append("file", file);
+      } else {
+        console.error(`Invalid file at index ${index}:`, file);
+      }
     });
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(
-        errorData.message ||
-          (editId ? "Failed to update task" : "Failed to create task")
-      );
+    if (editId && formData.fileUrls.length > 0) {
+      formDataToSend.append("fileUrls", JSON.stringify(formData.fileUrls));
     }
 
-    const updatedTask = await response.json();
+    // 🔍 Debug Logging
+    console.log("---- Task Submission Debug ----");
+    console.log("Raw Due Date (formData.dueDate):", formData.dueDate);
+    console.log("Formatted Due Date (sent to API):", formattedDueDate);
+    console.log("Complete Payload being sent:");
+    for (let [key, value] of formDataToSend.entries()) {
+      console.log(`${key}:`, value);
+    }
+    console.log("--------------------------------");
 
+    let taskToUpdate = null;
     if (editId) {
-      setTasks((prev) =>
-        prev.map((task) =>
-          task._id === editId
-            ? {
-                ...updatedTask.task,
-                fileUrls: updatedTask.task.fileUrls || [],
-                dueDate: updatedTask.task.dueDate
-                  ? updatedTask.task.dueDate.split("/").reverse().join("-")
-                  : "",
-                assignedTo: updatedTask.task.assignedTo.map((email) => ({
-                  email,
-                  name:
-                    employees.find((emp) => emp.email === email)?.name ||
-                    email ||
-                    "Unknown",
-                  avatar:
-                    employees.find((emp) => emp.email === email)?.avatar || "",
-                })),
-              }
-            : task
-        )
-      );
-      showToast("Task updated successfully", "success");
+      taskToUpdate = tasks.find((task) => task._id === editId);
+      if (!taskToUpdate) {
+        setError("Task not found for the given editId");
+        setIsLoading(false);
+        return;
+      }
     } else {
-      setTasks((prev) => [
-        ...prev,
-        {
-          ...updatedTask.task,
-          fileUrls: updatedTask.task.fileUrls || [],
-          dueDate: updatedTask.task.dueDate
-            ? updatedTask.task.dueDate.split("/").reverse().join("-")
-            : "",
-          assignedTo: updatedTask.task.assignedTo.map((email) => ({
-            email,
-            name:
-              employees.find((emp) => emp.email === email)?.name ||
-              email ||
-              "Unknown",
-            avatar: employees.find((emp) => emp.email === email)?.avatar || "",
-          })),
-        },
-      ]);
-      showToast("Task created successfully", "success");
+      formDataToSend.append("taskId", formData.taskId || generateTaskId(tasks));
     }
 
-    setIsModalOpen(false);
-    setIsEditModalOpen(false);
-    setFormData(initialForm);
-    setEditId(null);
-    setSelectedFiles([]);
-    setEmployeeSearchTerm("");
-  } catch (err) {
-    setError(err.message);
-    showToast(err.message || "Failed to submit task", "error");
-  } finally {
-    setIsLoading(false);
-  }
-};
+    try {
+      const url = editId
+        ? `https://task-manager-backend-xs5s.onrender.com/api/admin/updatetask/${taskToUpdate?.taskId}`
+        : "https://task-manager-backend-xs5s.onrender.com/api/admin/createtask";
+      const method = editId ? "PATCH" : "POST";
 
+      const response = await fetch(url, {
+        method: method,
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formDataToSend,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(
+          errorData.message ||
+            (editId ? "Failed to update task" : "Failed to create task")
+        );
+      }
+
+      const updatedTask = await response.json();
+
+      if (editId) {
+        setTasks((prev) =>
+          prev.map((task) =>
+            task._id === editId
+              ? {
+                  ...updatedTask.task,
+                  fileUrls: updatedTask.task.fileUrls || [],
+                  dueDate: updatedTask.task.dueDate
+                    ? updatedTask.task.dueDate.split("/").reverse().join("-")
+                    : "",
+                  assignedTo: updatedTask.task.assignedTo.map((email) => ({
+                    email,
+                    name:
+                      employees.find((emp) => emp.email === email)?.name ||
+                      email ||
+                      "Unknown",
+                    avatar:
+                      employees.find((emp) => emp.email === email)?.avatar ||
+                      "",
+                  })),
+                }
+              : task
+          )
+        );
+        showToast("Task updated successfully", "success");
+      } else {
+        setTasks((prev) => [
+          ...prev,
+          {
+            ...updatedTask.task,
+            fileUrls: updatedTask.task.fileUrls || [],
+            dueDate: updatedTask.task.dueDate
+              ? updatedTask.task.dueDate.split("/").reverse().join("-")
+              : "",
+            assignedTo: updatedTask.task.assignedTo.map((email) => ({
+              email,
+              name:
+                employees.find((emp) => emp.email === email)?.name ||
+                email ||
+                "Unknown",
+              avatar:
+                employees.find((emp) => emp.email === email)?.avatar || "",
+            })),
+          },
+        ]);
+        showToast("Task created successfully", "success");
+      }
+
+      setIsModalOpen(false);
+      setIsEditModalOpen(false);
+      setFormData(initialForm);
+      setEditId(null);
+      setSelectedFiles([]);
+      setEmployeeSearchTerm("");
+    } catch (err) {
+      setError(err.message);
+      showToast(err.message || "Failed to submit task", "error");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleEditTask = (task) => {
     setFormData({
@@ -1592,32 +1118,31 @@ useEffect(() => {
   };
 
   const exportToExcel = () => {
-  const ws = XLSX.utils.json_to_sheet(
-    sortedTasks.map((task) => ({
-      "Task ID": task.taskId,
-      "Task Name": task.taskName,
-      Description: task.description,
-      "Due Date": formatDisplayDate(task.dueDate),
-      "Due Time": task.dueTime,
-      Priority: task.priority,
-      Status: task.status,
-      "Assigned To":
-        Array.isArray(task.assignedTo) && task.assignedTo.length > 0
-          ? task.assignedTo.map((emp) => emp.name).join(", ")
-          : "Unassigned",
-      "Task Type": task.taskType,
-      "File URLs": task.fileUrls.join(", "),
-      "Assigned DateTime": task.assignedDateTime
-        ? new Date(task.assignedDateTime).toLocaleString()
-        : "N/A",
-      Remark: task.remark,
-    }))
-  );
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Tasks");
-  XLSX.writeFile(wb, "tasks_export.xlsx");
-};
-
+    const ws = XLSX.utils.json_to_sheet(
+      sortedTasks.map((task) => ({
+        "Task ID": task.taskId,
+        "Task Name": task.taskName,
+        Description: task.description,
+        "Due Date": formatDisplayDate(task.dueDate),
+        "Due Time": task.dueTime,
+        Priority: task.priority,
+        Status: task.status,
+        "Assigned To":
+          Array.isArray(task.assignedTo) && task.assignedTo.length > 0
+            ? task.assignedTo.map((emp) => emp.name).join(", ")
+            : "Unassigned",
+        "Task Type": task.taskType,
+        "File URLs": task.fileUrls.join(", "),
+        "Assigned DateTime": task.assignedDateTime
+          ? new Date(task.assignedDateTime).toLocaleString()
+          : "N/A",
+        Remark: task.remark,
+      }))
+    );
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Tasks");
+    XLSX.writeFile(wb, "tasks_export.xlsx");
+  };
 
   const toggleSidebar = () => {
     setShowSidebar((prev) => !prev);
@@ -1658,51 +1183,28 @@ useEffect(() => {
     }
   };
 
-const navigate = useNavigate();
+  const navigate = useNavigate();
 
-// const handlePageChange = (page) => {
-//   if (page >= 1 && page <= totalPages) {
-//     setCurrentPage(page);
-//     const newSearch = new URLSearchParams(location.search);
-//     newSearch.set("page", page);
-//     newSearch.set("limit", pageSize);
-//     navigate(`${location.pathname}?${newSearch.toString()}`);
-//   }
-// };
+  const handlePageChange = (page) => {
+    if (page >= 1 && page <= totalPages) {
+      setIsPageLoading(true); // Set loading to true during page change
+      setCurrentPage(page);
+      const newSearch = new URLSearchParams(location.search);
+      newSearch.set("page", page);
+      newSearch.set("limit", pageSize);
+      navigate(`${location.pathname}?${newSearch.toString()}`);
+    }
+  };
 
-// const handleLimitChange = (newLimit) => {
-//   setPageSize(newLimit);
-//   setCurrentPage(1); // Reset to first page
-//   const newSearch = new URLSearchParams(location.search);
-//   newSearch.set("limit", newLimit);
-//   newSearch.set("page", 1);
-//   navigate(`${location.pathname}?${newSearch.toString()}`);
-// };
-
-
-
-const handlePageChange = (page) => {
-  if (page >= 1 && page <= totalPages) {
-    setIsPageLoading(true); // Set loading to true during page change
-    setCurrentPage(page);
+  const handleLimitChange = (newLimit) => {
+    setIsPageLoading(true); // Set loading to true during limit change
+    setPageSize(newLimit);
+    setCurrentPage(1); // Reset to first page
     const newSearch = new URLSearchParams(location.search);
-    newSearch.set("page", page);
-    newSearch.set("limit", pageSize);
+    newSearch.set("limit", newLimit);
+    newSearch.set("page", 1);
     navigate(`${location.pathname}?${newSearch.toString()}`);
-  }
-};
-
-const handleLimitChange = (newLimit) => {
-  setIsPageLoading(true); // Set loading to true during limit change
-  setPageSize(newLimit);
-  setCurrentPage(1); // Reset to first page
-  const newSearch = new URLSearchParams(location.search);
-  newSearch.set("limit", newLimit);
-  newSearch.set("page", 1);
-  navigate(`${location.pathname}?${newSearch.toString()}`);
-};
-
-
+  };
 
   const matchesDueDate = (task) => {
     if (dueDateFilter === "none") return true;
@@ -1796,106 +1298,60 @@ const handleLimitChange = (newLimit) => {
     );
   });
 
-  // const sortedTasks = [...filteredTasks].sort((a, b) => {
-  //   let valA, valB;
-  //   switch (sort.column) {
-  //     case "taskId":
-  //       valA = a.taskId;
-  //       valB = b.taskId;
-  //       return sort.direction === "asc" ? valA - valB : valB - valA;
-  //     case "taskName":
-  //       return sort.direction === "asc"
-  //         ? a.taskName.localeCompare(b.taskName)
-  //         : b.taskName.localeCompare(a.taskName);
-  //     case "priority":
-  //       const priorityOrder = { High: 3, Medium: 2, Low: 1 };
-  //       valA = priorityOrder[a.priority] || 0;
-  //       valB = priorityOrder[b.priority] || 0;
-  //       return sort.direction === "asc" ? valA - valB : valB - valA;
-  //     case "status":
-  //       const statusOrder = {
-  //         Open: 1,
-  //         "In Progress": 2,
-  //         Hold: 3,
-  //         Archive: 4,
-  //         Pending: 5,
-  //         Complete: 6,
-  //       };
-  //       valA = statusOrder[getDisplayStatus(a)] || 0;
-  //       valB = statusOrder[getDisplayStatus(b)] || 0;
-  //       return sort.direction === "asc" ? valA - valB : valB - valA;
-  //     case "assignedTo":
-  //       valA = a.assignedTo[0]?.name || "";
-  //       valB = b.assignedTo[0]?.name || "";
-  //       return sort.direction === "asc"
-  //         ? valA.localeCompare(valB)
-  //         : valB.localeCompare(valA);
-  //     case "dueDate":
-  //       valA = new Date(a.dueDate || "9999-12-31").getTime();
-  //       valB = new Date(b.dueDate || "9999-12-31").getTime();
-  //       return sort.direction === "asc" ? valA - valB : valB - valA;
-  //     default:
-  //       return 0;
-  //   }
-  // });
-
-
   const sortedTasks =
-  sort.column === null
-    ? filteredTasks // keep API order, no reshuffle
-    : [...filteredTasks].sort((a, b) => {
-        let valA, valB;
-        switch (sort.column) {
-          case "taskId":
-            valA = a.taskId;
-            valB = b.taskId;
-            return sort.direction === "asc" ? valA - valB : valB - valA;
-          case "taskName":
-            return sort.direction === "asc"
-              ? a.taskName.localeCompare(b.taskName)
-              : b.taskName.localeCompare(a.taskName);
-          case "priority":
-            const priorityOrder = { High: 3, Medium: 2, Low: 1 };
-            valA = priorityOrder[a.priority] || 0;
-            valB = priorityOrder[b.priority] || 0;
-            return sort.direction === "asc" ? valA - valB : valB - valA;
-          case "status":
-            const statusOrder = {
-              Open: 1,
-              "In Progress": 2,
-              Hold: 3,
-              Archive: 4,
-              Pending: 5,
-              Complete: 6,
-            };
-            valA = statusOrder[getDisplayStatus(a)] || 0;
-            valB = statusOrder[getDisplayStatus(b)] || 0;
-            return sort.direction === "asc" ? valA - valB : valB - valA;
-          case "assignedTo":
-            valA = a.assignedTo[0]?.name || "";
-            valB = b.assignedTo[0]?.name || "";
-            return sort.direction === "asc"
-              ? valA.localeCompare(valB)
-              : valB.localeCompare(valA);
-          case "dueDate":
-            valA = new Date(a.dueDate || "9999-12-31").getTime();
-            valB = new Date(b.dueDate || "9999-12-31").getTime();
-            return sort.direction === "asc" ? valA - valB : valB - valA;
-          default:
-            return 0;
-        }
-      });
+    sort.column === null
+      ? filteredTasks // keep API order, no reshuffle
+      : [...filteredTasks].sort((a, b) => {
+          let valA, valB;
+          switch (sort.column) {
+            case "taskId":
+              valA = a.taskId;
+              valB = b.taskId;
+              return sort.direction === "asc" ? valA - valB : valB - valA;
+            case "taskName":
+              return sort.direction === "asc"
+                ? a.taskName.localeCompare(b.taskName)
+                : b.taskName.localeCompare(a.taskName);
+            case "priority":
+              const priorityOrder = { High: 3, Medium: 2, Low: 1 };
+              valA = priorityOrder[a.priority] || 0;
+              valB = priorityOrder[b.priority] || 0;
+              return sort.direction === "asc" ? valA - valB : valB - valA;
+            case "status":
+              const statusOrder = {
+                Open: 1,
+                "In Progress": 2,
+                Hold: 3,
+                Archive: 4,
+                Pending: 5,
+                Complete: 6,
+              };
+              valA = statusOrder[getDisplayStatus(a)] || 0;
+              valB = statusOrder[getDisplayStatus(b)] || 0;
+              return sort.direction === "asc" ? valA - valB : valB - valA;
+            case "assignedTo":
+              valA = a.assignedTo[0]?.name || "";
+              valB = b.assignedTo[0]?.name || "";
+              return sort.direction === "asc"
+                ? valA.localeCompare(valB)
+                : valB.localeCompare(valA);
+            case "dueDate":
+              valA = new Date(a.dueDate || "9999-12-31").getTime();
+              valB = new Date(b.dueDate || "9999-12-31").getTime();
+              return sort.direction === "asc" ? valA - valB : valB - valA;
+            default:
+              return 0;
+          }
+        });
 
+  const totalPages = Math.ceil(totalTasks / pageSize);
+  console.log("Calculated totalPages:", totalPages);
+  // const paginatedTasks = sortedTasks.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  const paginatedTasks = sortedTasks;
 
-const totalPages = Math.ceil(totalTasks / pageSize);
-console.log("Calculated totalPages:", totalPages);  
-// const paginatedTasks = sortedTasks.slice((currentPage - 1) * pageSize, currentPage * pageSize);
-const paginatedTasks = sortedTasks;
-
-
-console.log("Filtered tasks:", filteredTasks);
-console.log("Sorted tasks:", sortedTasks);
-console.log("Paginated tasks:", paginatedTasks);
+  console.log("Filtered tasks:", filteredTasks);
+  console.log("Sorted tasks:", sortedTasks);
+  console.log("Paginated tasks:", paginatedTasks);
 
   return (
     <div className="flex min-h-screen bg-white relative">
@@ -1907,64 +1363,71 @@ console.log("Paginated tasks:", paginatedTasks);
         <main className="flex-1 p-2 sm:p-4 md:p-6 ">
           <div className="max-w-8xl mx-auto">
             <div className="mb-6">
-               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-4">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-4">
                 <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-blue-600">
-                  My Tasks (Total: {totalTasks})
+                    Welcome                   (Total: {totalTasks})
                 </h2>
-<div className="flex flex-col sm:flex-row gap-2">
-  <Link to="/admin/createtasks">
-    <button
-      className="p-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center justify-center text-sm sm:text-base w-full sm:w-10 h-10"
-      title="Create Task"
-    >
-      <Plus className="w-5 h-5" />
-    </button>
-  </Link>
-  <button
-    onClick={exportToExcel}
-    className="p-2 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center justify-center text-sm sm:text-base w-full sm:w-10 h-10"
-    title="Export to Excel"
-    disabled={isLoading}
-  >
-    <Download className="w-5 h-5" />
-  </button>
-  <button
-    onClick={() => {
-      setIsPageLoading(true);
-      fetchTasks();
-    }}
-    className="p-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 flex items-center justify-center text-sm sm:text-base w-full sm:w-10 h-10 relative group"
-    title="Refresh Tasks"
-    disabled={isLoading}
-  >
-    <RefreshCw className="w-5 h-5" />
-    <span className="absolute left-1/2 transform -translate-x-1/2 -top-7 bg-black text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity z-50 whitespace-nowrap pointer-events-none">
-      Refresh Tasks
-    </span>
-  </button>
-  {isFilterApplied() && (
-    <button
-      onClick={clearAllFilters}
-      className="p-2 bg-red-600 text-white rounded-md hover:bg-gray-700 flex items-center justify-center text-sm sm:text-base w-full sm:w-auto h-10"
-      title="Clear Filters"
-      disabled={isLoading}
-    >
-      <FunnelX />
-    </button>
-  )}
-  <select
-    value={pageSize}
-    onChange={(e) => handleLimitChange(Number(e.target.value))}
-    className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-    disabled={isLoading}
-  >
-    <option value={25}>25 per page</option>
-    <option value={50}>50 per page</option>
-    <option value={75}>75 per page</option>
-    <option value={100}>100 per page</option>
-    <option value={500}>500 per page</option>
-  </select>
-</div>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <Link to="/admin/createtasks">
+                    <button
+                      className="p-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center justify-center text-sm sm:text-base w-full sm:w-10 h-10"
+                      title="Create Task"
+                    >
+                      <Plus className="w-5 h-5" />
+                    </button>
+                  </Link>
+                  <button
+                    onClick={exportToExcel}
+                    className="p-2 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center justify-center text-sm sm:text-base w-full sm:w-10 h-10"
+                    title="Export to Excel"
+                    disabled={isLoading}
+                  >
+                    <Download className="w-5 h-5" />
+                  </button>
+                  <button
+                    onClick={() => {
+                      setIsPageLoading(true);
+                      fetchTasks();
+                    }}
+                    className="p-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 flex items-center justify-center text-sm sm:text-base w-full sm:w-10 h-10 relative group"
+                    title="Refresh Tasks"
+                    disabled={isLoading}
+                  >
+                    <RefreshCw className="w-5 h-5" />
+                    <span className="absolute left-1/2 transform -translate-x-1/2 -top-7 bg-black text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity z-50 whitespace-nowrap pointer-events-none">
+                      Refresh Tasks
+                    </span>
+                  </button>
+                  {isFilterApplied() && (
+                    <button
+                      onClick={clearAllFilters}
+                      className="p-2 bg-red-600 text-white rounded-md hover:bg-gray-700 flex items-center justify-center text-sm sm:text-base w-full sm:w-auto h-10"
+                      title="Clear Filters"
+                      disabled={isLoading}
+                    >
+                      <FunnelX />
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setViewMode((m) => (m === "table" ? "cards" : "table"))}
+                    className="p-2 bg-orange-500 text-gray-800 rounded-md hover:bg-slate-900 flex items-center justify-center text-sm sm:text-base w-full sm:w-auto h-10"
+                    title={viewMode === "table" ? "Switch to Cards view" : "Switch to Table view"}
+                  >
+                    {viewMode === "table" ?  <IdCard className="text-white size-6" />: <Table className="text-white size-6" /> }
+                  </button>
+                  <select
+                    value={pageSize}
+                    onChange={(e) => handleLimitChange(Number(e.target.value))}
+                    className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    disabled={isLoading}
+                  >
+                    <option value={25}>25 per page</option>
+                    <option value={50}>50 per page</option>
+                    <option value={75}>75 per page</option>
+                    <option value={100}>100 per page</option>
+                    <option value={500}>500 per page</option>
+                  </select>
+                </div>
               </div>
 
               <div className="flex flex-wrap gap-2 mb-4">
@@ -2280,8 +1743,13 @@ console.log("Paginated tasks:", paginatedTasks);
             </div>
             <div className="hidden lg:block">
               <div className="w-full overflow-y-auto min-h-[65vh] max-h-[65vh]">
-                <table className="w-full text-xs sm:text-sm table-fixed">
-                  <thead className="bg-gray-100 border-gray-700 rounded-full sticky top-0 z-10 border-b border-gray-200">
+                {viewMode === "table" ? (
+                  filterTaskType === "Auctions" ? (
+                    <AuctionTable />
+                  ) : (
+                    <>
+                      <table className="w-full text-xs sm:text-sm table-fixed">
+                      <thead className="bg-gray-100 rounded-full sticky top-0 z-10 border-b border-gray-200">
                     <tr>
                       <th
                         className="w-20 text-center py-3 px-2 sm:px-4 font-medium text-gray-700 whitespace-nowrap cursor-pointer"
@@ -2311,24 +1779,8 @@ console.log("Paginated tasks:", paginatedTasks);
                             ))}
                         </div>
                       </th>
-                      {/* <th className="w-28 text-center py-3 px-2 sm:px-4 font-medium text-gray-700 whitespace-nowrap">
-                        Task Type
-                      </th> */}
-                      {/* <th
-                        className="w-28 text-center py-3 px-2 sm:px-4 font-medium text-gray-700 whitespace-nowrap cursor-pointer"
-                        onClick={() => handleSort("priority")}
-                      >
-                        <div className="flex items-center justify-center">
-                          Priority
-                          {sort.column === "priority" &&
-                            (sort.direction === "asc" ? (
-                              <ChevronUp className="w-4 h-4 ml-1" />
-                            ) : (
-                              <ChevronDown className="w-4 h-4 ml-1" />
-                            ))}
-                        </div>
-                      </th> */}
-                        <th
+                     
+                      <th
                         className="w-32 text-center py-3 px-2 sm:px-4 font-medium text-gray-700 whitespace-nowrap cursor-pointer"
                         onClick={() => handleSort("assignedTo")}
                       >
@@ -2342,8 +1794,7 @@ console.log("Paginated tasks:", paginatedTasks);
                             ))}
                         </div>
                       </th>
-                    
-                    
+
                       <th
                         className="w-32 text-center py-3 px-2 sm:px-4 font-medium text-gray-700 whitespace-nowrap cursor-pointer relative"
                         onClick={() => handleSort("dueDate")}
@@ -2439,7 +1890,7 @@ console.log("Paginated tasks:", paginatedTasks);
                           </div>
                         )}
                       </th>
-                        <th
+                      <th
                         className="w-28 text-center py-3 px-2 sm:px-4 font-medium text-gray-700 whitespace-nowrap cursor-pointer"
                         onClick={() => handleSort("status")}
                       >
@@ -2458,324 +1909,316 @@ console.log("Paginated tasks:", paginatedTasks);
                       </th>
                     </tr>
                   </thead>
-            <tbody>
-  {isInitialLoading || isPageLoading ? (
-    <tr>
-      <td colSpan="6" className="py-12 text-center">
-        <Lottie
-          animationData={loaderAnimation}
-          loop={true}
-          className="w-72 h-72 mx-auto"
-        />
-      </td>
-    </tr>
-  ) : paginatedTasks.length === 0 ? (
-    <tr>
-      <td colSpan="6" className="py-12 text-center text-gray-500">
-        No tasks found matching your criteria <br />
-        Try adjusting your filters
-      </td>
-    </tr>
-  ) : (
-    paginatedTasks.map((task) => (
-      <tr
-        key={task._id}
-        className={`border-b border-gray-100 hover:bg-gray-50 cursor-pointer ${
-          isOverdue(task.dueDate, task.dueTime, task.status) ? "bg-red-50" : ""
-        }`}
-        onClick={() => handleViewTask(task)}
-      >
-        <td className="py-4 px-2 sm:px-4 text-gray-900 text-center truncate">
-          {task.taskId}
-        </td>
-        <td className="py-3 px-2 sm:px-4">
-          <div className="relative group max-w-[500px]">
-            <div className="font-medium text-gray-900 cursor-pointer">
-              {task.taskName}
-            </div>
-            <div
-              className="absolute left-1/2 -translate-x-1/2 top-full mt-1 w-80 hidden group-hover:block bg-red-800 text-white text-xs px-2 py-1 rounded shadow-lg z-50"
-            >
-              <span className="text-yellow-300">Task Name:</span> {task.taskName}
-              <br />
-              <span className="text-yellow-300">Task Description:</span>{" "}
-              {task.description}
-            </div>
-          </div>
-        </td>
-        <td className="py-4 px-2 sm:px-4 text-gray-600 text-center">
-          <span className="flex -space-x-1 justify-center">
-            {Array.isArray(task.assignedTo) && task.assignedTo.length > 0 ? (
-              task.assignedTo.map((emp) => (
-                <div key={emp.email} className="relative group">
-                  {emp.avatar ? (
-                    <img
-                      src={emp.avatar}
-                      alt={emp.name || emp.email}
-                      className="inline-block w-7 h-7 rounded-full border border-gray-300"
+                  <tbody>
+                    {isInitialLoading || isPageLoading ? (
+                      <tr>
+                        <td colSpan="6" className="py-12 text-center">
+                          <Lottie
+                            animationData={loaderAnimation}
+                            loop={true}
+                            className="w-72 h-72 mx-auto"
+                          />
+                        </td>
+                      </tr>
+                    ) : paginatedTasks.length === 0 ? (
+                      <tr>
+                        <td
+                          colSpan="6"
+                          className="py-12 text-center text-gray-500"
+                        >
+                          No tasks found matching your criteria <br />
+                          Try adjusting your filters
+                        </td>
+                      </tr>
+                    ) : (
+                      paginatedTasks.map((task) => (
+                        <tr
+                          key={task._id}
+                          className={`border-b border-gray-100 hover:bg-gray-50 cursor-pointer ${
+                            isOverdue(task.dueDate, task.dueTime, task.status)
+                              ? "bg-red-50"
+                              : ""
+                          }`}
+                          onClick={() => handleViewTask(task)}
+                        >
+                          <td className="py-4 px-2 sm:px-4 text-gray-900 text-center truncate">
+                            {task.taskId}
+                          </td>
+                          <td className="py-3 px-2 sm:px-4">
+                            <div className="relative group max-w-[500px]">
+                              <div className="font-medium text-gray-900 cursor-pointer">
+                                {task.taskName}
+                              </div>
+                              <div className="absolute left-1/2 -translate-x-1/2 top-full mt-1 w-80 hidden group-hover:block bg-red-800 text-white text-xs px-2 py-1 rounded shadow-lg z-50">
+                                <span className="text-yellow-300">
+                                  Task Name:
+                                </span>{" "}
+                                {task.taskName}
+                                <br />
+                                <span className="text-yellow-300">
+                                  Task Description:
+                                </span>{" "}
+                                {task.description}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="py-4 px-2 sm:px-4 text-gray-600 text-center">
+                            <span className="flex -space-x-1 justify-center">
+                              {Array.isArray(task.assignedTo) &&
+                              task.assignedTo.length > 0 ? (
+                                task.assignedTo.map((emp) => (
+                                  <div
+                                    key={emp.email}
+                                    className="relative group"
+                                  >
+                                    {emp.avatar ? (
+                                      <img
+                                        src={emp.avatar}
+                                        alt={emp.name || emp.email}
+                                        className="inline-block w-7 h-7 rounded-full border border-gray-300"
+                                      />
+                                    ) : (
+                                      <span className="inline-flex w-7 h-7 bg-gray-200 rounded-full items-center justify-center text-xs text-gray-600">
+                                        {getInitials(emp.name || emp.email)}
+                                      </span>
+                                    )}
+                                    <span className="absolute left-1/2 transform -translate-x-1/2 top-8 bg-red-800 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none whitespace-nowrap">
+                                      {emp.email
+                                        .split("@")[0]
+                                        .replace(".", " ")
+                                        .replace(/\b\w/g, (l) =>
+                                          l.toUpperCase()
+                                        )}
+                                    </span>
+                                  </div>
+                                ))
+                              ) : (
+                                <div className="relative group">
+                                  <span className="inline-flex w-6 h-6 bg-gray-100 rounded-full items-center justify-center text-gray-600 text-xs font-medium">
+                                    UN
+                                  </span>
+                                  <span className="absolute left-1/2 transform -translate-x-1/2 top-8 bg-gray-800 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                                    Unassigned
+                                  </span>
+                                </div>
+                              )}
+                            </span>
+                          </td>
+                          <td className="py-4 px-2 sm:px-4 text-gray-600 text-center truncate">
+                            {formatDisplayDate(task.dueDate)}
+                            {/* {task.dueTime !== "N/A" && ` ${task.dueTime}`} */}
+                            {isOverdue(
+                              task.dueDate,
+                              task.dueTime,
+                              task.status
+                            ) && (
+                              // <AlertCircle className="inline ml-2 text-red-600 w-4 h-4" />
+                              <span></span>
+                            )}
+                          </td>
+                          <td className="py-4 px-2 sm:px-4 text-center">
+                            <span
+                              className={`px-2 py-1 min-w-[90px] text-center whitespace-nowrap rounded-full text-xs font-medium ${getStatusColor(
+                                getDisplayStatus(task)
+                              )}`}
+                            >
+                              {getDisplayStatus(task)}
+                            </span>
+                          </td>
+                          <td
+                            className="py-4 px-2 sm:px-4 text-center"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <div className="flex justify-center gap-2">
+                              <button
+                                onClick={() => handleViewTask(task)}
+                                className="p-1 text-orange-600 hover:bg-orange-50 rounded relative"
+                                title="View Comments"
+                                disabled={isLoading}
+                              >
+                                <MessageCircle
+                                  className={`w-4 h-4 ${
+                                    unseenComments[task._id] &&
+                                    unseenComments[task._id].length > 0
+                                      ? "text-orange-500 animate-pulse"
+                                      : "text-gray-600"
+                                  }`}
+                                />
+                                {task.comments?.length > 0 && (
+                                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
+                                    {task.comments.length}
+                                  </span>
+                                )}
+                              </button>
+                              <button
+                                onClick={() => confirmDelete(task)}
+                                className="p-1 text-red-600 hover:bg-red-50 rounded"
+                                title="Delete Task"
+                                disabled={isLoading}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                    </table>
+                    </>
+                  )
+                ) : (
+                  <div className="relative">
+                    <EmployeeCardsView
+                      employees={employees.filter(emp => filterEmployee.length === 0 || filterEmployee.includes(emp.email))}
+                      tasks={paginatedTasks}
+                      onViewTask={handleViewTask}
+                      isLoading={isLoading}
+                      dueDateFilter={dueDateFilter}
+                      setDueDateFilter={setDueDateFilter}
+                      customDateRange={customDateRange}
+                      setCustomDateRange={setCustomDateRange}
                     />
-                  ) : (
-                    <span className="inline-flex w-7 h-7 bg-gray-200 rounded-full items-center justify-center text-xs text-gray-600">
-                      {getInitials(emp.name || emp.email)}
-                    </span>
-                  )}
-                  <span className="absolute left-1/2 transform -translate-x-1/2 top-8 bg-red-800 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none whitespace-nowrap">
-                    {emp.email
-                      .split("@")[0]
-                      .replace(".", " ")
-                      .replace(/\b\w/g, (l) => l.toUpperCase())}
-                  </span>
-                </div>
-              ))
-            ) : (
-              <div className="relative group">
-                <span className="inline-flex w-6 h-6 bg-gray-100 rounded-full items-center justify-center text-gray-600 text-xs font-medium">
-                  UN
-                </span>
-                <span className="absolute left-1/2 transform -translate-x-1/2 top-8 bg-gray-800 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                  Unassigned
-                </span>
+                   <button
+  className="fixed top-1/2 right-0 z-50 bg-gradient-to-b from-gray-600 to-gray-700 text-white 
+             p-4 rounded-l-lg shadow-lg hover:shadow-xl hover:from-slate-800-700 hover:to-slate-900 
+             transition-all duration-300 w-12 h-32 flex items-center justify-center"
+  style={{ transform: 'translateY(-50%)' }}
+  onClick={() => setShowFilterDrawer(true)}
+>
+  <span className="block -rotate-90 origin-center whitespace-nowrap text-sm font-semibold 
+                   leading-tight tracking-wide">
+    Apply Filter
+  </span>
+</button>
+<TaskFilterDrawer
+  isOpen={showFilterDrawer}
+  onClose={() => setShowFilterDrawer(false)}
+  filterEmployee={filterEmployee}
+  setFilterEmployee={setFilterEmployee}
+  employees={employees}
+  filterStatus={filterStatus}
+  setFilterStatus={setFilterStatus}
+  statusOptions={statusOptions}
+  filterPriority={filterPriority}
+  setFilterPriority={setFilterPriority}
+  priorities={priorities}
+  dueDateFilter={dueDateFilter}
+  setDueDateFilter={setDueDateFilter}
+  showDueDateFilterDropdown={showDueDateFilterDropdown}
+  setShowDueDateFilterDropdown={setShowDueDateFilterDropdown}
+  customDateRange={customDateRange}
+  setCustomDateRange={setCustomDateRange}
+  showCustomDateModal={showCustomDateModal}
+  setShowCustomDateModal={setShowCustomDateModal}
+  filterTaskType={filterTaskType}
+  setFilterTaskType={setFilterTaskType}
+  taskTypes={taskTypes}
+  clearAllFilters={clearAllFilters}
+/>
+                  </div>
+                )}
               </div>
-            )}
-          </span>
-        </td>
-        <td className="py-4 px-2 sm:px-4 text-gray-600 text-center truncate">
-          {formatDisplayDate(task.dueDate)}
-          {/* {task.dueTime !== "N/A" && ` ${task.dueTime}`} */}
-          {isOverdue(task.dueDate, task.dueTime, task.status) && (
-            // <AlertCircle className="inline ml-2 text-red-600 w-4 h-4" />
-            <span></span>
-          )}
-        </td>
-        <td className="py-4 px-2 sm:px-4 text-center">
-          <span
-            className={`px-2 py-1 min-w-[90px] text-center whitespace-nowrap rounded-full text-xs font-medium ${getStatusColor(
-              getDisplayStatus(task)
-            )}`}
-          >
-            {getDisplayStatus(task)}
-          </span>
-        </td>
-        <td className="py-4 px-2 sm:px-4 text-center" onClick={(e) => e.stopPropagation()}>
-          <div className="flex justify-center gap-2">
-            <button
-              onClick={() => handleViewTask(task)}
-              className="p-1 text-orange-600 hover:bg-orange-50 rounded relative"
-              title="View Comments"
-              disabled={isLoading}
-            >
-              <MessageCircle
-                className={`w-4 h-4 ${
-                  unseenComments[task._id] && unseenComments[task._id].length > 0
-                    ? "text-orange-500 animate-pulse"
-                    : "text-gray-600"
-                }`}
-              />
-              {task.comments?.length > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
-                  {task.comments.length}
-                </span>
-              )}
-            </button>
-            <button
-              onClick={() => confirmDelete(task)}
-              className="p-1 text-red-600 hover:bg-red-50 rounded"
-              title="Delete Task"
-              disabled={isLoading}
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
-          </div>
-        </td>
-      </tr>
-    ))
-  )}
-</tbody>
-                </table>
-                {/* {sortedTasks.length === 0 && (
-                    <div className="text-center py-12 text-gray-500">
-                      <div className="mb-4">
-                        No tasks found matching your criteria
+            </div>
+            <div className="lg:hidden grid gap-4">
+              {viewMode === "table" ? (
+                isInitialLoading ? (
+                  <div className="py-12 text-center">
+                    <Lottie
+                      animationData={loaderAnimation}
+                      loop={true}
+                      className="w-72 h-72 mx-auto"
+                    />
+                    {/* <span className="text-gray-500 animate-pulse">Loading Tasks...</span> */}
+                  </div>
+                ) : paginatedTasks.length === 0 ? (
+                  <div className="text-center py-12 text-gray-500">
+                    <div className="mb-4">No tasks found matching your criteria</div>
+                    <div className="text-sm text-gray-400">Try adjusting your search or filters</div>
+                  </div>
+                ) : (
+                  paginatedTasks.map((task) => (
+                    <div
+                      key={task._id}
+                      className={`border rounded-lg p-4 shadow-md bg-white hover:shadow-lg transition-shadow duration-200 ${
+                        isOverdue(task.dueDate, task.dueTime, task.status) ? "bg-red-50" : ""
+                      }`}
+                      onClick={() => handleViewTask(task)}
+                    >
+                      <div className="flex justify-between items-start">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-sm sm:text-base" title={task.taskName}>
+                            {task.taskName}
+                          </span>
+                        </div>
+                        <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+                          <button onClick={() => handleViewTask(task)} className="p-1 text-blue-600 hover:bg-blue-50 rounded" disabled={isLoading}>
+                            <Eye className="w-4 h-4" />
+                          </button>
+                          <button onClick={() => handleOpenRemainderEmailModal(task)} className="p-1 text-purple-600 hover:bg-purple-50 rounded" disabled={isLoading}>
+                            <Mail className="w-4 h-4" />
+                          </button>
+                          <button onClick={() => handleViewTask(task)} className="p-1 text-orange-600 hover:bg-orange-50 rounded relative" disabled={isLoading}>
+                            <MessageCircle className={`w-4 h-4 ${unseenComments[task._id] && unseenComments[task._id].length > 0 ? "text-orange-500 animate-pulse" : "text-gray-600"}`} />
+                            {task.comments?.length > 0 && (
+                              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">{task.comments.length}</span>
+                            )}
+                          </button>
+                          <button onClick={() => confirmDelete(task)} className="p-1 text-red-600 hover:bg-red-50 rounded" disabled={isLoading}>
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </div>
-                      <div className="text-sm text-gray-400">
-                        Try adjusting your search or filters
+
+                      <div className="mt-3 text-xs sm:text-sm grid grid-cols-1 sm:grid-cols-2 gap-3 bg-gray-50 p-3 rounded-md">
+                        <div>
+                          <span className="font-semibold">Task ID:</span> {task.taskId}
+                        </div>
+                        <div>
+                          <span className="font-semibold">Assigned Date:</span> {formatDisplayDate(task.assignedDateTime)}
+                        </div>
+                        <div>
+                          <span className="font-semibold">Status:</span>
+                          <span className={`ml-1 px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(getDisplayStatus(task))}`}>{getDisplayStatus(task)}</span>
+                        </div>
+                        <div>
+                          <span className="font-semibold">Due Date:</span> {formatDisplayDate(task.dueDate)} {task.dueTime !== "N/A" && ` ${task.dueTime}`} {isOverdue(task.dueDate, task.dueTime, task.status) && <AlertCircle className="inline ml-1 text-red-600 w-4 h-4" />}
+                        </div>
+                        <div>
+                          <span className="font-semibold">Assigned To:</span>
+                          <span className="flex -space-x-1 justify-start">
+                            {Array.isArray(task.assignedTo) && task.assignedTo.length > 0 ? (
+                              task.assignedTo.map((emp) => (
+                                <div key={emp.email} className="relative group">
+                                  {emp.avatar ? <img src={emp.avatar} alt={emp.name || emp.email} className="inline-block w-6 h-6 rounded-full border border-gray-300" /> : <span className="inline-flex w-6 h-6 bg-gray-200 rounded-full items-center justify-center text-xs text-gray-600">{getInitials(emp.name || emp.email)}</span>}
+                                  <span className="absolute left-1/2 transform -translate-x-1/2 top-8 bg-gray-800 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none whitespace-nowrap">{emp.name || emp.email}</span>
+                                </div>
+                              ))
+                            ) : (
+                              <div className="relative group">
+                                <span className="inline-flex w-6 h-6 bg-gray-100 rounded-full items-center justify-center text-gray-600 text-xs font-medium">UN</span>
+                                <span className="absolute left-1/2 transform -translate-x-1/2 top-8 bg-gray-800 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">Unassigned</span>
+                              </div>
+                            )}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="font-semibold">Task Type:</span> <span className={`ml-1 px-2 py-1 rounded-full text-xs font-medium ${getTaskTypeColor(task.taskType)}`}>{task.taskType}</span>
+                        </div>
+                        <div>
+                          <span className="font-semibold">Priority:</span> <span className={`ml-1 px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(task.priority)}`}>{task.priority}</span>
+                        </div>
+                        <div className="col-span-full">
+                          <span className="font-semibold">Description:</span> {task.description || "None"}
+                        </div>
                       </div>
                     </div>
-                  )} */}
-              </div>
-            </div>
-         <div className="lg:hidden grid gap-4">
-  {isInitialLoading ? (
-    <div className="py-12 text-center">
-      <Lottie
-        animationData={loaderAnimation}
-        loop={true}
-        className="w-72 h-72 mx-auto"
-      />
-      {/* <span className="text-gray-500 animate-pulse">Loading Tasks...</span> */}
-    </div>
-  ) : paginatedTasks.length === 0 ? (
-    <div className="text-center py-12 text-gray-500">
-      <div className="mb-4">No tasks found matching your criteria </div>
-      <div className="text-sm text-gray-400">
-        Try adjusting your search or filters
-      </div>
-    </div>
-  ) : (
-    paginatedTasks.map((task) => (
-      <div
-        key={task._id}
-        className={`border rounded-lg p-4 shadow-md bg-white hover:shadow-lg transition-shadow duration-200 ${
-          isOverdue(task.dueDate, task.dueTime, task.status) ? "bg-red-50" : ""
-        }`}
-        onClick={() => handleViewTask(task)}
-      >
-        <div className="flex justify-between items-start">
-          <div className="flex items-center gap-2">
-            <span
-              className="font-bold text-sm sm:text-base"
-              title={task.taskName}
-            >
-              {task.taskName}
-            </span>
-          </div>
-          <div
-            className="flex gap-2"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              onClick={() => handleViewTask(task)}
-              className="p-1 text-blue-600 hover:bg-blue-50 rounded"
-              disabled={isLoading}
-            >
-              <Eye className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => handleOpenRemainderEmailModal(task)}
-              className="p-1 text-purple-600 hover:bg-purple-50 rounded"
-              disabled={isLoading}
-            >
-              <Mail className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => handleViewTask(task)}
-              className="p-1 text-orange-600 hover:bg-orange-50 rounded relative"
-              disabled={isLoading}
-            >
-              <MessageCircle
-                className={`w-4 h-4 ${
-                  unseenComments[task._id] &&
-                  unseenComments[task._id].length > 0
-                    ? "text-orange-500 animate-pulse"
-                    : "text-gray-600"
-                }`}
-              />
-              {task.comments?.length > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
-                  {task.comments.length}
-                </span>
-              )}
-            </button>
-            <button
-              onClick={() => confirmDelete(task)}
-              className="p-1 text-red-600 hover:bg-red-50 rounded"
-              disabled={isLoading}
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-
-        {/* Task details */}
-        <div className="mt-3 text-xs sm:text-sm grid grid-cols-1 sm:grid-cols-2 gap-3 bg-gray-50 p-3 rounded-md">
-          <div>
-            <span className="font-semibold">Task ID:</span> {task.taskId}
-          </div>
-          <div>
-            <span className="font-semibold">Assigned Date:</span>{" "}
-            {formatDisplayDate(task.assignedDateTime)}
-          </div>
-          <div>
-            <span className="font-semibold">Status:</span>
-            <span
-              className={`ml-1 px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
-                getDisplayStatus(task)
-              )}`}
-            >
-              {getDisplayStatus(task)}
-            </span>
-          </div>
-          <div>
-            <span className="font-semibold">Due Date:</span>{" "}
-            {formatDisplayDate(task.dueDate)}{" "}
-            {task.dueTime !== "N/A" && ` ${task.dueTime}`}{" "}
-            {isOverdue(task.dueDate, task.dueTime, task.status) && (
-              <AlertCircle className="inline ml-1 text-red-600 w-4 h-4" />
-            )}
-          </div>
-          <div>
-            <span className="font-semibold">Assigned To:</span>{" "}
-            <span className="flex -space-x-1 justify-start">
-              {Array.isArray(task.assignedTo) && task.assignedTo.length > 0 ? (
-                task.assignedTo.map((emp) => (
-                  <div key={emp.email} className="relative group">
-                    {emp.avatar ? (
-                      <img
-                        src={emp.avatar}
-                        alt={emp.name || emp.email}
-                        className="inline-block w-6 h-6 rounded-full border border-gray-300"
-                      />
-                    ) : (
-                      <span className="inline-flex w-6 h-6 bg-gray-200 rounded-full items-center justify-center text-xs text-gray-600">
-                        {getInitials(emp.name || emp.email)}
-                      </span>
-                    )}
-                    <span className="absolute left-1/2 transform -translate-x-1/2 top-8 bg-gray-800 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none whitespace-nowrap">
-                      {emp.name || emp.email}
-                    </span>
-                  </div>
-                ))
+                  ))
+                )
               ) : (
-                <div className="relative group">
-                  <span className="inline-flex w-6 h-6 bg-gray-100 rounded-full items-center justify-center text-gray-600 text-xs font-medium">
-                    UN
-                  </span>
-                  <span className="absolute left-1/2 transform -translate-x-1/2 top-8 bg-gray-800 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                    Unassigned
-                  </span>
-                </div>
+                <EmployeeCardsView employees={filteredEmployeesForFilter} tasks={paginatedTasks} onViewTask={handleViewTask} isLoading={isLoading} />
               )}
-            </span>
-          </div>
-          <div>
-            <span className="font-semibold">Task Type:</span>{" "}
-            <span
-              className={`ml-1 px-2 py-1 rounded-full text-xs font-medium ${getTaskTypeColor(
-                task.taskType
-              )}`}
-            >
-              {task.taskType}
-            </span>
-          </div>
-          <div>
-            <span className="font-semibold">Priority:</span>{" "}
-            <span
-              className={`ml-1 px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(
-                task.priority
-              )}`}
-            >
-              {task.priority}
-            </span>
-          </div>
-          <div className="col-span-full">
-            <span className="font-semibold">Description:</span>{" "}
-            {task.description || "None"}
-          </div>
-        </div>
-      </div>
-    ))
-  )}
-</div>
+            </div>
 
             {/* Pagination */}
             {totalPages > 1 && (
@@ -2791,14 +2234,16 @@ console.log("Paginated tasks:", paginatedTasks);
                     disabled={currentPage === 1}
                     className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md disabled:opacity-50"
                   >
-                  <ChevronLeft/>
-                    
+                    <ChevronLeft />
                   </button>
                   {/* Windowed pagination logic */}
                   {(() => {
                     const pageButtons = [];
                     const windowSize = 5;
-                    let startPage = Math.max(1, currentPage - Math.floor(windowSize / 2));
+                    let startPage = Math.max(
+                      1,
+                      currentPage - Math.floor(windowSize / 2)
+                    );
                     let endPage = startPage + windowSize - 1;
                     if (endPage > totalPages) {
                       endPage = totalPages;
@@ -2810,14 +2255,23 @@ console.log("Paginated tasks:", paginatedTasks);
                         <button
                           key={1}
                           onClick={() => handlePageChange(1)}
-                          className={`px-4 py-2 rounded-md ${currentPage === 1 ? "bg-blue-600 text-white" : "bg-gray-200 text-gray-800"}`}
+                          className={`px-4 py-2 rounded-md ${
+                            currentPage === 1
+                              ? "bg-blue-600 text-white"
+                              : "bg-gray-200 text-gray-800"
+                          }`}
                         >
                           1
                         </button>
                       );
                       if (startPage > 2) {
                         pageButtons.push(
-                          <span key="start-ellipsis" className="px-2 py-2 text-gray-500">...</span>
+                          <span
+                            key="start-ellipsis"
+                            className="px-2 py-2 text-gray-500"
+                          >
+                            ...
+                          </span>
                         );
                       }
                     }
@@ -2826,7 +2280,11 @@ console.log("Paginated tasks:", paginatedTasks);
                         <button
                           key={page}
                           onClick={() => handlePageChange(page)}
-                          className={`px-4 py-2 rounded-md ${currentPage === page ? "bg-blue-600 text-white" : "bg-gray-200 text-gray-800"}`}
+                          className={`px-4 py-2 rounded-md ${
+                            currentPage === page
+                              ? "bg-blue-600 text-white"
+                              : "bg-gray-200 text-gray-800"
+                          }`}
                         >
                           {page}
                         </button>
@@ -2836,14 +2294,23 @@ console.log("Paginated tasks:", paginatedTasks);
                     if (endPage < totalPages) {
                       if (endPage < totalPages - 1) {
                         pageButtons.push(
-                          <span key="end-ellipsis" className="px-2 py-2 text-gray-500">...</span>
+                          <span
+                            key="end-ellipsis"
+                            className="px-2 py-2 text-gray-500"
+                          >
+                            ...
+                          </span>
                         );
                       }
                       pageButtons.push(
                         <button
                           key={totalPages}
                           onClick={() => handlePageChange(totalPages)}
-                          className={`px-4 py-2 rounded-md ${currentPage === totalPages ? "bg-blue-600 text-white" : "bg-gray-200 text-gray-800"}`}
+                          className={`px-4 py-2 rounded-md ${
+                            currentPage === totalPages
+                              ? "bg-blue-600 text-white"
+                              : "bg-gray-200 text-gray-800"
+                          }`}
                         >
                           {totalPages}
                         </button>
@@ -3765,5 +3232,3 @@ console.log("Paginated tasks:", paginatedTasks);
 };
 
 export default AdmintaskPage;
-
-

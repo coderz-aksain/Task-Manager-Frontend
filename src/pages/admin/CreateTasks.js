@@ -1725,7 +1725,7 @@ function CreateTasks({ onSubmit, editTask, onCancel }) {
                       </>
                     )}
                     {/* Priority and Due Date */}
-                    {/* {formik.values.taskType !== 'Reminder' && (
+                    {formik.values.taskType !== 'Reminder' && (
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1770,7 +1770,7 @@ function CreateTasks({ onSubmit, editTask, onCancel }) {
                           )}
                         </div>
                       </div>
-                    )} */}
+                    )}
                     {/* Assign Employees */}
                     {formik.values.taskType !== "Reminder" && (
                       <div>

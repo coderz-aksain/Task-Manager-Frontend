@@ -203,7 +203,7 @@ class ApiService {
 
   async updateProfile(profileData) {
     const formData = new FormData();
-    
+
     Object.entries(profileData).forEach(([key, value]) => {
       if (value !== undefined && value !== null && value !== '') {
         formData.append(key, value);
@@ -215,6 +215,37 @@ class ApiService {
       headers: this.getMultipartHeaders(),
       body: formData,
     });
+  }
+
+  // Auction Task methods
+  async getAuctionTasks() {
+    return this.request('/get/auction-tasks');
+  }
+
+  async updateAuctionTask(taskId, taskData) {
+    return this.request(`/auction-tasks/${taskId}`, {
+      method: 'PUT',
+      body: JSON.stringify(taskData),
+    });
+  }
+
+  async deleteAuctionTask(taskId) {
+    return this.request(`/delete/${taskId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Category methods
+  async createCategory(categoryData) {
+    return this.request('/create-category', {
+      method: 'POST',
+      body: JSON.stringify(categoryData),
+    });
+  }
+
+  async getCategories(categoryType) {
+    const query = categoryType ? `?categoryType=${encodeURIComponent(categoryType)}` : '';
+    return this.request(`/get-categories${query}`);
   }
 }
 

@@ -32,7 +32,6 @@ import { jwtDecode } from "jwt-decode";
 import { useAppContext } from "../../contexts/AppContext"; // adjust path
 import AuctionTableEmployee from "../../components/layout/AuctionTableEmployee";
 const priorities = ["High", "Medium", "Low"];
-const taskTypes = ["General", "Auctions", "Remainder"];
 const statusOptions = [
   { value: "Open", label: "Open" },
   { value: "In Progress", label: "In Progress" },
@@ -120,12 +119,18 @@ const getInitials = (name) => {
 };
 
 const TaskPage = () => {
+  const taskTypes = ["General", "Auctions"];
+
   const [showSidebar, setShowSidebar] = useState(false);
   const [tasks, setTasks] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState([]);
   const [filterPriority, setFilterPriority] = useState("all");
-  const [filterTaskType, setFilterTaskType] = useState("all");
+  const [filterTaskType, setFilterTaskType] = useState(() => {
+    const queryParams = new URLSearchParams(window.location.search);
+    const tab = queryParams.get("tab");
+    return tab && (tab === "all" || taskTypes.includes(tab)) ? tab : "all";
+  });
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState(initialForm);
   const [editId, setEditId] = useState(null);
@@ -282,7 +287,7 @@ const TaskPage = () => {
 
   const handleStatusTabClick = (tab) => {
     setCurrentStatusTab(tab);
-    if (tab === "All") {
+    if (tab === "All") {  
       setFilterStatus([]);
     } else if (tab === "Open") {
       setFilterStatus(["Open"]);
@@ -1047,65 +1052,69 @@ const TaskPage = () => {
             <div className="mb-6">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-4">
                 <h2 className="text-xl sm:text-2xl font-bold text-blue-600">
-                  My Tasks (Total: {totalTasks})
+                  My Tasks 
                 </h2>
                 <div className="flex flex-col sm:flex-row gap-2">
-                  <Link to="/employee/createtasks">
-                    <button
-                      className="p-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center justify-center text-sm sm:text-base w-10 h-10 sm:w-auto sm:h-auto"
-                      title="Create Task"
-                    >
-                      <Plus />
-                    </button>
-                  </Link>
-                  <button
-                    onClick={exportToExcel}
-                    className="p-2 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center justify-center text-sm sm:text-base w-10 h-10 sm:w-auto sm:h-auto"
-                    disabled={isLoading}
-                    title="Export to Excel"
-                  >
-                    <Download />
-                  </button>
-                  <button
-                    onClick={() => {
-                      setIsLoadingTasks(true);
-                      fetchTasks();
-                    }}
-                    className="p-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 flex items-center justify-center text-sm sm:text-base w-10 h-10 sm:w-auto sm:h-auto relative group"
-                    title="Refresh Tasks"
-                    disabled={isLoading}
-                  >
-                    <RefreshCw className="w-5 h-5" />
-                    <span className="absolute left-1/2 transform -translate-x-1/2 -top-7 bg-black text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity z-50 whitespace-nowrap pointer-events-none">
-                      Refresh Tasks
-                    </span>
-                  </button>
-                  {isFilterApplied && (
-                    <button
-                      onClick={handleResetFilters}
-                      className="p-2 bg-red-200 text-red-800 rounded-md hover:bg-red-200 flex items-center justify-center text-sm sm:text-base w-10 h-10 sm:w-auto sm:h-auto"
-                      disabled={isLoading}
-                      title="Remove Filters"
-                    >
-                      <FunnelX />
-                    </button>
+                  {filterTaskType !== "Auctions" && (
+                    <>
+                      <Link to="/employee/createtasks">
+                        <button
+                          className="p-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center justify-center text-sm sm:text-base w-10 h-10 sm:w-auto sm:h-auto"
+                          title="Create Task"
+                        >
+                          <Plus />
+                        </button>
+                      </Link>
+                      <button
+                        onClick={exportToExcel}
+                        className="p-2 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center justify-center text-sm sm:text-base w-10 h-10 sm:w-auto sm:h-auto"
+                        disabled={isLoading}
+                        title="Export to Excel"
+                      >
+                        <Download />
+                      </button>
+                      <button
+                        onClick={() => {
+                          setIsLoadingTasks(true);
+                          fetchTasks();
+                        }}
+                        className="p-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 flex items-center justify-center text-sm sm:text-base w-10 h-10 sm:w-auto sm:h-auto relative group"
+                        title="Refresh Tasks"
+                        disabled={isLoading}
+                      >
+                        <RefreshCw className="w-5 h-5" />
+                        <span className="absolute left-1/2 transform -translate-x-1/2 -top-7 bg-black text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity z-50 whitespace-nowrap pointer-events-none">
+                          Refresh Tasks
+                        </span>
+                      </button>
+                      {isFilterApplied && (
+                        <button
+                          onClick={handleResetFilters}
+                          className="p-2 bg-red-200 text-red-800 rounded-md hover:bg-red-200 flex items-center justify-center text-sm sm:text-base w-10 h-10 sm:w-auto sm:h-auto"
+                          disabled={isLoading}
+                          title="Remove Filters"
+                        >
+                          <FunnelX />
+                        </button>
+                      )}
+                      <select
+                        value={pageSize}
+                        onChange={(e) => handleLimitChange(Number(e.target.value))}
+                        className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                        disabled={isLoading}
+                      >
+                        <option value={25}>25 per page</option>
+                        <option value={50}>50 per page</option>
+                        <option value={75}>75 per page</option>
+                        <option value={100}>100 per page</option>
+                        <option value={500}>500 per page</option>
+                      </select>
+                    </>
                   )}
-                  <select
-                    value={pageSize}
-                    onChange={(e) => handleLimitChange(Number(e.target.value))}
-                    className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                    disabled={isLoading}
-                  >
-                    <option value={25}>25 per page</option>
-                    <option value={50}>50 per page</option>
-                    <option value={75}>75 per page</option>
-                    <option value={100}>100 per page</option>
-                    <option value={500}>500 per page</option>
-                  </select>
                 </div>
               </div>
               <div className="flex flex-wrap gap-2 mb-4">
-                <button
+                {/* <button
                   onClick={() => setFilterTaskType("all")}
                   className={`px-3 py-2 rounded-md text-xs sm:text-sm font-medium ${
                     filterTaskType === "all"
@@ -1115,7 +1124,7 @@ const TaskPage = () => {
                   disabled={isLoading}
                 >
                   All
-                </button>
+                </button> */}
                 {taskTypes.map((type) => (
                   <button
                     key={type}
@@ -1135,7 +1144,7 @@ const TaskPage = () => {
                   </button>
                 ))}
               </div>
-              <div className="flex overflow-x-auto gap-2 mb-4">
+              {/* <div className="flex overflow-x-auto gap-2 mb-4">
                 <button
                   onClick={() => handleStatusTabClick("All")}
                   className={`px-4 py-2 rounded-md flex items-center text-sm font-medium ${
@@ -1180,111 +1189,113 @@ const TaskPage = () => {
                 >
                   Completed
                 </button>
-              </div>
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-4 mb-4">
-                <div className="flex-1 relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                  <input
-                    type="text"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                    placeholder="Search by name or description..."
-                    disabled={isLoading}
-                  />
-                </div>
-                <div className="relative min-w-[180px] max-w-full sm:min-w-[220px] sm:max-w-[220px]">
-                  <div
-                    className="px-3 py-2 border border-gray-300 rounded-md bg-white cursor-pointer flex items-center justify-between w-full text-xs sm:text-sm"
-                    onClick={() => setShowStatusDropdown(!showStatusDropdown)}
-                  >
-                    <span className="flex flex-wrap items-center gap-1">
-                      {filterStatus.length === 0 ? (
-                        <>
-                          <span className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center text-xs text-gray-600 mr-2">
-                            All
-                          </span>
-                          All Status
-                        </>
-                      ) : (
-                        <>
-                          <span className="flex flex-wrap gap-1">
-                            {filterStatus.slice(0, 5).map((status, idx) => (
-                              <span
-                                key={status}
-                                className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center text-xs text-blue-800 border border-gray-300"
-                                title={status}
-                              >
-                                {status[0]}
-                              </span>
-                            ))}
-                            {filterStatus.length > 5 && (
-                              <span className="w-5 h-5 rounded-full bg-gray-300 flex items-center justify-center text-xs text-gray-700 ml-1">
-                                +{filterStatus.length - 5}
-                              </span>
-                            )}
-                          </span>
-                          <span className="ml-2">Applied Status</span>
-                        </>
-                      )}
-                    </span>
+              </div> */}
+              {filterTaskType !== "Auctions" && (
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-4 mb-4">
+                  <div className="flex-1 relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                    <input
+                      type="text"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                      placeholder="Search by name or description..."
+                      disabled={isLoading}
+                    />
                   </div>
-                  {showStatusDropdown && (
+                  <div className="relative min-w-[180px] max-w-full sm:min-w-[220px] sm:max-w-[220px]">
                     <div
-                      ref={statusDropdownRef}
-                      className="absolute z-20 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-64 overflow-y-auto min-w-[180px] max-w-full sm:min-w-[220px] sm:max-w-[220px]"
+                      className="px-3 py-2 border border-gray-300 rounded-md bg-white cursor-pointer flex items-center justify-between w-full text-xs sm:text-sm"
+                      onClick={() => setShowStatusDropdown(!showStatusDropdown)}
                     >
-                      <label className="flex items-center px-3 py-2 hover:bg-gray-100 cursor-pointer text-xs sm:text-sm">
-                        <input
-                          type="checkbox"
-                          checked={filterStatus.length === 0}
-                          onChange={() => setFilterStatus([])}
-                          className="mr-2"
-                          disabled={isLoading}
-                        />
-                        <span className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center text-xs text-gray-600 mr-2">
-                          All
-                        </span>
-                        <span>All Status</span>
-                      </label>
-                      {statusOptions.map((opt) => (
-                        <label
-                          key={opt.value}
-                          className="flex items-center px-3 py-2 hover:bg-gray-100 cursor-pointer text-xs sm:text-sm"
-                        >
+                      <span className="flex flex-wrap items-center gap-1">
+                        {filterStatus.length === 0 ? (
+                          <>
+                            <span className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center text-xs text-gray-600 mr-2">
+                              All
+                            </span>
+                            All Status
+                          </>
+                        ) : (
+                          <>
+                            <span className="flex flex-wrap gap-1">
+                              {filterStatus.slice(0, 5).map((status, idx) => (
+                                <span
+                                  key={status}
+                                  className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center text-xs text-blue-800 border border-gray-300"
+                                  title={status}
+                                >
+                                  {status[0]}
+                                </span>
+                              ))}
+                              {filterStatus.length > 5 && (
+                                <span className="w-5 h-5 rounded-full bg-gray-300 flex items-center justify-center text-xs text-gray-700 ml-1">
+                                  +{filterStatus.length - 5}
+                                </span>
+                              )}
+                            </span>
+                            <span className="ml-2">Applied Status</span>
+                          </>
+                        )}
+                      </span>
+                    </div>
+                    {showStatusDropdown && (
+                      <div
+                        ref={statusDropdownRef}
+                        className="absolute z-20 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-64 overflow-y-auto min-w-[180px] max-w-full sm:min-w-[220px] sm:max-w-[220px]"
+                      >
+                        <label className="flex items-center px-3 py-2 hover:bg-gray-100 cursor-pointer text-xs sm:text-sm">
                           <input
                             type="checkbox"
-                            checked={filterStatus.includes(opt.value)}
-                            onChange={() => toggleStatus(opt.value)}
+                            checked={filterStatus.length === 0}
+                            onChange={() => setFilterStatus([])}
                             className="mr-2"
                             disabled={isLoading}
                           />
-                          <span className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center text-xs text-blue-800 mr-2 border border-gray-300">
-                            {opt.label[0]}
+                          <span className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center text-xs text-gray-600 mr-2">
+                            All
                           </span>
-                          {opt.label}
+                          <span>All Status</span>
                         </label>
-                      ))}
-                    </div>
-                  )}
+                        {statusOptions.map((opt) => (
+                          <label
+                            key={opt.value}
+                            className="flex items-center px-3 py-2 hover:bg-gray-100 cursor-pointer text-xs sm:text-sm"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={filterStatus.includes(opt.value)}
+                              onChange={() => toggleStatus(opt.value)}
+                              className="mr-2"
+                              disabled={isLoading}
+                            />
+                            <span className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center text-xs text-blue-800 mr-2 border border-gray-300">
+                              {opt.label[0]}
+                            </span>
+                            {opt.label}
+                          </label>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <select
+                    value={filterPriority}
+                    onChange={(e) => setFilterPriority(e.target.value)}
+                    className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm w-full sm:w-auto"
+                    disabled={isLoading}
+                  >
+                    <option value="all">All Priorities</option>
+                    {priorities.map((p) => (
+                      <option key={p} value={p}>
+                        {p}
+                      </option>
+                    ))}
+                  </select>
                 </div>
-                <select
-                  value={filterPriority}
-                  onChange={(e) => setFilterPriority(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm w-full sm:w-auto"
-                  disabled={isLoading}
-                >
-                  <option value="all">All Priorities</option>
-                  {priorities.map((p) => (
-                    <option key={p} value={p}>
-                      {p}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              )}
             </div>
             <div className="hidden lg:block">
-                <div className="w-full overflow-y-auto min-h-[65vh] max-h-[65vh]">
+                <div className="w-full  min-h-[73vh] max-h-[65vh]">
                 {filterTaskType === "Auctions" ? (
                   <AuctionTableEmployee />
                 ) : (
@@ -1595,7 +1606,7 @@ const TaskPage = () => {
             </div>
 
             {/* Pagination */}
-            {totalPages > 1 && (
+            {filterTaskType !== "Auctions" && totalPages > 1 && (
               <div className="flex flex-col sm:flex-row justify-between items-center mt-4 space-y-4 sm:space-y-0 sm:space-x-2">
                 <div className="text-sm text-gray-600">
                   Showing {(currentPage - 1) * pageSize + 1} to{" "}

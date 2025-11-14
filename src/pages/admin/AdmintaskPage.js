@@ -37,6 +37,7 @@ import loaderAnimation from "../../assets/animations/loader.json";
 import { RefreshCw } from "lucide-react";
 import AuctionTable from "../../components/layout/AuctionTable";
 import EmployeeCardsView from "../../components/layout/EmployeeCardsView";
+import AuctionCardsView from "../../components/layout/AuctionCardsView";
 import TaskFilterDrawer from "../../components/layout/TaskFilterDrawer";
 // Helper functions
 const formatDisplayDate = (dateStr) => {
@@ -49,7 +50,7 @@ const formatDisplayDate = (dateStr) => {
   return `${day}/${month}/${year}`;
 };
 
-const taskTypes = ["Auctions", "General", "Reminder"];
+const taskTypes = ["Auctions", "General"];
 const priorities = ["High", "Medium", "Low"];
 const statusOptions = [
   { value: "Open", label: "Open" },
@@ -150,7 +151,8 @@ const AdmintaskPage = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState([]);
   const [filterPriority, setFilterPriority] = useState("all");
-  const [filterTaskType, setFilterTaskType] = useState("all");
+  const [filterTaskType, setFilterTaskType] = useState("Auctions");
+  const [selectedTab, setSelectedTab] = useState("Auctions");
   const [filterEmployee, setFilterEmployee] = useState([]);
   const [sortBy, setSortBy] = useState("taskId");
   const [dueDateSort, setDueDateSort] = useState("none");
@@ -189,7 +191,7 @@ const AdmintaskPage = () => {
   });
 
   const [isPageLoading, setIsPageLoading] = useState(false);
-  const [viewMode, setViewMode] = useState("table");
+  const [viewMode, setViewMode] = useState("cards");
 
   // const [sort, setSort] = useState({ column: "taskId", direction: "desc" });
   const [sort, setSort] = useState({ column: null, direction: "asc" });
@@ -198,7 +200,6 @@ const AdmintaskPage = () => {
   const [customDueDate, setCustomDueDate] = useState(null);
   const [showDueDateFilterDropdown, setShowDueDateFilterDropdown] =
     useState(false);
-  const [showCustomDateModal, setShowCustomDateModal] = useState(false);
   const [customDateRange, setCustomDateRange] = useState({
     start: "",
     end: "",
@@ -311,13 +312,6 @@ const AdmintaskPage = () => {
       ) {
         setShowDueDateFilterDropdown(false);
       }
-      if (
-        showCustomDateModal &&
-        customDateModalRef.current &&
-        !customDateModalRef.current.contains(event.target)
-      ) {
-        setShowCustomDateModal(false);
-      }
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
@@ -327,7 +321,6 @@ const AdmintaskPage = () => {
     showStatusDropdown,
     showDueDateSortDropdown,
     showDueDateFilterDropdown,
-    showCustomDateModal,
   ]);
 
   useEffect(() => {
@@ -1176,7 +1169,6 @@ const AdmintaskPage = () => {
   const handleCustomDateSubmit = () => {
     if (customDateRange.start && customDateRange.end) {
       setDueDateFilter("custom");
-      setShowCustomDateModal(false);
       setShowDueDateFilterDropdown(false);
     } else {
       showToast("Please select both start and end dates", "error");
@@ -1284,7 +1276,7 @@ const AdmintaskPage = () => {
     const matchesPriority =
       filterPriority === "all" || task.priority === filterPriority;
     const matchesTaskType =
-      filterTaskType === "all" || task.taskType === filterTaskType;
+      selectedTab === "General" || task.taskType === selectedTab;
     const matchesEmployee =
       filterEmployee.length === 0 ||
       task.assignedTo.some((emp) => filterEmployee.includes(emp.email));
@@ -1362,394 +1354,333 @@ const AdmintaskPage = () => {
         <Header isLoggedIn={!!token} onToggleSidebar={toggleSidebar} />
         <main className="flex-1 p-2 sm:p-4 md:p-6 ">
           <div className="max-w-8xl mx-auto">
-            <div className="mb-6">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-4">
-                <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-blue-600">
-                    Welcome Back!  <br/>
-                </h2>
-                  <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-blue-600" >
-                    All Tasks: {totalTasks}
-                  </h1>
-                <div className="flex flex-col sm:flex-row gap-2">
-                  <Link to="/admin/createtasks">
-                    <button
-                      className="p-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center justify-center text-sm sm:text-base w-full sm:w-10 h-10"
-                      title="Create Task"
-                    >
-                      <Plus className="w-5 h-5" />
-                    </button>
-                  </Link>
-                  <button
-                    onClick={exportToExcel}
-                    className="p-2 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center justify-center text-sm sm:text-base w-full sm:w-10 h-10"
-                    title="Export to Excel"
-                    disabled={isLoading}
-                  >
-                    <Download className="w-5 h-5" />
-                  </button>
-                  <button
-                    onClick={() => {
-                      setIsPageLoading(true);
-                      fetchTasks();
-                    }}
-                    className="p-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 flex items-center justify-center text-sm sm:text-base w-full sm:w-10 h-10 relative group"
-                    title="Refresh Tasks"
-                    disabled={isLoading}
-                  >
-                    <RefreshCw className="w-5 h-5" />
-                    <span className="absolute left-1/2 transform -translate-x-1/2 -top-7 bg-black text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity z-50 whitespace-nowrap pointer-events-none">
-                      Refresh Tasks
-                    </span>
-                  </button>
-                  {isFilterApplied() && (
-                    <button
-                      onClick={clearAllFilters}
-                      className="p-2 bg-red-600 text-white rounded-md hover:bg-gray-700 flex items-center justify-center text-sm sm:text-base w-full sm:w-auto h-10"
-                      title="Clear Filters"
-                      disabled={isLoading}
-                    >
-                      <FunnelX />
-                    </button>
-                  )}
-                  <button
-                    onClick={() => setViewMode((m) => (m === "table" ? "cards" : "table"))}
-                    className="p-2 bg-orange-500 text-gray-800 rounded-md hover:bg-slate-900 flex items-center justify-center text-sm sm:text-base w-full sm:w-auto h-10"
-                    title={viewMode === "table" ? "Switch to Cards view" : "Switch to Table view"}
-                  >
-                    {viewMode === "table" ?  <IdCard className="text-white size-6" />: <Table className="text-white size-6" /> }
-                  </button>
-                  <select
-                    value={pageSize}
-                    onChange={(e) => handleLimitChange(Number(e.target.value))}
-                    className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                    disabled={isLoading}
-                  >
-                    <option value={25}>25 per page</option>
-                    <option value={50}>50 per page</option>
-                    <option value={75}>75 per page</option>
-                    <option value={100}>100 per page</option>
-                    <option value={500}>500 per page</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="flex flex-wrap gap-2 mb-4">
-                <button
-                  onClick={() => setFilterTaskType("all")}
-                  className={`px-3 py-2 rounded-md text-xs sm:text-sm font-medium ${
-                    filterTaskType === "all"
-                      ? "bg-gray-200 text-gray-800"
-                      : "text-gray-600 hover:bg-gray-100"
-                  }`}
-                  disabled={isLoading}
-                >
+         <div className="mb-6">
+  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-4">
+    <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-blue-600">
+      Welcome Back! <br />
+    </h2>
+    <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-blue-600">
+      {/* All Tasks: {totalTasks} */}
+    </h1>
+    {filterTaskType !== "Auctions" && (
+      <div className="flex flex-col sm:flex-row gap-2">
+        <Link to="/admin/createtasks">
+          <button
+            className="p-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center justify-center text-sm sm:text-base w-full sm:w-10 h-10"
+            title="Create Task"
+          >
+            <Plus className="w-5 h-5" />
+          </button>
+        </Link>
+        <button
+          onClick={exportToExcel}
+          className="p-2 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center justify-center text-sm sm:text-base w-full sm:w-10 h-10"
+          title="Export to Excel"
+          disabled={isLoading}
+        >
+          <Download className="w-5 h-5" />
+        </button>
+        <button
+          onClick={() => {
+            setIsPageLoading(true);
+            fetchTasks();
+          }}
+          className="p-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 flex items-center justify-center text-sm sm:text-base w-full sm:w-10 h-10 relative group"
+          title="Refresh Tasks"
+          disabled={isLoading}
+        >
+          <RefreshCw className="w-5 h-5" />
+          <span className="absolute left-1/2 transform -translate-x-1/2 -top-7 bg-black text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity z-50 whitespace-nowrap pointer-events-none">
+            Refresh Tasks
+          </span>
+        </button>
+        {isFilterApplied() && (
+          <button
+            onClick={clearAllFilters}
+            className="p-2 bg-red-600 text-white rounded-md hover:bg-gray-700 flex items-center justify-center text-sm sm:text-base w-full sm:w-auto h-10"
+            title="Clear Filters"
+            disabled={isLoading}
+          >
+            <FunnelX />
+          </button>
+        )}
+        <button
+          onClick={() => setViewMode((m) => (m === "table" ? "cards" : "table"))}
+          className="p-2 bg-orange-500 text-gray-800 rounded-md hover:bg-slate-900 flex items-center justify-center text-sm sm:text-base w-full sm:w-auto h-10"
+          title={viewMode === "table" ? "Switch to Cards view" : "Switch to Table view"}
+        >
+          {viewMode === "table" ? (
+            <IdCard className="text-white size-6" />
+          ) : (
+            <Table className="text-white size-6" />
+          )}
+        </button>
+        <select
+          value={pageSize}
+          onChange={(e) => handleLimitChange(Number(e.target.value))}
+          className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+          disabled={isLoading}
+        >
+          <option value={25}>25 per page</option>
+          <option value={50}>50 per page</option>
+          <option value={75}>75 per page</option>
+          <option value={100}>100 per page</option>
+          <option value={500}>500 per page</option>
+        </select>
+      </div>
+    )}
+  </div>
+  <div className="flex flex-wrap gap-2 mb-4">
+    {taskTypes.map((type) => (
+      <button
+        key={type}
+        onClick={() => {
+          setSelectedTab(type);
+          setFilterTaskType(type);
+        }}
+        className={`px-3 py-2 rounded-md text-xs sm:text-sm font-medium ${
+          selectedTab === type
+            ? type === "Auctions"
+              ? "bg-purple-100 text-purple-800"
+              : type === "General"
+              ? "bg-blue-100 text-blue-800"
+              : "bg-orange-100 text-orange-800"
+            : "text-gray-600 hover:bg-gray-100"
+        }`}
+        disabled={isLoading}
+      >
+        {type}
+      </button>
+    ))}
+  </div>
+  {selectedTab === "General" && (
+    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4 mb-4">
+      <div className="flex-1 relative">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+        <input
+          type="text"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs sm:text-sm"
+          placeholder="Search by name or description..."
+          disabled={isLoading}
+        />
+      </div>
+      <div className="relative min-w-[180px] max-w-full sm:min-w-[220px] sm:max-w-[220px]">
+        <div
+          className="px-3 py-2 border border-gray-300 rounded-md bg-white cursor-pointer flex items-center justify-between w-full text-xs sm:text-sm"
+          onClick={() => setShowStatusDropdown(!showStatusDropdown)}
+        >
+          <span className="flex flex-wrap items-center gap-1">
+            {filterStatus.length === 0 ? (
+              <>
+                <span className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center text-xs text-gray-600 mr-2">
                   All
-                </button>
-                {taskTypes.map((type) => (
-                  <button
-                    key={type}
-                    onClick={() => setFilterTaskType(type)}
-                    className={`px-3 py-2 rounded-md text-xs sm:text-sm font-medium ${
-                      filterTaskType === type
-                        ? type === "Auctions"
-                          ? "bg-purple-100 text-purple-800"
-                          : type === "General"
-                          ? "bg-blue-100 text-blue-800"
-                          : "bg-orange-100 text-orange-800"
-                        : "text-gray-600 hover:bg-gray-100"
-                    }`}
-                    disabled={isLoading}
-                  >
-                    {type}
-                  </button>
-                ))}
-              </div>
-              <div className="flex overflow-x-auto gap-2 mb-4">
-                <button
-                  onClick={() => handleStatusTabClick("All")}
-                  className={`px-4 py-2 rounded-md flex items-center text-sm font-medium ${
-                    currentStatusTab === "All"
-                      ? "bg-blue-600 text-white"
-                      : "bg-blue-100 text-blue-800"
-                  }`}
-                  disabled={isLoading}
-                >
-                  {/* <Filter className="w-4 h-4 mr-1" /> */}
-                  All
-                </button>
-                <button
-                  onClick={() => handleStatusTabClick("Open")}
-                  className={`px-4 py-2 rounded-md flex items-center text-sm font-medium ${
-                    currentStatusTab === "Open"
-                      ? "bg-red-500 text-white"
-                      : "bg-red-100 text-red-800"
-                  }`}
-                  disabled={isLoading}
-                >
-                  {/* <Filter className="w-4 h-4 mr-1" /> */}
-                  New Tasks
-                </button>
-                <button
-                  onClick={() => handleStatusTabClick("Not Started")}
-                  className={`px-4 py-2 rounded-md flex items-center text-sm font-medium ${
-                    currentStatusTab === "Not Started"
-                      ? "bg-orange-400 text-white"
-                      : "bg-orange-100 text-orange-800"
-                  }`}
-                  disabled={isLoading}
-                >
-                  {/* <Filter className="w-4 h-4 mr-1" /> */}
-                  In Progress
-                </button>
-                <button
-                  onClick={() => handleStatusTabClick("Closed")}
-                  className={`px-4 py-2 rounded-md flex items-center text-sm font-medium ${
-                    currentStatusTab === "Closed"
-                      ? "bg-green-500 text-white"
-                      : "bg-green-100 text-green-800"
-                  }`}
-                  disabled={isLoading}
-                >
-                  {/* <Filter className="w-4 h-4 mr-1" /> */}
-                  Complete
-                </button>
-              </div>
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4 mb-4">
-                <div className="flex-1 relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                  <input
-                    type="text"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs sm:text-sm"
-                    placeholder="Search by name or description..."
-                    disabled={isLoading}
-                  />
-                </div>
-                <div className="relative min-w-[180px] max-w-full sm:min-w-[220px] sm:max-w-[220px]">
-                  <div
-                    className="px-3 py-2 border border-gray-300 rounded-md bg-white cursor-pointer flex items-center justify-between w-full text-xs sm:text-sm"
-                    onClick={() => setShowStatusDropdown(!showStatusDropdown)}
-                  >
-                    <span className="flex flex-wrap items-center gap-1">
-                      {filterStatus.length === 0 ? (
-                        <>
-                          <span className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center text-xs text-gray-600 mr-2">
-                            All
-                          </span>
-                          All Status
-                        </>
-                      ) : (
-                        <>
-                          <span className="flex flex-wrap gap-1">
-                            {filterStatus.slice(0, 5).map((status, idx) => (
-                              <Tooltip key={status} text={status}>
-                                <span className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center text-xs text-blue-800 border border-gray-300">
-                                  {status[0]}
-                                </span>
-                              </Tooltip>
-                            ))}
-                            {filterStatus.length > 5 && (
-                              <Tooltip text={filterStatus.slice(5).join(", ")}>
-                                <span className="w-5 h-5 rounded-full bg-gray-300 flex items-center justify-center text-xs text-gray-700 ml-1">
-                                  +{filterStatus.length - 5}
-                                </span>
-                              </Tooltip>
-                            )}
-                          </span>
-                          <span className="ml-2">Applied Status</span>
-                        </>
-                      )}
-                    </span>
-                  </div>
-                  {showStatusDropdown && (
-                    <div
-                      ref={statusDropdownRef}
-                      className="absolute z-20 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-64 overflow-y-auto min-w-[180px] max-w-full sm:min-w-[220px] sm:max-w-[220px]"
-                    >
-                      <label className="flex items-center px-3 py-2 hover:bg-gray-100 cursor-pointer text-xs sm:text-sm">
-                        <input
-                          type="checkbox"
-                          checked={filterStatus.length === 0}
-                          onChange={() => setFilterStatus([])}
-                          className="mr-2"
-                          disabled={isLoading}
-                        />
-                        <span className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center text-xs text-gray-600 mr-2">
-                          All
-                        </span>
-                        <span>All Status</span>
-                      </label>
-                      {statusOptions.map((opt) => (
-                        <label
-                          key={opt.value}
-                          className="flex items-center px-3 py-2 hover:bg-gray-100 cursor-pointer text-xs sm:text-sm"
-                        >
-                          <input
-                            type="checkbox"
-                            checked={filterStatus.includes(opt.value)}
-                            onChange={() => toggleStatus(opt.value)}
-                            className="mr-2"
-                            disabled={isLoading}
-                          />
-                          <Tooltip text={opt.label}>
-                            <span className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center text-xs text-blue-800 mr-2 border border-gray-300">
-                              {opt.label[0]}
-                            </span>
-                          </Tooltip>
-                          {opt.label}
-                        </label>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                <select
-                  value={filterPriority}
-                  onChange={(e) => setFilterPriority(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs sm:text-sm w-full sm:w-auto"
-                  disabled={isLoading}
-                >
-                  <option value="all">All Priorities</option>
-                  {priorities.map((p) => (
-                    <option key={p} value={p}>
-                      {p}
-                    </option>
+                </span>
+                All Status
+              </>
+            ) : (
+              <>
+                <span className="flex flex-wrap gap-1">
+                  {filterStatus.slice(0, 5).map((status, idx) => (
+                    <Tooltip key={status} text={status}>
+                      <span className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center text-xs text-blue-800 border border-gray-300">
+                        {status[0]}
+                      </span>
+                    </Tooltip>
                   ))}
-                </select>
-                <div className="relative min-w-[180px] max-w-full sm:min-w-[220px] sm:max-w-[220px]">
-                  <div
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white cursor-pointer flex items-center justify-between text-xs sm:text-sm"
-                    onClick={() =>
-                      setShowEmployeeDropdown(!showEmployeeDropdown)
-                    }
-                  >
-                    <span className="flex flex-wrap items-center gap-1">
-                      {filterEmployee.length === 0 ? (
-                        <>
-                          <span className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center text-xs text-gray-600 mr-2">
-                            All
-                          </span>
-                          All Employees
-                        </>
-                      ) : (
-                        <>
-                          <span className="flex flex-wrap gap-1">
-                            {filterEmployee.slice(0, 5).map((email, idx) => {
-                              const emp = employees.find(
-                                (e) => e.email === email
-                              );
-                              return (
-                                <Tooltip key={email} text={emp?.name || email}>
-                                  {emp?.avatar ? (
-                                    <img
-                                      src={emp.avatar}
-                                      alt={emp.name}
-                                      className="w-5 h-5 rounded-full border border-gray-300"
-                                    />
-                                  ) : (
-                                    <span className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center text-xs text-gray-600">
-                                      {getInitials(emp?.name || "U")}
-                                    </span>
-                                  )}
-                                </Tooltip>
-                              );
-                            })}
-                            {filterEmployee.length > 5 && (
-                              <Tooltip
-                                text={filterEmployee
-                                  .slice(5)
-                                  .map((email) => {
-                                    const emp = employees.find(
-                                      (e) => e.email === email
-                                    );
-                                    return emp?.name || email;
-                                  })
-                                  .join(", ")}
-                              >
-                                <span className="w-5 h-5 rounded-full bg-gray-300 flex items-center justify-center text-xs text-gray-700 ml-1">
-                                  +{filterEmployee.length - 5}
-                                </span>
-                              </Tooltip>
-                            )}
-                          </span>
-                        </>
-                      )}
-                    </span>
-                  </div>
-                  {showEmployeeDropdown && (
-                    <div
-                      ref={employeeDropdownRef}
-                      className="absolute z-20 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-64 overflow-y-auto min-w-[180px] max-w-full sm:min-w-[220px] sm:max-w-[220px]"
-                    >
-                      <input
-                        type="text"
-                        value={filterEmployeeSearch}
-                        onChange={(e) =>
-                          setFilterEmployeeSearch(e.target.value)
-                        }
-                        className="w-full px-3 py-2 border-b border-gray-300 text-xs sm:text-sm"
-                        placeholder="Search by name "
-                        disabled={isLoading}
-                      />
-                      <label className="flex items-center px-3 py-2 hover:bg-gray-100 cursor-pointer text-xs sm:text-sm">
-                        <input
-                          type="checkbox"
-                          checked={filterEmployee.length === 0}
-                          onChange={() => setFilterEmployee([])}
-                          className="mr-2"
-                          disabled={isLoading}
-                        />
-                        <span className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center text-xs text-gray-600 mr-2">
-                          All
-                        </span>
-                        <span>All Employees</span>
-                      </label>
-                      {filteredEmployeesForFilter.map((emp) => (
-                        <label
-                          key={emp.email}
-                          className="flex items-center px-3 py-2 hover:bg-gray-100 cursor-pointer text-xs sm:text-sm"
-                        >
-                          <input
-                            type="checkbox"
-                            checked={filterEmployee.includes(emp.email)}
-                            onChange={() => toggleEmployee(emp.email)}
-                            className="mr-2"
-                            disabled={isLoading}
-                          />
-                          <Tooltip text={emp.name || emp.email}>
-                            {emp.avatar ? (
-                              <img
-                                src={emp.avatar}
-                                alt={emp.name}
-                                className="w-5 h-5 rounded-full mr-2"
-                              />
-                            ) : (
-                              <span className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center text-xs text-gray-600 mr-2">
-                                {getInitials(emp.name || "Unknown")}
-                              </span>
-                            )}
-                          </Tooltip>
-                          <div>
-                            <span className="text-gray-900">
-                              {emp.name || "Unknown"}
-                            </span>
-                            <span className="block text-xs text-gray-500">
-                              {emp.position || "Unknown"}
-                            </span>
-                          </div>
-                        </label>
-                      ))}
-                    </div>
+                  {filterStatus.length > 5 && (
+                    <Tooltip text={filterStatus.slice(5).join(", ")}>
+                      <span className="w-5 h-5 rounded-full bg-gray-300 flex items-center justify-center text-xs text-gray-700 ml-1">
+                        +{filterStatus.length - 5}
+                      </span>
+                    </Tooltip>
                   )}
-                </div>
-              </div>
-            </div>
-            <div className="hidden lg:block">
-              <div className="w-full overflow-y-auto min-h-[65vh] max-h-[65vh]">
-                {viewMode === "table" ? (
-                  filterTaskType === "Auctions" ? (
-                    <AuctionTable />
+                </span>
+                <span className="ml-2">Applied Status</span>
+              </>
+            )}
+          </span>
+        </div>
+        {showStatusDropdown && (
+          <div
+            ref={statusDropdownRef}
+            className="absolute z-20 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-64 overflow-y-auto min-w-[180px] max-w-full sm:min-w-[220px] sm:max-w-[220px]"
+          >
+            <label className="flex items-center px-3 py-2 hover:bg-gray-100 cursor-pointer text-xs sm:text-sm">
+              <input
+                type="checkbox"
+                checked={filterStatus.length === 0}
+                onChange={() => setFilterStatus([])}
+                className="mr-2"
+                disabled={isLoading}
+              />
+              <span className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center text-xs text-gray-600 mr-2">
+                All
+              </span>
+              <span>All Status</span>
+            </label>
+            {statusOptions.map((opt) => (
+              <label
+                key={opt.value}
+                className="flex items-center px-3 py-2 hover:bg-gray-100 cursor-pointer text-xs sm:text-sm"
+              >
+                <input
+                  type="checkbox"
+                  checked={filterStatus.includes(opt.value)}
+                  onChange={() => toggleStatus(opt.value)}
+                  className="mr-2"
+                  disabled={isLoading}
+                />
+                <Tooltip text={opt.label}>
+                  <span className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center text-xs text-blue-800 mr-2 border border-gray-300">
+                    {opt.label[0]}
+                  </span>
+                </Tooltip>
+                {opt.label}
+              </label>
+            ))}
+          </div>
+        )}
+      </div>
+      <select
+        value={filterPriority}
+        onChange={(e) => setFilterPriority(e.target.value)}
+        className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs sm:text-sm w-full sm:w-auto"
+        disabled={isLoading}
+      >
+        <option value="all">All Priorities</option>
+        {priorities.map((p) => (
+          <option key={p} value={p}>
+            {p}
+          </option>
+        ))}
+      </select>
+      <div className="relative min-w-[180px] max-w-full sm:min-w-[220px] sm:max-w-[220px]">
+        <div
+          className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white cursor-pointer flex items-center justify-between text-xs sm:text-sm"
+          onClick={() => setShowEmployeeDropdown(!showEmployeeDropdown)}
+        >
+          <span className="flex flex-wrap items-center gap-1">
+            {filterEmployee.length === 0 ? (
+              <>
+                <span className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center text-xs text-gray-600 mr-2">
+                  All
+                </span>
+                All Employees
+              </>
+            ) : (
+              <>
+                <span className="flex flex-wrap gap-1">
+                  {filterEmployee.slice(0, 5).map((email, idx) => {
+                    const emp = employees.find((e) => e.email === email);
+                    return (
+                      <Tooltip key={email} text={emp?.name || email}>
+                        {emp?.avatar ? (
+                          <img
+                            src={emp.avatar}
+                            alt={emp.name}
+                            className="w-5 h-5 rounded-full border border-gray-300"
+                          />
+                        ) : (
+                          <span className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center text-xs text-gray-600">
+                            {getInitials(emp?.name || "U")}
+                          </span>
+                        )}
+                      </Tooltip>
+                    );
+                  })}
+                  {filterEmployee.length > 5 && (
+                    <Tooltip
+                      text={filterEmployee
+                        .slice(5)
+                        .map((email) => {
+                          const emp = employees.find((e) => e.email === email);
+                          return emp?.name || email;
+                        })
+                        .join(", ")}
+                    >
+                      <span className="w-5 h-5 rounded-full bg-gray-300 flex items-center justify-center text-xs text-gray-700 ml-1">
+                        +{filterEmployee.length - 5}
+                      </span>
+                    </Tooltip>
+                  )}
+                </span>
+              </>
+            )}
+          </span>
+        </div>
+        {showEmployeeDropdown && (
+          <div
+            ref={employeeDropdownRef}
+            className="absolute z-20 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-64 overflow-y-auto min-w-[180px] max-w-full sm:min-w-[220px] sm:max-w-[220px]"
+          >
+            <input
+              type="text"
+              value={filterEmployeeSearch}
+              onChange={(e) => setFilterEmployeeSearch(e.target.value)}
+              className="w-full px-3 py-2 border-b border-gray-300 text-xs sm:text-sm"
+              placeholder="Search by name "
+              disabled={isLoading}
+            />
+            <label className="flex items-center px-3 py-2 hover:bg-gray-100 cursor-pointer text-xs sm:text-sm">
+              <input
+                type="checkbox"
+                checked={filterEmployee.length === 0}
+                onChange={() => setFilterEmployee([])}
+                className="mr-2"
+                disabled={isLoading}
+              />
+              <span className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center text-xs text-gray-600 mr-2">
+                All
+              </span>
+              <span>All Employees</span>
+            </label>
+            {filteredEmployeesForFilter.map((emp) => (
+              <label
+                key={emp.email}
+                className="flex items-center px-3 py-2 hover:bg-gray-100 cursor-pointer text-xs sm:text-sm"
+              >
+                <input
+                  type="checkbox"
+                  checked={filterEmployee.includes(emp.email)}
+                  onChange={() => toggleEmployee(emp.email)}
+                  className="mr-2"
+                  disabled={isLoading}
+                />
+                <Tooltip text={emp.name || emp.email}>
+                  {emp.avatar ? (
+                    <img
+                      src={emp.avatar}
+                      alt={emp.name}
+                      className="w-5 h-5 rounded-full mr-2"
+                    />
                   ) : (
+                    <span className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center text-xs text-gray-600 mr-2">
+                      {getInitials(emp.name || "Unknown")}
+                    </span>
+                  )}
+                </Tooltip>
+                <div>
+                  <span className="text-gray-900">{emp.name || "Unknown"}</span>
+                  <span className="block text-xs text-gray-500">
+                    {emp.position || "Unknown"}
+                  </span>
+                </div>
+              </label>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  )}
+</div>
+            <div className="hidden lg:block">
+              <div className="w-full overflow-y-auto min-h-[80vh] max-h-[70vh]">
+                {selectedTab === "Auctions" ? (
+                  <AuctionTable />
+                ) : (
+                  viewMode === "table" ? (
                     <>
                       <table className="w-full text-xs sm:text-sm table-fixed">
                       <thead className="bg-gray-100 rounded-full sticky top-0 z-10 border-b border-gray-200">
@@ -1782,7 +1713,7 @@ const AdmintaskPage = () => {
                             ))}
                         </div>
                       </th>
-                     
+
                       <th
                         className="w-32 text-center py-3 px-2 sm:px-4 font-medium text-gray-700 whitespace-nowrap cursor-pointer"
                         onClick={() => handleSort("assignedTo")}
@@ -1881,10 +1812,7 @@ const AdmintaskPage = () => {
                                   type="radio"
                                   name="dueFilter"
                                   checked={dueDateFilter === "custom"}
-                                  onChange={() => {
-                                    setDueDateFilter("custom");
-                                    setShowCustomDateModal(true);
-                                  }}
+                                  onChange={() => setDueDateFilter("custom")}
                                   className="mr-2"
                                 />
                                 Custom Date
@@ -2069,31 +1997,30 @@ const AdmintaskPage = () => {
                   </tbody>
                     </table>
                     </>
-                  )
-                ) : (
-                  <div className="relative">
-                    <EmployeeCardsView
-                      employees={employees.filter(emp => filterEmployee.length === 0 || filterEmployee.includes(emp.email))}
-                      tasks={paginatedTasks}
-                      onViewTask={handleViewTask}
-                      isLoading={isLoading}
-                      dueDateFilter={dueDateFilter}
-                      setDueDateFilter={setDueDateFilter}
-                      customDateRange={customDateRange}
-                      setCustomDateRange={setCustomDateRange}
-                    />
-                   <button
-  className="fixed top-1/2 right-0 z-50 bg-gradient-to-b from-gray-600 to-gray-700 text-white 
-             p-4 rounded-l-lg shadow-lg hover:shadow-xl hover:from-slate-800-700 hover:to-slate-900 
-             transition-all duration-300 w-12 h-32 flex items-center justify-center"
-  style={{ transform: 'translateY(-50%)' }}
-  onClick={() => setShowFilterDrawer(true)}
->
-  <span className="block -rotate-90 origin-center whitespace-nowrap text-sm font-semibold 
-                   leading-tight tracking-wide">
-    Apply Filter
-  </span>
-</button>
+                  ) : (
+                    <div className="relative">
+                      <EmployeeCardsView
+                        employees={employees.filter(emp => filterEmployee.length === 0 || filterEmployee.includes(emp.email))}
+                        tasks={paginatedTasks}
+                        onViewTask={handleViewTask}
+                        isLoading={isLoading}
+                        dueDateFilter={dueDateFilter}
+                        setDueDateFilter={setDueDateFilter}
+                        customDateRange={customDateRange}
+                        setCustomDateRange={setCustomDateRange}
+                      />
+                      <button
+   className="fixed top-1/2 right-0 z-50 bg-gradient-to-b from-gray-600 to-gray-700 text-white
+              p-4 rounded-l-lg shadow-lg hover:shadow-xl hover:from-slate-800-700 hover:to-slate-900
+              transition-all duration-300 w-12 h-32 flex items-center justify-center"
+   style={{ transform: 'translateY(-50%)' }}
+   onClick={() => setShowFilterDrawer(true)}
+ >
+   <span className="block -rotate-90 origin-center whitespace-nowrap text-sm font-semibold
+                    leading-tight tracking-wide">
+     Apply Filter
+   </span>
+ </button>
 <TaskFilterDrawer
   isOpen={showFilterDrawer}
   onClose={() => setShowFilterDrawer(false)}
@@ -2112,119 +2039,123 @@ const AdmintaskPage = () => {
   setShowDueDateFilterDropdown={setShowDueDateFilterDropdown}
   customDateRange={customDateRange}
   setCustomDateRange={setCustomDateRange}
-  showCustomDateModal={showCustomDateModal}
-  setShowCustomDateModal={setShowCustomDateModal}
   filterTaskType={filterTaskType}
   setFilterTaskType={setFilterTaskType}
   taskTypes={taskTypes}
   clearAllFilters={clearAllFilters}
+  isAuctionMode={filterTaskType === "Auctions"}
 />
-                  </div>
+                    </div>
+                  )
                 )}
               </div>
             </div>
             <div className="lg:hidden grid gap-4">
-              {viewMode === "table" ? (
-                isInitialLoading ? (
-                  <div className="py-12 text-center">
-                    <Lottie
-                      animationData={loaderAnimation}
-                      loop={true}
-                      className="w-72 h-72 mx-auto"
-                    />
-                    {/* <span className="text-gray-500 animate-pulse">Loading Tasks...</span> */}
-                  </div>
-                ) : paginatedTasks.length === 0 ? (
-                  <div className="text-center py-12 text-gray-500">
-                    <div className="mb-4">No tasks found matching your criteria</div>
-                    <div className="text-sm text-gray-400">Try adjusting your search or filters</div>
-                  </div>
-                ) : (
-                  paginatedTasks.map((task) => (
-                    <div
-                      key={task._id}
-                      className={`border rounded-lg p-4 shadow-md bg-white hover:shadow-lg transition-shadow duration-200 ${
-                        isOverdue(task.dueDate, task.dueTime, task.status) ? "bg-red-50" : ""
-                      }`}
-                      onClick={() => handleViewTask(task)}
-                    >
-                      <div className="flex justify-between items-start">
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-sm sm:text-base" title={task.taskName}>
-                            {task.taskName}
-                          </span>
-                        </div>
-                        <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
-                          <button onClick={() => handleViewTask(task)} className="p-1 text-blue-600 hover:bg-blue-50 rounded" disabled={isLoading}>
-                            <Eye className="w-4 h-4" />
-                          </button>
-                          <button onClick={() => handleOpenRemainderEmailModal(task)} className="p-1 text-purple-600 hover:bg-purple-50 rounded" disabled={isLoading}>
-                            <Mail className="w-4 h-4" />
-                          </button>
-                          <button onClick={() => handleViewTask(task)} className="p-1 text-orange-600 hover:bg-orange-50 rounded relative" disabled={isLoading}>
-                            <MessageCircle className={`w-4 h-4 ${unseenComments[task._id] && unseenComments[task._id].length > 0 ? "text-orange-500 animate-pulse" : "text-gray-600"}`} />
-                            {task.comments?.length > 0 && (
-                              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">{task.comments.length}</span>
-                            )}
-                          </button>
-                          <button onClick={() => confirmDelete(task)} className="p-1 text-red-600 hover:bg-red-50 rounded" disabled={isLoading}>
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </div>
-
-                      <div className="mt-3 text-xs sm:text-sm grid grid-cols-1 sm:grid-cols-2 gap-3 bg-gray-50 p-3 rounded-md">
-                        <div>
-                          <span className="font-semibold">Task ID:</span> {task.taskId}
-                        </div>
-                        <div>
-                          <span className="font-semibold">Assigned Date:</span> {formatDisplayDate(task.assignedDateTime)}
-                        </div>
-                        <div>
-                          <span className="font-semibold">Status:</span>
-                          <span className={`ml-1 px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(getDisplayStatus(task))}`}>{getDisplayStatus(task)}</span>
-                        </div>
-                        <div>
-                          <span className="font-semibold">Due Date:</span> {formatDisplayDate(task.dueDate)} {task.dueTime !== "N/A" && ` ${task.dueTime}`} {isOverdue(task.dueDate, task.dueTime, task.status) && <AlertCircle className="inline ml-1 text-red-600 w-4 h-4" />}
-                        </div>
-                        <div>
-                          <span className="font-semibold">Assigned To:</span>
-                          <span className="flex -space-x-1 justify-start">
-                            {Array.isArray(task.assignedTo) && task.assignedTo.length > 0 ? (
-                              task.assignedTo.map((emp) => (
-                                <div key={emp.email} className="relative group">
-                                  {emp.avatar ? <img src={emp.avatar} alt={emp.name || emp.email} className="inline-block w-6 h-6 rounded-full border border-gray-300" /> : <span className="inline-flex w-6 h-6 bg-gray-200 rounded-full items-center justify-center text-xs text-gray-600">{getInitials(emp.name || emp.email)}</span>}
-                                  <span className="absolute left-1/2 transform -translate-x-1/2 top-8 bg-gray-800 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none whitespace-nowrap">{emp.name || emp.email}</span>
-                                </div>
-                              ))
-                            ) : (
-                              <div className="relative group">
-                                <span className="inline-flex w-6 h-6 bg-gray-100 rounded-full items-center justify-center text-gray-600 text-xs font-medium">UN</span>
-                                <span className="absolute left-1/2 transform -translate-x-1/2 top-8 bg-gray-800 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">Unassigned</span>
-                              </div>
-                            )}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="font-semibold">Task Type:</span> <span className={`ml-1 px-2 py-1 rounded-full text-xs font-medium ${getTaskTypeColor(task.taskType)}`}>{task.taskType}</span>
-                        </div>
-                        <div>
-                          <span className="font-semibold">Priority:</span> <span className={`ml-1 px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(task.priority)}`}>{task.priority}</span>
-                        </div>
-                        <div className="col-span-full">
-                          <span className="font-semibold">Description:</span> {task.description || "None"}
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                )
+              {selectedTab === "Auctions" ? (
+                <AuctionTable />
               ) : (
-                <EmployeeCardsView employees={filteredEmployeesForFilter} tasks={paginatedTasks} onViewTask={handleViewTask} isLoading={isLoading} />
+                viewMode === "table" ? (
+                  isInitialLoading ? (
+                    <div className="py-12 text-center">
+                      <Lottie
+                        animationData={loaderAnimation}
+                        loop={true}
+                        className="w-72 h-72 mx-auto"
+                      />
+                      {/* <span className="text-gray-500 animate-pulse">Loading Tasks...</span> */}
+                    </div>
+                  ) : paginatedTasks.length === 0 ? (
+                    <div className="text-center py-12 text-gray-500">
+                      <div className="mb-4">No tasks found matching your criteria</div>
+                      <div className="text-sm text-gray-400">Try adjusting your search or filters</div>
+                    </div>
+                  ) : (
+                    paginatedTasks.map((task) => (
+                      <div
+                        key={task._id}
+                        className={`border rounded-lg p-4 shadow-md bg-white hover:shadow-lg transition-shadow duration-200 ${
+                          isOverdue(task.dueDate, task.dueTime, task.status) ? "bg-red-50" : ""
+                        }`}
+                        onClick={() => handleViewTask(task)}
+                      >
+                        <div className="flex justify-between items-start">
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-sm sm:text-base" title={task.taskName}>
+                              {task.taskName}
+                            </span>
+                          </div>
+                          <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+                            <button onClick={() => handleViewTask(task)} className="p-1 text-blue-600 hover:bg-blue-50 rounded" disabled={isLoading}>
+                              <Eye className="w-4 h-4" />
+                            </button>
+                            <button onClick={() => handleOpenRemainderEmailModal(task)} className="p-1 text-purple-600 hover:bg-purple-50 rounded" disabled={isLoading}>
+                              <Mail className="w-4 h-4" />
+                            </button>
+                            <button onClick={() => handleViewTask(task)} className="p-1 text-orange-600 hover:bg-orange-50 rounded relative" disabled={isLoading}>
+                              <MessageCircle className={`w-4 h-4 ${unseenComments[task._id] && unseenComments[task._id].length > 0 ? "text-orange-500 animate-pulse" : "text-gray-600"}`} />
+                              {task.comments?.length > 0 && (
+                                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">{task.comments.length}</span>
+                              )}
+                            </button>
+                            <button onClick={() => confirmDelete(task)} className="p-1 text-red-600 hover:bg-red-50 rounded" disabled={isLoading}>
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="mt-3 text-xs sm:text-sm grid grid-cols-1 sm:grid-cols-2 gap-3 bg-gray-50 p-3 rounded-md">
+                          <div>
+                            <span className="font-semibold">Task ID:</span> {task.taskId}
+                          </div>
+                          <div>
+                            <span className="font-semibold">Assigned Date:</span> {formatDisplayDate(task.assignedDateTime)}
+                          </div>
+                          <div>
+                            <span className="font-semibold">Status:</span>
+                            <span className={`ml-1 px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(getDisplayStatus(task))}`}>{getDisplayStatus(task)}</span>
+                          </div>
+                          <div>
+                            <span className="font-semibold">Due Date:</span> {formatDisplayDate(task.dueDate)} {task.dueTime !== "N/A" && ` ${task.dueTime}`} {isOverdue(task.dueDate, task.dueTime, task.status) && <AlertCircle className="inline ml-1 text-red-600 w-4 h-4" />}
+                          </div>
+                          <div>
+                            <span className="font-semibold">Assigned To:</span>
+                            <span className="flex -space-x-1 justify-start">
+                              {Array.isArray(task.assignedTo) && task.assignedTo.length > 0 ? (
+                                task.assignedTo.map((emp) => (
+                                  <div key={emp.email} className="relative group">
+                                    {emp.avatar ? <img src={emp.avatar} alt={emp.name || emp.email} className="inline-block w-6 h-6 rounded-full border border-gray-300" /> : <span className="inline-flex w-6 h-6 bg-gray-200 rounded-full items-center justify-center text-xs text-gray-600">{getInitials(emp.name || emp.email)}</span>}
+                                    <span className="absolute left-1/2 transform -translate-x-1/2 top-8 bg-gray-800 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none whitespace-nowrap">{emp.name || emp.email}</span>
+                                  </div>
+                                ))
+                              ) : (
+                                <div className="relative group">
+                                  <span className="inline-flex w-6 h-6 bg-gray-100 rounded-full items-center justify-center text-gray-600 text-xs font-medium">UN</span>
+                                  <span className="absolute left-1/2 transform -translate-x-1/2 top-8 bg-gray-800 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">Unassigned</span>
+                                </div>
+                              )}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="font-semibold">Task Type:</span> <span className={`ml-1 px-2 py-1 rounded-full text-xs font-medium ${getTaskTypeColor(task.taskType)}`}>{task.taskType}</span>
+                          </div>
+                          <div>
+                            <span className="font-semibold">Priority:</span> <span className={`ml-1 px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(task.priority)}`}>{task.priority}</span>
+                          </div>
+                          <div className="col-span-full">
+                            <span className="font-semibold">Description:</span> {task.description || "None"}
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )
+                ) : (
+                  <EmployeeCardsView employees={filteredEmployeesForFilter} tasks={paginatedTasks} onViewTask={handleViewTask} isLoading={isLoading} />
+                )
               )}
             </div>
 
             {/* Pagination */}
-            {totalPages > 1 && (
+            {totalPages > 1 && selectedTab === "General" && (
               <div className="flex flex-col sm:flex-row justify-between items-center mt-4 space-y-4 sm:space-y-0 sm:space-x-2">
                 <div className="text-sm text-gray-600">
                   Showing {(currentPage - 1) * pageSize + 1} to{" "}
@@ -3145,70 +3076,6 @@ const AdmintaskPage = () => {
               </div>
             )}
 
-            {showCustomDateModal && (
-              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                <div
-                  ref={customDateModalRef}
-                  className="bg-white rounded-lg p-6 w-full max-w-md"
-                >
-                  <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-lg font-semibold">Select Date Range</h3>
-                    <button
-                      onClick={() => setShowCustomDateModal(false)}
-                      className="text-gray-500 hover:text-gray-700"
-                    >
-                      <X className="w-5 h-5" />
-                    </button>
-                  </div>
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Start Date
-                    </label>
-                    <input
-                      type="date"
-                      value={customDateRange.start}
-                      onChange={(e) =>
-                        setCustomDateRange((prev) => ({
-                          ...prev,
-                          start: e.target.value,
-                        }))
-                      }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      End Date
-                    </label>
-                    <input
-                      type="date"
-                      value={customDateRange.end}
-                      onChange={(e) =>
-                        setCustomDateRange((prev) => ({
-                          ...prev,
-                          end: e.target.value,
-                        }))
-                      }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                  <div className="flex justify-end gap-2">
-                    <button
-                      onClick={() => setShowCustomDateModal(false)}
-                      className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={handleCustomDateSubmit}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                    >
-                      Apply
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
 
             {toast.show && (
               <div
@@ -3235,3 +3102,4 @@ const AdmintaskPage = () => {
 };
 
 export default AdmintaskPage;
+

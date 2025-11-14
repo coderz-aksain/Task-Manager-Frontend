@@ -26,6 +26,7 @@ import AdminSidebar from "../../components/common/AdminSidebar";
 import Header from "../../components/common/Header";
 import { useNavigate } from "react-router-dom";
 import { requestorsData } from "../employee/requestorsData";
+import { createAuctionTask } from "../../services/auctionTaskApi";
 
 // Placeholder categories (replace with actual categories if available)
 const categories = [
@@ -82,9 +83,7 @@ function CreateTasks({ onSubmit, editTask, onCancel }) {
   const [showSidebar, setShowSidebar] = useState(false);
 
   // Local editable lists and UI state for adding new requestors/categories
-  const [localRequestors, setLocalRequestors] = useState(() =>
-    typeof requestorsData !== "undefined" ? requestorsData : []
-  );
+  const [localRequestors, setLocalRequestors] = useState([]);
   const [showAddRequestor, setShowAddRequestor] = useState(false);
   const [newRequestor, setNewRequestor] = useState({
     name: "",
@@ -101,9 +100,12 @@ function CreateTasks({ onSubmit, editTask, onCancel }) {
   const [showAddCategory, setShowAddCategory] = useState(false);
   const [newCategory, setNewCategory] = useState("");
   const [requestorQuery, setRequestorQuery] = useState("");
-  const [showRequestorSuggestions, setShowRequestorSuggestions] = useState(false);
+  const [showRequestorSuggestions, setShowRequestorSuggestions] =
+    useState(false);
   const filteredRequestors = localRequestors.filter((r) =>
-    (r["Requestor Name"] || "").toLowerCase().includes((requestorQuery || "").toLowerCase())
+    (r.requestorName || "")
+      .toLowerCase()
+      .includes((requestorQuery || "").toLowerCase())
   );
   useEffect(() => {
     const fetchEmployees = async () => {
@@ -202,25 +204,16 @@ function CreateTasks({ onSubmit, editTask, onCancel }) {
 
   const validationSchema = Yup.object({
     taskType: Yup.string().required("Task Type is required"),
+    auctionType: Yup.string().when("taskType", {
+      is: "Auction",
+      then: (schema) => schema.required("Auction Type is required"),
+      otherwise: (schema) => schema,
+    }),
     taskName: Yup.string().when("taskType", {
-      is: (value) => value !== "Reminder",
-      then: (schema) => schema.required("Task Name is required"),
+      is: "Auction",
+      then: (schema) => schema.required("Event Name is required"),
       otherwise: (schema) => schema,
     }),
-    priority: Yup.string().when("taskType", {
-      is: (value) => value !== "Reminder",
-      then: (schema) => schema.required("Priority is required"),
-      otherwise: (schema) => schema,
-    }),
-    dueDate: Yup.string().when("taskType", {
-      is: (value) => value !== "Reminder",
-      then: (schema) => schema.required("Due Date is required"),
-      otherwise: (schema) => schema,
-    }),
-    description: Yup.string(),
-    assignedTo: Yup.array().min(1, "At least one employee must be assigned"),
-    attachments: Yup.array(),
-    remark: Yup.string(),
     requestorName: Yup.string().when("taskType", {
       is: "Auction",
       then: (schema) => schema.required("Requestor Name is required"),
@@ -236,38 +229,9 @@ function CreateTasks({ onSubmit, editTask, onCancel }) {
       then: (schema) => schema.required("Division is required"),
       otherwise: (schema) => schema,
     }),
-    expenditureType: Yup.string().when("taskType", {
+    assignedTo: Yup.array().when("taskType", {
       is: "Auction",
-      then: (schema) => schema.required("Expenditure Type is required"),
-      otherwise: (schema) => schema,
-    }),
-    category: Yup.string().when("taskType", {
-      is: "Auction",
-      then: (schema) => schema.required("Category is required"),
-      otherwise: (schema) => schema,
-    }),
-    auctionDate: Yup.string().when("taskType", {
-      is: "Auction",
-      then: (schema) => schema.required("Auction Date is required"),
-      otherwise: (schema) => schema,
-    }),
-    auctionTime: Yup.string().when("taskType", {
-      is: "Auction",
-      then: (schema) => schema.required("Auction Time is required"),
-      otherwise: (schema) => schema,
-    }),
-    auctionType: Yup.string().when("taskType", {
-      is: "Auction",
-      then: (schema) => schema.required("Auction Type is required"),
-      otherwise: (schema) => schema,
-    }),
-    preBid: Yup.number().when("taskType", {
-      is: "Auction",
-      then: (schema) =>
-        schema
-          .required("Pre Bid amount is required")
-          .positive("Pre Bid amount must be a positive number")
-          .typeError("Pre Bid amount must be a number"),
+      then: (schema) => schema.min(1, "At least one employee must be assigned"),
       otherwise: (schema) => schema,
     }),
   });
@@ -380,6 +344,34 @@ function CreateTasks({ onSubmit, editTask, onCancel }) {
         } catch (err) {
           setErrors({ api: err.message });
           showToast(err.message || "Failed to create reminders", "error");
+        } finally {
+          setSubmitting(false);
+        }
+      } else if (values.taskType === "Auction") {
+        setSubmitting(true);
+        try {
+          // Map frontend fields to backend-required fields for Auction
+          const auctionTaskData = {
+            taskType: values.taskType,
+            auctionType: values.auctionType,
+            eventName: values.taskName, // Map taskName to eventName
+            requesterName: values.requestorName, // Use requestorName as plain string
+            client: values.client,
+            division: values.division,
+            assignEmployees:
+              Array.isArray(values.assignedTo) && values.assignedTo.length > 0
+                ? values.assignedTo.map((emp) => emp.email)
+                : [],
+          };
+          const data = await createAuctionTask(auctionTaskData);
+          if (typeof onSubmit === "function") {
+            onSubmit(data);
+          }
+          showToast("Auction task created successfully!", "success");
+          setTimeout(() => navigate("/admin/tasks"), 3000);
+        } catch (err) {
+          setErrors({ api: err.message });
+          showToast(err.message || "Failed to create auction task", "error");
         } finally {
           setSubmitting(false);
         }
@@ -705,6 +697,72 @@ function CreateTasks({ onSubmit, editTask, onCancel }) {
       );
     }
   };
+
+  // Loader state for requestor actions
+  const [requestorLoading, setRequestorLoading] = useState(false);
+
+ // Fetch all requestors
+const fetchRequestors = async () => {
+  console.log("Fetching requestors...");
+  setRequestorLoading(true);
+  const token = localStorage.getItem("token") || ""; // Retrieve token from localStorage
+  try {
+    const response = await fetch(
+      "https://task-manager-backend-xs5s.onrender.com/api/get/requestors",
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`, // Add Authorization header
+        },
+      }
+    );
+    if (!response.ok) throw new Error("Failed to fetch requestors");
+    const data = await response.json();
+    console.log("Fetched requestors are as follows:", data);
+    console.log("Requestors fetched successfully");
+    setLocalRequestors(Array.isArray(data) ? data : []);
+  } catch (err) {
+    console.log("Error fetching requestors:", err);
+    showToast(err.message, "error"); // Display error to user
+  } finally {
+    setRequestorLoading(false);
+  }
+};
+
+// Add new requestor
+const addRequestor = async (requestorData) => {
+  console.log("Adding requestor:", requestorData);
+  setRequestorLoading(true);
+  const token = localStorage.getItem("token") || ""; // Retrieve token from localStorage
+  try {
+    const response = await fetch(
+      "https://task-manager-backend-xs5s.onrender.com/api/create/requestors",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`, // Add Authorization header
+        },
+        body: JSON.stringify(requestorData),
+      }
+    );
+    if (!response.ok) throw new Error("Failed to create requestor");
+    console.log("Requestor added successfully");
+    showToast("Requestor created successfully!", "success");
+    await fetchRequestors(); // Refetch after save
+  } catch (err) {
+    console.log("Error adding requestor:", err);
+    showToast(err.message, "error");
+  } finally {
+    setRequestorLoading(false);
+  }
+};
+
+  // Call fetchRequestors on mount
+  useEffect(() => {
+    fetchRequestors();
+  }, []);
 
   return (
     <div className="flex min-h-screen bg-gray-50 font-inter text-gray-800">
@@ -1129,7 +1187,7 @@ function CreateTasks({ onSubmit, editTask, onCancel }) {
                     {/* Task Name */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Task Name <span className="text-red-500">*</span>
+                        Event Name <span className="text-red-500">*</span>
                       </label>
                       <div className="relative">
                         <input
@@ -1152,36 +1210,23 @@ function CreateTasks({ onSubmit, editTask, onCancel }) {
                         </div>
                       )}
                     </div>
-                    {/* Description */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Description
-                      </label>
-                      <textarea
-                        name="description"
-                        value={formik.values.description}
-                        onChange={formik.handleChange}
-                        onBlur={formik.handleBlur}
-                        rows={4}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                        placeholder="Enter task description (optional)"
-                      />
-                    </div>
                     {/* Auction-Specific Fields */}
                     {formik.values.taskType === "Auction" && (
                       <>
                         {/* Requestor Name */}
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Requestor Name{" "}
-                            <span className="text-red-500">*</span>
+                            Requestor Name{" "} <span className="text-red-500">*</span>
+                            {/* <span className="text-red-500">*</span> */}
                           </label>
                           {/* Searchable Requestor input with suggestions */}
                           <div className="relative">
                             <input
                               type="text"
                               name="requestorName"
-                              value={requestorQuery ?? formik.values.requestorName}
+                              value={
+                                requestorQuery ?? formik.values.requestorName
+                              }
                               onChange={(e) => {
                                 const v = e.target.value;
                                 setRequestorQuery(v);
@@ -1189,10 +1234,16 @@ function CreateTasks({ onSubmit, editTask, onCancel }) {
                                 setShowRequestorSuggestions(true);
                               }}
                               onFocus={() => setShowRequestorSuggestions(true)}
-                              onBlur={() => setTimeout(() => setShowRequestorSuggestions(false), 150)}
+                              onBlur={() =>
+                                setTimeout(
+                                  () => setShowRequestorSuggestions(false),
+                                  150
+                                )
+                              }
                               placeholder="Type or select requestor"
                               className={`w-full px-4 py-3 pr-10 border rounded-lg text-gray-700 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 ease-in-out ${
-                                formik.touched.requestorName && formik.errors.requestorName
+                                formik.touched.requestorName &&
+                                formik.errors.requestorName
                                   ? "border-red-500"
                                   : "border-gray-300 hover:border-gray-400"
                               }`}
@@ -1208,20 +1259,31 @@ function CreateTasks({ onSubmit, editTask, onCancel }) {
                                       type="button"
                                       onMouseDown={(e) => e.preventDefault()}
                                       onClick={() => {
-                                        const name = r["Requestor Name"];
+                                        const name = r.requestorName;
                                         setRequestorQuery(name);
-                                        formik.setFieldValue("requestorName", name);
-                                        formik.setFieldValue("client", r.Client || "");
-                                        formik.setFieldValue("division", r.Division || "");
+                                        formik.setFieldValue(
+                                          "requestorName",
+                                          name
+                                        );
+                                        formik.setFieldValue(
+                                          "client",
+                                          r.client || ""
+                                        );
+                                        formik.setFieldValue(
+                                          "division",
+                                          r.division || ""
+                                        );
                                         setShowRequestorSuggestions(false);
                                       }}
                                       className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm"
                                     >
-                                      {r["Requestor Name"]}
+                                      {r.requestorName}
                                     </button>
                                   ))
                                 ) : (
-                                  <div className="px-4 py-3 text-sm text-gray-500">No results</div>
+                                  <div className="px-4 py-3 text-sm text-gray-500">
+                                    No results
+                                  </div>
                                 )}
                                 <div className="border-t border-gray-100 p-2">
                                   <button
@@ -1229,7 +1291,12 @@ function CreateTasks({ onSubmit, editTask, onCancel }) {
                                     onMouseDown={(e) => e.preventDefault()}
                                     onClick={() => {
                                       setShowAddRequestor(true);
-                                      setNewRequestor((prev) => ({ ...prev, name: requestorQuery || formik.values.requestorName }));
+                                      setNewRequestor((prev) => ({
+                                        ...prev,
+                                        name:
+                                          requestorQuery ||
+                                          formik.values.requestorName,
+                                      }));
                                       setShowRequestorSuggestions(false);
                                     }}
                                     className="w-full text-left px-3 py-2 bg-blue-50 text-blue-700 rounded-md text-sm"
@@ -1244,7 +1311,12 @@ function CreateTasks({ onSubmit, editTask, onCancel }) {
                                 type="button"
                                 onClick={() => {
                                   setShowAddRequestor(true);
-                                  setNewRequestor((prev) => ({ ...prev, name: requestorQuery || formik.values.requestorName }));
+                                  setNewRequestor((prev) => ({
+                                    ...prev,
+                                    name:
+                                      requestorQuery ||
+                                      formik.values.requestorName,
+                                  }));
                                 }}
                                 className="px-3 py-2 bg-blue-600 text-white rounded-md text-sm"
                               >
@@ -1311,7 +1383,7 @@ function CreateTasks({ onSubmit, editTask, onCancel }) {
                               <div className="flex space-x-2">
                                 <button
                                   type="button"
-                                  onClick={() => {
+                                  onClick={async () => {
                                     if (!newRequestor.name) {
                                       showToast(
                                         "Requestor name is required",
@@ -1320,14 +1392,11 @@ function CreateTasks({ onSubmit, editTask, onCancel }) {
                                       return;
                                     }
                                     const obj = {
-                                      "Requestor Name": newRequestor.name,
-                                      Client: newRequestor.client,
-                                      Division: newRequestor.division,
+                                      requestorName: newRequestor.name,
+                                      client: newRequestor.client,
+                                      division: newRequestor.division,
                                     };
-                                    setLocalRequestors((prev) => [
-                                      obj,
-                                      ...prev,
-                                    ]);
+                                    await addRequestor(obj);
                                     formik.setFieldValue(
                                       "requestorName",
                                       newRequestor.name
@@ -1347,9 +1416,18 @@ function CreateTasks({ onSubmit, editTask, onCancel }) {
                                     });
                                     setShowAddRequestor(false);
                                   }}
-                                  className="px-3 py-1 bg-blue-600 text-white rounded-md"
+                                  disabled={requestorLoading}
+                                  className={`px-3 py-1 bg-blue-600 text-white rounded-md flex items-center justify-center ${
+                                    requestorLoading
+                                      ? "opacity-50 cursor-not-allowed"
+                                      : ""
+                                  }`}
                                 >
-                                  Save
+                                  {requestorLoading ? (
+                                    <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                                  ) : (
+                                    "Save"
+                                  )}
                                 </button>
                                 <button
                                   type="button"
@@ -1373,7 +1451,8 @@ function CreateTasks({ onSubmit, editTask, onCancel }) {
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                              Client <span className="text-red-500">*</span>
+                              Client
+                              {/* <span className="text-red-500">*</span> */}
                             </label>
                             <input
                               type="text"
@@ -1402,7 +1481,8 @@ function CreateTasks({ onSubmit, editTask, onCancel }) {
                           </div>
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                              Division <span className="text-red-500">*</span>
+                              Division
+                              {/* <span className="text-red-500">*</span> */}
                             </label>
                             <input
                               type="text"
@@ -1431,205 +1511,13 @@ function CreateTasks({ onSubmit, editTask, onCancel }) {
                               )}
                           </div>
                         </div>
-                        {/* Expenditure Type and Category */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                              Expenditure Type{" "}
-                              <span className="text-red-500">*</span>
-                            </label>
-                            <select
-                              name="expenditureType"
-                              value={formik.values.expenditureType}
-                              onChange={formik.handleChange}
-                              onBlur={formik.handleBlur}
-                              className={`w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
-                                formik.touched.expenditureType &&
-                                formik.errors.expenditureType
-                                  ? "border-red-500"
-                                  : "border-gray-300"
-                              }`}
-                            >
-                              <option value="">Select Expenditure Type</option>
-                              <option value="Capex">Capex</option>
-                              <option value="Opex">Opex</option>
-                              <option value="Scrap">Scrap</option>
-                            </select>
-                            {formik.touched.expenditureType &&
-                              formik.errors.expenditureType && (
-                                <div className="text-red-500 text-sm mt-1">
-                                  {formik.errors.expenditureType}
-                                </div>
-                              )}
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                              Category <span className="text-red-500">*</span>
-                            </label>
-                            <select
-                              name="category"
-                              value={formik.values.category}
-                              onChange={(e) => {
-                                const val = e.target.value;
-                                if (val === "__add_category__") {
-                                  setShowAddCategory(true);
-                                  formik.setFieldValue("category", ""); // Clear selection
-                                  return;
-                                }
-                                formik.handleChange(e);
-                              }}
-                              onBlur={formik.handleBlur}
-                              className={`
-    w-full px-4 py-3 pr-10 border rounded-lg 
-    text-gray-700 bg-white font-medium
-    focus:ring-2 focus:ring-blue-500 focus:border-blue-500 
-    focus:outline-none transition-all duration-200 ease-in-out
-    appearance-none cursor-pointer
-    ${
-      formik.touched.category && formik.errors.category
-        ? "border-red-500 shadow-red-50"
-        : "border-gray-300 hover:border-gray-400 hover:shadow-sm"
-    }
-  `}
-                              style={{
-                                backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e")`,
-                                backgroundPosition: "right 0.75rem center",
-                                backgroundRepeat: "no-repeat",
-                                backgroundSize: "1.2em",
-                              }}
-                            >
-                              {/* Placeholder */}
-                              <option
-                                value=""
-                                disabled
-                                className="text-gray-400 italic"
-                              >
-                                Select Category
-                              </option>
-
-                              {/* Add New Category - Eye-Catching */}
-                              <option
-                                value="__add_category__"
-                                className="bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 font-bold py-3"
-                              >
-                                <span className="flex items-center">
-                                  <svg
-                                    className="w-5 h-5 mr-2 inline"
-                                    fill="currentColor"
-                                    viewBox="0 0 20 20"
-                                  >
-                                    <path
-                                      fillRule="evenodd"
-                                      d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
-                                      clipRule="evenodd"
-                                    />
-                                  </svg>
-                                  Add New Category
-                                </span>
-                              </option>
-
-                              {/* Visual Divider */}
-                              <option
-                                disabled
-                                className="border-t border-gray-200 my-1"
-                              ></option>
-
-                              {/* Dynamic Category List */}
-                              {(formik.values.auctionType === "Forward Auction"
-                                ? localForwardCategories
-                                : localCategories
-                              ).map((category, index) => (
-                                <option
-                                  key={index}
-                                  value={category}
-                                  className="text-gray-800 py-2 pl-8 relative"
-                                >
-                                  <span className="flex items-center">
-                                    <span className="w-1.5 h-1.5 bg-blue-500 rounded-full mr-2"></span>
-                                    {category}
-                                  </span>
-                                </option>
-                              ))}
-                            </select>
-                            {formik.touched.category &&
-                              formik.errors.category && (
-                                <div className="text-red-500 text-sm mt-1">
-                                  {formik.errors.category}
-                                </div>
-                              )}
-                            {/* Inline Add Category */}
-                            {showAddCategory && (
-                              <div className="mt-3 p-3 border border-gray-200 rounded-md bg-gray-50">
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                  New Category{" "}
-                                  <span className="text-red-500">*</span>
-                                </label>
-                                <input
-                                  type="text"
-                                  value={newCategory}
-                                  onChange={(e) =>
-                                    setNewCategory(e.target.value)
-                                  }
-                                  className="w-full px-3 py-2 border rounded-md mb-3"
-                                  placeholder="Enter category"
-                                />
-                                <div className="flex space-x-2">
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      if (!newCategory) {
-                                        showToast(
-                                          "Category name is required",
-                                          "error"
-                                        );
-                                        return;
-                                      }
-                                      if (
-                                        formik.values.auctionType ===
-                                        "Forward Auction"
-                                      ) {
-                                        setLocalForwardCategories((prev) => [
-                                          newCategory,
-                                          ...prev,
-                                        ]);
-                                      } else {
-                                        setLocalCategories((prev) => [
-                                          newCategory,
-                                          ...prev,
-                                        ]);
-                                      }
-                                      formik.setFieldValue(
-                                        "category",
-                                        newCategory
-                                      );
-                                      setNewCategory("");
-                                      setShowAddCategory(false);
-                                    }}
-                                    className="px-3 py-1 bg-blue-600 text-white rounded-md"
-                                  >
-                                    Save
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setNewCategory("");
-                                      setShowAddCategory(false);
-                                    }}
-                                    className="px-3 py-1 border rounded-md"
-                                  >
-                                    Cancel
-                                  </button>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        </div>
+                     
                         {/* Auction Date and Auction Time */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
                               Auction Date{" "}
-                              <span className="text-red-500">*</span>
+                              {/* <span className="text-red-500">*</span> */}
                             </label>
                             <div className="relative">
                               <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-5 h-5" />
@@ -1657,7 +1545,7 @@ function CreateTasks({ onSubmit, editTask, onCancel }) {
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
                               Auction Time{" "}
-                              <span className="text-red-500">*</span>
+                              {/* <span className="text-red-500">*</span> */}
                             </label>
                             <div className="relative">
                               <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-5 h-5" />
@@ -1684,96 +1572,11 @@ function CreateTasks({ onSubmit, editTask, onCancel }) {
                           </div>
                         </div>
                         {/* Auction Type and Pre Bid */}
-                        {/* Pre Bid (Dynamic Label) */}
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            {formik.values.auctionType === "Forward Auction"
-                              ? "Benchmark (INR)"
-                              : "Pre Bid (INR)"}{" "}
-                            <span className="text-red-600">*</span>
-                          </label>
-                          <div className="relative">
-                            <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
-                              ₹
-                            </span>
-                            <input
-                              type="number"
-                              name="preBid"
-                              value={formik.values.preBid}
-                              onChange={formik.handleChange}
-                              onBlur={formik.handleBlur}
-                              className={`w-full pl-8 pr-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
-                                formik.touched.preBid && formik.errors.preBid
-                                  ? "border-red-500"
-                                  : "border-gray-300"
-                              }`}
-                              placeholder={
-                                formik.values.auctionType === "Forward Auction"
-                                  ? "Enter benchmark amount in INR"
-                                  : "Enter pre-bid amount in INR"
-                              }
-                              disabled={formik.isSubmitting}
-                              step="0.01"
-                            />
-                          </div>
-                          {formik.touched.preBid && formik.errors.preBid && (
-                            <div className="text-red-500 text-sm mt-1">
-                              {formik.errors.preBid}
-                            </div>
-                          )}
-                        </div>
-
-                        
+                    
                       </>
                     )}
-                    {/* Priority and Due Date */}
-                    {formik.values.taskType !== 'Reminder' && (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Priority <span className="text-red-500">*</span>
-                          </label>
-                          <select
-                            name="priority"
-                            value={formik.values.priority}
-                            onChange={formik.handleChange}
-                            onBlur={formik.handleBlur}
-                            className={`w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
-                              formik.touched.priority && formik.errors.priority ? 'border-red-500' : 'border-gray-300'
-                            }`}
-                          >
-                            <option value="High">High</option>
-                            <option value="Medium">Medium</option>
-                            <option value="Low">Low</option>
-                          </select>
-                          {formik.touched.priority && formik.errors.priority && (
-                            <div className="text-red-500 text-sm mt-1">{formik.errors.priority}</div>
-                          )}
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Due Date <span className="text-red-500">*</span>
-                          </label>
-                          <div className="relative">
-                            <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-5 h-5" />
-                            <input
-                              type="date"
-                              name="dueDate"
-                              value={formik.values.dueDate}
-                              onChange={formik.handleChange}
-                              onBlur={formik.handleBlur}
-                              className={`w-full pl-10 pr-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
-                                formik.touched.dueDate && formik.errors.dueDate ? 'border-red-500' : 'border-gray-300'
-                              }`}
-                            />
-                          </div>
-                          {formik.touched.dueDate && formik.errors.dueDate && (
-                            <div className="text-red-500 text-sm mt-1">{formik.errors.dueDate}</div>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                    {/* Assign Employees */}
+
+                    {/* Assign Employees - Moved here */}
                     {formik.values.taskType !== "Reminder" && (
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1885,8 +1688,83 @@ function CreateTasks({ onSubmit, editTask, onCancel }) {
                           )}
                       </div>
                     )}
+
+                    {/* Description */}
+                    {/* <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Description
+                      </label>
+                      <textarea
+                        name="description"
+                        value={formik.values.description}
+                        onChange={formik.handleChange}
+                        onBlur={formik.handleBlur}
+                        rows={4}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                        placeholder="Enter task description (optional)"
+                      />
+                    </div> */}
+
+                    {/* Priority and Due Date */}
+                    {formik.values.taskType !== "Auction" && (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Priority
+                            <span className="text-red-500">*</span>
+                          </label>
+                          <select
+                            name="priority"
+                            value={formik.values.priority}
+                            onChange={formik.handleChange}
+                            onBlur={formik.handleBlur}
+                            className={`w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
+                              formik.touched.priority && formik.errors.priority
+                                ? "border-red-500"
+                                : "border-gray-300"
+                            }`}
+                          >
+                            <option value="High">High</option>
+                            <option value="Medium">Medium</option>
+                            <option value="Low">Low</option>
+                          </select>
+                          {formik.touched.priority &&
+                            formik.errors.priority && (
+                              <div className="text-red-500 text-sm mt-1">
+                                {formik.errors.priority}
+                              </div>
+                            )}
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Due Date
+                            <span className="text-red-500">*</span>
+                          </label>
+                          <div className="relative">
+                            <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-5 h-5" />
+                            <input
+                              type="date"
+                              name="dueDate"
+                              value={formik.values.dueDate}
+                              onChange={formik.handleChange}
+                              onBlur={formik.handleBlur}
+                              className={`w-full pl-10 pr-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
+                                formik.touched.dueDate && formik.errors.dueDate
+                                  ? "border-red-500"
+                                  : "border-gray-300"
+                              }`}
+                            />
+                          </div>
+                          {formik.touched.dueDate && formik.errors.dueDate && (
+                            <div className="text-red-500 text-sm mt-1">
+                              {formik.errors.dueDate}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
                     {/* File Attachments */}
-                    {formik.values.taskType !== "Reminder" && (
+                    {formik.values.taskType !== "Auction" && (
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           File Attachments

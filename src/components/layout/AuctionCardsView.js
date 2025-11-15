@@ -279,7 +279,7 @@ const AuctionCardsView = ({
 
       {/* Loading State */}
       {loading && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
           {[1, 2, 3].map((i) => (
             <div key={i} className="bg-white/70 backdrop-blur-xl rounded-2xl p-6 animate-pulse shadow-lg">
               <div className="flex items-center space-x-4">

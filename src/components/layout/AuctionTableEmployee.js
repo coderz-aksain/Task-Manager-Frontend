@@ -86,6 +86,7 @@ const AuctionTableEemployee = () => {
     savingsPercent: "",
     fileUrls: [],
     remark: "",
+    expenditureType: "",
     errors: {},
   });
   // Removed employee handling for employee view
@@ -115,6 +116,7 @@ const AuctionTableEemployee = () => {
         savingsPercent: selectedTask.savingsPercent || "",
         fileUrls: selectedTask.fileUrls || [],
         remark: selectedTask.remark || "",
+        expenditureType: selectedTask.expenditureType || "",
         errors: {},
       });
       setEditId(selectedTask.taskId);
@@ -191,6 +193,7 @@ const AuctionTableEemployee = () => {
       savingsPercent: "",
       fileUrls: [],
       remark: "",
+      expenditureType: "",
       errors: {},
     });
     // Removed employee handling
@@ -261,6 +264,7 @@ const AuctionTableEemployee = () => {
     if (!formData.client) errors.client = "Required";
     if (!formData.division) errors.division = "Required";
     if (!formData.status) errors.status = "Required";
+    if (!formData.expenditureType) errors.expenditureType = "Required";
 
     // Status-specific validations
     if (formData.status === "Complete") {
@@ -330,6 +334,7 @@ const AuctionTableEemployee = () => {
         auctionTime,
         remarks: formData.remark,
         status: formData.status,
+        expenditureType: formData.expenditureType,
       };
 
       // Add status-specific fields
@@ -1251,6 +1256,30 @@ const AuctionTableEemployee = () => {
                     <option value="Forward Auction">Forward Auction</option>
                     <option value="Reverse Auction">Reverse Auction</option>
                   </select>
+                </div>
+
+                {/* Expenditure Type */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Expenditure Type *
+                  </label>
+                  <select
+                    name="expenditureType"
+                    value={formData.expenditureType}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 text-sm"
+                  >
+                    <option value="">Select</option>
+                    <option value="Capex">Capex</option>
+                    <option value="Opex">Opex</option>
+                    <option value="Scrap">Scrap</option>
+                  </select>
+                  {formData.errors.expenditureType && (
+                    <p className="text-red-500 text-xs mt-1">
+                      {formData.errors.expenditureType}
+                    </p>
+                  )}
                 </div>
 
                 {/* Requestor, Client, Division, DateTime, Category, Status */}

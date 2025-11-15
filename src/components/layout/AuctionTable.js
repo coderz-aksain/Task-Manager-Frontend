@@ -90,6 +90,7 @@ const AuctionTable = () => {
     assignedTo: [],
     fileUrls: [],
     remark: "",
+    expenditureType: "",
     errors: {},
   });
   const [employeeSearchTerm, setEmployeeSearchTerm] = useState("");
@@ -123,6 +124,7 @@ const AuctionTable = () => {
         assignedTo: selectedTask.assignedTo || [],
         fileUrls: selectedTask.fileUrls || [],
         remark: selectedTask.remark || "",
+        expenditureType: selectedTask.expenditureType || "",
         errors: {},
       });
       setEditId(selectedTask.taskId);
@@ -200,6 +202,7 @@ const AuctionTable = () => {
       assignedTo: [],
       fileUrls: [],
       remark: "",
+      expenditureType: "",
       errors: {},
     });
     setEmployeeSearchTerm("");
@@ -271,6 +274,7 @@ const AuctionTable = () => {
     if (!formData.client) errors.client = "Required";
     if (!formData.division) errors.division = "Required";
     if (!formData.status) errors.status = "Required";
+    if (!formData.expenditureType) errors.expenditureType = "Required";
 
     // Status-specific validations
     if (formData.status === "Complete") {
@@ -342,6 +346,7 @@ const AuctionTable = () => {
         auctionTime,
         remarks: formData.remark,
         status: formData.status,
+        expenditureType: formData.expenditureType,
       };
 
       // Add status-specific fields
@@ -720,11 +725,31 @@ const AuctionTable = () => {
 
   // Export to Excel function
   const exportToExcel = () => {
+    // Helper to get month-year from date string
+    const getMonthYear = (dateStr) => {
+      if (!dateStr || dateStr === "-") return "";
+      try {
+        const [day, month, year] = dateStr.split('-');
+        const date = new Date(`${year}-${month}-${day}`);
+        const monthName = date.toLocaleString('default', { month: 'long' });
+        return `${monthName}-${year}`;
+      } catch {
+        return "";
+      }
+    };
+
+    // Helper to format auction date and time
+    const formatAuctionDateTime = (date, time) => {
+      const dateStr = date || "";
+      const timeStr = time || "";
+      return `${dateStr} ${timeStr}`.trim();
+    };
+
     // Simple CSV export for now
     const csvContent = "data:text/csv;charset=utf-8,"
-      + "Event ID,Event Name,Requestor,Client,Division,Auction Type,Status,Pre Bid,Post Bid,Savings,Savings %,Assigned To\n"
+      + "Client,Division,Event ID,Auction Date,Month-Year,Expenditure Type,Category,Event Description,Prebid,Post bid,Savings,Savings %\n"
       + filteredTasks.map(task =>
-          `"${task.eventId}","${task.eventName}","${task.requestor}","${task.client}","${task.division}","${task.auctionType}","${task.status}","${task.preBid || ''}","${task.postBid || ''}","${task.savings || ''}","${task.savingsPercent || ''}%","${Array.isArray(task.assignedTo) ? task.assignedTo.map(emp => emp.name || emp.email).join('; ') : task.assignedTo}"`
+          `"${task.client || ''}","${task.division || ''}","${task.eventId || ''}","${task.auctionDate || ''}","${getMonthYear(task.auctionDate)}","${task.expenditureType || ''}","${task.category || ''}","${task.eventName || ''}","${task.preBid || ''}","${task.postBid || ''}","${task.savings || ''}","${task.savingsPercent || ''}%"`
         ).join("\n");
 
     const encodedUri = encodeURI(csvContent);
@@ -1347,7 +1372,7 @@ const AuctionTable = () => {
                 {editId ? "Edit Task" : "Task Details"}
               </h3>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
                 {/* Task ID */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1418,6 +1443,30 @@ const AuctionTable = () => {
                     <option value="Forward Auction">Forward Auction</option>
                     <option value="Reverse Auction">Reverse Auction</option>
                   </select>
+                </div>
+
+                {/* Expenditure Type */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Expenditure Type *
+                  </label>
+                  <select
+                    name="expenditureType"
+                    value={formData.expenditureType}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 text-sm"
+                  >
+                    <option value="">Select</option>
+                    <option value="Capex">Capex</option>
+                    <option value="Opex">Opex</option>
+                    <option value="Scrap">Scrap</option>
+                  </select>
+                  {formData.errors.expenditureType && (
+                    <p className="text-red-500 text-xs mt-1">
+                      {formData.errors.expenditureType}
+                    </p>
+                  )}
                 </div>
 
                 {/* Requestor, Client, Division, DateTime, Category, Status */}

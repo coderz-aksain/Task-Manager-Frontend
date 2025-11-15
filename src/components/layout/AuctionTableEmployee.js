@@ -1203,7 +1203,7 @@ const AuctionTableEemployee = () => {
                 {isComplete && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Event ID *
+                      Event ID  <span className="text-red-600">*</span>
                     </label>
                     <input
                       type="text"
@@ -1223,7 +1223,7 @@ const AuctionTableEemployee = () => {
                 {/* Event Name */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Event Name *
+                    Event Name <span className="text-red-600">*</span>
                   </label>
                   <input
                     type="text"
@@ -1243,7 +1243,7 @@ const AuctionTableEemployee = () => {
                 {/* Auction Type */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Auction Type *
+                    Auction Type <span className="text-red-600">*</span>
                   </label>
                   <select
                     name="auctionType"
@@ -1258,35 +1258,11 @@ const AuctionTableEemployee = () => {
                   </select>
                 </div>
 
-                {/* Expenditure Type */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Expenditure Type *
-                  </label>
-                  <select
-                    name="expenditureType"
-                    value={formData.expenditureType}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 text-sm"
-                  >
-                    <option value="">Select</option>
-                    <option value="Capex">Capex</option>
-                    <option value="Opex">Opex</option>
-                    <option value="Scrap">Scrap</option>
-                  </select>
-                  {formData.errors.expenditureType && (
-                    <p className="text-red-500 text-xs mt-1">
-                      {formData.errors.expenditureType}
-                    </p>
-                  )}
-                </div>
-
                 {/* Requestor, Client, Division, DateTime, Category, Status */}
                 {["requestor", "client", "division"].map((field) => (
                   <div key={field}>
                     <label className="block text-sm font-medium text-gray-700 mb-2 capitalize">
-                      {field} *
+                      {field} <span className="text-red-600">*</span>
                     </label>
                     <input
                       type="text"
@@ -1306,7 +1282,7 @@ const AuctionTableEemployee = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Date & Time *
+                    Date & Time <span className="text-red-600">*</span>
                   </label>
                   <input
                     type="datetime-local"
@@ -1320,7 +1296,7 @@ const AuctionTableEemployee = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Status *
+                    Status  <span className="text-red-600">*</span>
                   </label>
                   <select
                     name="status"
@@ -1345,7 +1321,7 @@ const AuctionTableEemployee = () => {
                     {/* Category */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Category *
+                        Category  <span className="text-red-600">*</span>
                       </label>
                       <div className="flex gap-2">
                         <select
@@ -1376,6 +1352,30 @@ const AuctionTableEemployee = () => {
                       )}
                     </div>
 
+                    {/* Expenditure Type */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Expenditure Type  <span className="text-red-600">*</span>
+                      </label>
+                      <select
+                        name="expenditureType"
+                        value={formData.expenditureType}
+                        onChange={handleInputChange}
+                        required
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 text-sm"
+                      >
+                        <option value="">Select</option>
+                        <option value="Capex">Capex</option>
+                        <option value="Opex">Opex</option>
+                        <option value="Scrap">Scrap</option>
+                      </select>
+                      {formData.errors.expenditureType && (
+                        <p className="text-red-500 text-xs mt-1">
+                          {formData.errors.expenditureType}
+                        </p>
+                      )}
+                    </div>
+
                     {/* Pre Bid / Benchmark (label depends on auctionType) */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1397,7 +1397,7 @@ const AuctionTableEemployee = () => {
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Post Bid *
+                        Post Bid <span className="text-red-600">*</span>
                       </label>
                       <input
                         type="number"

@@ -1109,13 +1109,35 @@ const AuctionTableEemployee = () => {
                           }
                         </td>
 
-                        <td className="px-2 sm:px-4 py-2 text-center">
+                        {/* <td className="px-2 sm:px-4 py-2 text-center">
                           {task.savings ? formatCurrency(task.savings) : "-"}
+                        </td> */}
+
+
+                           <td className="px-2 sm:px-4 py-2 text-center">
+                          {task.savings === "" ||
+                          task.savings === null ||
+                          task.savings === undefined
+                            ? "-" // blank → show "-"
+                            : Number(task.savings) === 0
+                            ? "₹0" // zero → show "₹0"
+                            : formatCurrency(task.savings)}
                         </td>
 
-                        <td className="px-2 sm:px-4 py-2 text-center">
+                        {/* <td className="px-2 sm:px-4 py-2 text-center">
                           {task.savingsPercent ? `${task.savingsPercent}%` : "-"}
+                        </td> */}
+
+                          <td className="px-2 sm:px-4 py-2 text-center">
+                          {task.savingsPercent === "" ||
+                          task.savingsPercent === null ||
+                          task.savingsPercent === undefined
+                            ? "-" // blank → "-"
+                            : Number(task.savingsPercent) === 0
+                            ? "0%" // zero → "0%"
+                            : `${task.savingsPercent}%`}
                         </td>
+                        
                         <td className="px-2 sm:px-4 py-2 text-center">
                           <span
                             className={`inline-block px-2 py-1 rounded-full text-xs ${

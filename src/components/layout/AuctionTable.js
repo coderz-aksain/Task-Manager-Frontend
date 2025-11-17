@@ -22,7 +22,7 @@ import {
   Table as TableIcon,
   Download,
   RefreshCw,
-  Table
+  Table,
 } from "lucide-react";
 import SevenProcure from "../layout/icon.png";
 import api from "../../services/api";
@@ -65,8 +65,23 @@ const AuctionTable = () => {
 
   // Date filter states
   const [dueDateFilter, setDueDateFilter] = useState("none");
-  const [showDueDateFilterDropdown, setShowDueDateFilterDropdown] = useState(false);
-  const [customDateRange, setCustomDateRange] = useState({ start: "", end: "" });
+  const [showDueDateFilterDropdown, setShowDueDateFilterDropdown] =
+    useState(false);
+  const [customDateRange, setCustomDateRange] = useState({
+    start: "",
+    end: "",
+  });
+  const [showMISModal, setShowMISModal] = useState(false);
+  const [misFormData, setMisFormData] = useState({
+    client: "",
+    fromDate: "",
+    toDate: "",
+    selectedDivisions: [],
+    selectedFields: [],
+  });
+  const [misFormErrors, setMisFormErrors] = useState({});
+  const [isDownloadingMIS, setIsDownloadingMIS] = useState(false);
+  const [divisions, setDivisions] = useState([]);
 
   // Refs for dropdowns
   const statusDropdownRef = useRef(null);
@@ -152,25 +167,25 @@ const AuctionTable = () => {
   const handleDelete = async () => {
     if (!taskToDelete) return;
 
-    console.log('🗑️ Starting to delete auction task:', taskToDelete.taskId);
+    console.log("🗑️ Starting to delete auction task:", taskToDelete.taskId);
     try {
       await api.deleteAuctionTask(taskToDelete.taskId);
-      console.log('✅ Successfully deleted auction task:', taskToDelete.taskId);
+      console.log("✅ Successfully deleted auction task:", taskToDelete.taskId);
       setTasks(tasks.filter((task) => task.taskId !== taskToDelete.taskId));
       if (selectedTask?.taskId === taskToDelete.taskId) {
         closeModal();
       }
       setDeleteModalVisible(false);
       setTaskToDelete(null);
-      success('Auction task deleted successfully');
+      success("Auction task deleted successfully");
     } catch (err) {
-      console.error('❌ Error deleting auction task:', err);
-      console.error('❌ Error details:', {
+      console.error("❌ Error deleting auction task:", err);
+      console.error("❌ Error details:", {
         message: err.message,
         stack: err.stack,
-        response: err.response
+        response: err.response,
       });
-      toastError('Failed to delete auction task');
+      toastError("Failed to delete auction task");
     }
   };
 
@@ -230,8 +245,10 @@ const AuctionTable = () => {
 
       // Auto-calculate savings/earning when preBid or postBid changes.
       if (name === "preBid" || name === "postBid" || name === "auctionType") {
-        const preBidVal = parseFloat(name === "preBid" ? value : updated.preBid) || 0;
-        const postBidVal = parseFloat(name === "postBid" ? value : updated.postBid) || 0;
+        const preBidVal =
+          parseFloat(name === "preBid" ? value : updated.preBid) || 0;
+        const postBidVal =
+          parseFloat(name === "postBid" ? value : updated.postBid) || 0;
 
         let savings = 0;
         let savingsPercent = 0;
@@ -240,14 +257,17 @@ const AuctionTable = () => {
           // Reverse Auction: Savings = Pre bid - Post bid, Savings % = (savings / prebid) * 100
           savings = preBidVal - postBidVal;
           savingsPercent = preBidVal > 0 ? (savings / preBidVal) * 100 : 0;
-        } else if ((updated.auctionType || prev.auctionType) === "Forward Auction") {
+        } else if (
+          (updated.auctionType || prev.auctionType) === "Forward Auction"
+        ) {
           // Forward Auction: Earning = Post bid - benchmark, Earning % = (earning / benchmark) * 100
           savings = postBidVal - preBidVal; // This represents earning
           savingsPercent = preBidVal > 0 ? (savings / preBidVal) * 100 : 0; // benchmark is preBid
         }
 
         updated.savings = savings >= 0 ? Number(savings.toFixed(2)) : 0;
-        updated.savingsPercent = savingsPercent >= 0 ? Number(savingsPercent.toFixed(2)) : 0;
+        updated.savingsPercent =
+          savingsPercent >= 0 ? Number(savingsPercent.toFixed(2)) : 0;
       }
 
       // Fetch categories when auction type changes
@@ -262,7 +282,7 @@ const AuctionTable = () => {
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('📝 Starting form submission for task update');
+    console.log("📝 Starting form submission for task update");
     setIsLoading(true);
 
     const errors = {};
@@ -279,41 +299,76 @@ const AuctionTable = () => {
     // Status-specific validations
     if (formData.status === "Complete") {
       // Event ID and category are required when Complete
-      if (!formData.eventId) errors.eventId = "Required when status is Complete";
-      if (!formData.category) errors.category = "Required when status is Complete";
+      if (!formData.eventId)
+        errors.eventId = "Required when status is Complete";
+      if (!formData.category)
+        errors.category = "Required when status is Complete";
 
       // Auction-type specific validations
       if (formData.auctionType === "Reverse Auction") {
-        if (formData.preBid === "" || formData.preBid === null || typeof formData.preBid === "undefined")
+        if (
+          formData.preBid === "" ||
+          formData.preBid === null ||
+          typeof formData.preBid === "undefined"
+        )
           errors.preBid = "Required when Complete";
-        if (formData.postBid === "" || formData.postBid === null || typeof formData.postBid === "undefined")
+        if (
+          formData.postBid === "" ||
+          formData.postBid === null ||
+          typeof formData.postBid === "undefined"
+        )
           errors.postBid = "Required when Complete";
-        if (formData.savings === "" || formData.savings === null || typeof formData.savings === "undefined")
+        if (
+          formData.savings === "" ||
+          formData.savings === null ||
+          typeof formData.savings === "undefined"
+        )
           errors.savings = "Required when Complete";
-        if (formData.savingsPercent === "" || formData.savingsPercent === null || typeof formData.savingsPercent === "undefined")
+        if (
+          formData.savingsPercent === "" ||
+          formData.savingsPercent === null ||
+          typeof formData.savingsPercent === "undefined"
+        )
           errors.savingsPercent = "Required when Complete";
 
         // Validate non-negative numbers
         if (formData.preBid < 0) errors.preBid = "Must be non-negative";
         if (formData.postBid < 0) errors.postBid = "Must be non-negative";
         if (formData.savings < 0) errors.savings = "Must be non-negative";
-        if (formData.savingsPercent < 0) errors.savingsPercent = "Must be non-negative";
-
+        if (formData.savingsPercent < 0)
+          errors.savingsPercent = "Must be non-negative";
       } else if (formData.auctionType === "Forward Auction") {
-        if (formData.preBid === "" || formData.preBid === null || typeof formData.preBid === "undefined")
+        if (
+          formData.preBid === "" ||
+          formData.preBid === null ||
+          typeof formData.preBid === "undefined"
+        )
           errors.preBid = "Benchmark required when Complete";
-        if (formData.postBid === "" || formData.postBid === null || typeof formData.postBid === "undefined")
+        if (
+          formData.postBid === "" ||
+          formData.postBid === null ||
+          typeof formData.postBid === "undefined"
+        )
           errors.postBid = "Required when Complete";
-        if (formData.savings === "" || formData.savings === null || typeof formData.savings === "undefined")
+        if (
+          formData.savings === "" ||
+          formData.savings === null ||
+          typeof formData.savings === "undefined"
+        )
           errors.savings = "Earning required when Complete";
-        if (formData.savingsPercent === "" || formData.savingsPercent === null || typeof formData.savingsPercent === "undefined")
+        if (
+          formData.savingsPercent === "" ||
+          formData.savingsPercent === null ||
+          typeof formData.savingsPercent === "undefined"
+        )
           errors.savingsPercent = "Earning % required when Complete";
 
         // Validate non-negative numbers
         if (formData.preBid < 0) errors.preBid = "Must be non-negative";
         if (formData.postBid < 0) errors.postBid = "Must be non-negative";
         if (formData.savings < 0) errors.savings = "Must be non-negative";
-        if (formData.savingsPercent < 0) errors.savingsPercent = "Must be non-negative";
+        if (formData.savingsPercent < 0)
+          errors.savingsPercent = "Must be non-negative";
       }
     }
 
@@ -328,9 +383,9 @@ const AuctionTable = () => {
 
     try {
       // Prepare data for backend
-      console.log('🔄 Preparing data for backend update...');
-      const [auctionDate, auctionTime] = formData.dateTime.split('T');
-      console.log('📅 Split date/time:', { auctionDate, auctionTime });
+      console.log("🔄 Preparing data for backend update...");
+      const [auctionDate, auctionTime] = formData.dateTime.split("T");
+      console.log("📅 Split date/time:", { auctionDate, auctionTime });
 
       const updateData = {
         taskType: "Auction",
@@ -340,7 +395,7 @@ const AuctionTable = () => {
         requesterName: formData.requestor,
         client: formData.client,
         division: formData.division,
-        assignEmployees: formData.assignedTo.map(emp => emp.email), // Convert to emails
+        assignEmployees: formData.assignedTo.map((emp) => emp.email), // Convert to emails
         auctionDate,
         category: formData.category,
         auctionTime,
@@ -365,33 +420,39 @@ const AuctionTable = () => {
       }
 
       // Convert auctionDate from YYYY-MM-DD to DD-MM-YYYY format
-      if (updateData.auctionDate && /^\d{4}-\d{2}-\d{2}$/.test(updateData.auctionDate)) {
+      if (
+        updateData.auctionDate &&
+        /^\d{4}-\d{2}-\d{2}$/.test(updateData.auctionDate)
+      ) {
         const [year, month, day] = updateData.auctionDate.split("-");
         updateData.auctionDate = `${day}-${month}-${year}`;
       }
 
-      console.log('📤 Data to send to backend:', updateData);
-      console.log('📋 Complete data being sent to database:', JSON.stringify(updateData, null, 2));
-      console.log(' Making API call to update task:', editId);
+      console.log("📤 Data to send to backend:", updateData);
+      console.log(
+        "📋 Complete data being sent to database:",
+        JSON.stringify(updateData, null, 2)
+      );
+      console.log(" Making API call to update task:", editId);
       await api.updateAuctionTask(editId, updateData);
-      console.log('✅ Successfully updated auction task:', editId);
+      console.log("✅ Successfully updated auction task:", editId);
 
       // Refresh data to update counts and ensure consistency
       await fetchTasks();
 
       closeModal();
-      success('Auction task updated successfully');
+      success("Auction task updated successfully");
     } catch (err) {
-      console.error('❌ Error updating auction task:', err);
-      console.error('❌ Error details:', {
+      console.error("❌ Error updating auction task:", err);
+      console.error("❌ Error details:", {
         message: err.message,
         stack: err.stack,
-        response: err.response
+        response: err.response,
       });
-      toastError('Failed to update auction task');
+      toastError("Failed to update auction task");
     } finally {
       setIsLoading(false);
-      console.log('🏁 Form submission completed');
+      console.log("🏁 Form submission completed");
     }
   };
 
@@ -408,9 +469,11 @@ const AuctionTable = () => {
   const filteredEmployees = employees.filter(
     (emp) =>
       (emp.name.toLowerCase().includes(employeeSearchTerm.toLowerCase()) ||
-      emp.email.toLowerCase().includes(employeeSearchTerm.toLowerCase()) ||
-      emp.position.toLowerCase().includes(employeeSearchTerm.toLowerCase())) &&
-      !formData.assignedTo.some(assigned => assigned.email === emp.email) // Exclude already assigned employees
+        emp.email.toLowerCase().includes(employeeSearchTerm.toLowerCase()) ||
+        emp.position
+          .toLowerCase()
+          .includes(employeeSearchTerm.toLowerCase())) &&
+      !formData.assignedTo.some((assigned) => assigned.email === emp.email) // Exclude already assigned employees
   );
 
   const handleEmployeeSelect = (emp) => {
@@ -434,18 +497,19 @@ const AuctionTable = () => {
   const fetchCategories = async (auctionType) => {
     if (!auctionType) return;
 
-    const categoryType = auctionType === "Forward Auction"
-      ? "Forward Auction Category"
-      : "Reverse Auction Category";
+    const categoryType =
+      auctionType === "Forward Auction"
+        ? "Forward Auction Category"
+        : "Reverse Auction Category";
 
-    console.log('📂 Fetching categories for type:', categoryType);
+    console.log("📂 Fetching categories for type:", categoryType);
     try {
       setCategoriesLoading(true);
       const response = await api.getCategories(categoryType);
-      console.log('📂 Categories response:', response);
+      console.log("📂 Categories response:", response);
       setCategories(response.categories || []);
     } catch (error) {
-      console.error('❌ Error fetching categories:', error);
+      console.error("❌ Error fetching categories:", error);
       setCategories([]);
     } finally {
       setCategoriesLoading(false);
@@ -454,7 +518,7 @@ const AuctionTable = () => {
 
   const handleCreateCategory = async (e) => {
     e.preventDefault();
-    console.log('📝 Creating new category...');
+    console.log("📝 Creating new category...");
 
     const errors = {};
     if (!categoryFormData.categoryName.trim()) {
@@ -471,37 +535,37 @@ const AuctionTable = () => {
 
     try {
       const response = await api.createCategory(categoryFormData);
-      console.log('✅ Category created:', response);
+      console.log("✅ Category created:", response);
 
       // Add the new category to the list
-      setCategories(prev => [...prev, response.category]);
+      setCategories((prev) => [...prev, response.category]);
 
       // Close modal and reset form
       setCategoryModalVisible(false);
       setCategoryFormData({ categoryName: "", categoryType: "" });
       setCategoryFormErrors({});
-
     } catch (error) {
-      console.error('❌ Error creating category:', error);
-      if (error.message?.includes('already exists')) {
+      console.error("❌ Error creating category:", error);
+      if (error.message?.includes("already exists")) {
         setCategoryFormErrors({ categoryName: "Category name already exists" });
       } else {
-        alert('Failed to create category');
+        alert("Failed to create category");
       }
     }
   };
 
   const handleCategoryFormChange = (e) => {
     const { name, value } = e.target;
-    setCategoryFormData(prev => ({ ...prev, [name]: value }));
-    setCategoryFormErrors(prev => ({ ...prev, [name]: "" }));
+    setCategoryFormData((prev) => ({ ...prev, [name]: value }));
+    setCategoryFormErrors((prev) => ({ ...prev, [name]: "" }));
   };
 
   const openCategoryModal = () => {
     // Set category type based on current auction type
-    const categoryType = formData.auctionType === "Forward Auction"
-      ? "Forward Auction Category"
-      : "Reverse Auction Category";
+    const categoryType =
+      formData.auctionType === "Forward Auction"
+        ? "Forward Auction Category"
+        : "Reverse Auction Category";
 
     setCategoryFormData({
       categoryName: "",
@@ -551,33 +615,40 @@ const AuctionTable = () => {
 
   // Fetch auction tasks and employees on component mount
   const fetchTasks = async () => {
-    console.log('🔄 Starting to fetch data...');
+    console.log("🔄 Starting to fetch data...");
 
     try {
       // Fetch employees
-      console.log('👥 Fetching employees...');
+      console.log("👥 Fetching employees...");
       setEmployeesLoading(true);
       const employeesResponse = await api.getEmployees();
-      console.log('👥 Employees response:', employeesResponse);
+      console.log("👥 Employees response:", employeesResponse);
 
       // Handle different employee response formats
-      const employeesData = Array.isArray(employeesResponse) ? employeesResponse :
-                            employeesResponse.employees || employeesResponse.data || [];
-      console.log('👥 Processed employees data:', employeesData);
+      const employeesData = Array.isArray(employeesResponse)
+        ? employeesResponse
+        : employeesResponse.employees || employeesResponse.data || [];
+      console.log("👥 Processed employees data:", employeesData);
 
       // Transform employee data
-      const transformedEmployees = employeesData.map(emp => ({
+      const transformedEmployees = employeesData.map((emp) => ({
         id: emp._id || emp.id,
-        name: emp.name || emp.fullName || `${emp.firstName || ''} ${emp.lastName || ''}`.trim(),
+        name:
+          emp.name ||
+          emp.fullName ||
+          `${emp.firstName || ""} ${emp.lastName || ""}`.trim(),
         email: emp.email,
-        position: emp.position || emp.designation || emp.role || 'Employee',
-        avatar: emp.avatar || emp.profileImage || '',
+        position: emp.position || emp.designation || emp.role || "Employee",
+        avatar: emp.avatar || emp.profileImage || "",
       }));
-      console.log('✅ Transformed employees:', transformedEmployees);
+      console.log("✅ Transformed employees:", transformedEmployees);
       setEmployees(transformedEmployees);
 
+      // Set hardcoded divisions for EKL
+      const divisions = ["EAM", "ECE", "KAI"];
+      setDivisions(divisions);
     } catch (empErr) {
-      console.error('❌ Error fetching employees:', empErr);
+      console.error("❌ Error fetching employees:", empErr);
       // Continue with empty employees array
       setEmployees([]);
     } finally {
@@ -587,48 +658,58 @@ const AuctionTable = () => {
     try {
       // Fetch auction tasks
       setLoading(true);
-      console.log('📡 Making API call to get auction tasks...');
+      console.log("📡 Making API call to get auction tasks...");
       const response = await api.getAuctionTasks();
-      console.log('📦 Raw API response:', response);
+      console.log("📦 Raw API response:", response);
 
       // Handle API response structure
       const tasksData = response.tasks || [];
-      console.log('📋 Processed tasks data:', tasksData);
+      console.log("📋 Processed tasks data:", tasksData);
 
       // Transform backend data to frontend format (basic transformation)
-      const transformedTasks = tasksData.map(task => {
-        console.log('🔄 Transforming task:', task);
+      const transformedTasks = tasksData.map((task) => {
+        console.log("🔄 Transforming task:", task);
         return {
           ...task,
           requestor: task.requesterName, // Map requesterName to requestor
           preBid: task.prebid,
           postBid: task.postbid,
           savingsPercent: task.savingsPercentage,
-          dateTime: (task.auctionDate && task.auctionDate !== "-") ?
-            `${task.auctionDate.split('-').reverse().join('-')}T${task.auctionTime || "00:00"}` :
-            new Date().toISOString().split('T')[0] + "T00:00",
+          dateTime:
+            task.auctionDate && task.auctionDate !== "-"
+              ? `${task.auctionDate.split("-").reverse().join("-")}T${
+                  task.auctionTime || "00:00"
+                }`
+              : new Date().toISOString().split("T")[0] + "T00:00",
           remark: task.remarks,
-          assignedTo: (task.assignedTo || []).map(email => {
-            const employee = employees.find(emp => emp.email === email);
-            return employee || { email, name: email.split('@')[0].replace('.', ' '), avatar: '', position: 'Employee' };
+          assignedTo: (task.assignedTo || []).map((email) => {
+            const employee = employees.find((emp) => emp.email === email);
+            return (
+              employee || {
+                email,
+                name: email.split("@")[0].replace(".", " "),
+                avatar: "",
+                position: "Employee",
+              }
+            );
           }),
         };
       });
-      console.log('✅ Transformed tasks:', transformedTasks);
+      console.log("✅ Transformed tasks:", transformedTasks);
       setTasks(transformedTasks);
       setError(null);
     } catch (err) {
-      console.error('❌ Error fetching auction tasks:', err);
-      console.error('❌ Error details:', {
+      console.error("❌ Error fetching auction tasks:", err);
+      console.error("❌ Error details:", {
         message: err.message,
         stack: err.stack,
-        response: err.response
+        response: err.response,
       });
-      setError('Failed to load auction tasks');
+      setError("Failed to load auction tasks");
     } finally {
       setLoading(false);
       setIsPageLoading(false);
-      console.log('🏁 Fetch data completed');
+      console.log("🏁 Fetch data completed");
     }
   };
 
@@ -639,16 +720,18 @@ const AuctionTable = () => {
   // Update tasks with employee information when employees are loaded
   useEffect(() => {
     if (employees.length > 0 && tasks.length > 0) {
-      console.log('🔄 Updating tasks with employee information...');
-      const updatedTasks = tasks.map(task => ({
+      console.log("🔄 Updating tasks with employee information...");
+      const updatedTasks = tasks.map((task) => ({
         ...task,
-        assignedTo: task.assignedTo.map(assigned => {
-          const employee = employees.find(emp => emp.email === assigned.email);
+        assignedTo: task.assignedTo.map((assigned) => {
+          const employee = employees.find(
+            (emp) => emp.email === assigned.email
+          );
           return employee || assigned;
-        })
+        }),
       }));
       setTasks(updatedTasks);
-      console.log('✅ Tasks updated with employee information');
+      console.log("✅ Tasks updated with employee information");
     }
   }, [employees, tasks.length]);
 
@@ -660,25 +743,24 @@ const AuctionTable = () => {
   ];
 
   // Filtered employees for filter dropdown
-  const filteredEmployeesForFilter = employees.filter((emp) =>
-    emp.name.toLowerCase().includes(filterEmployeeSearch.toLowerCase()) ||
-    emp.email.toLowerCase().includes(filterEmployeeSearch.toLowerCase())
+  const filteredEmployeesForFilter = employees.filter(
+    (emp) =>
+      emp.name.toLowerCase().includes(filterEmployeeSearch.toLowerCase()) ||
+      emp.email.toLowerCase().includes(filterEmployeeSearch.toLowerCase())
   );
 
   // Filter functions
   const toggleStatus = (status) => {
-    setFilterStatus(prev =>
+    setFilterStatus((prev) =>
       prev.includes(status)
-        ? prev.filter(s => s !== status)
+        ? prev.filter((s) => s !== status)
         : [...prev, status]
     );
   };
 
   const toggleEmployee = (email) => {
-    setFilterEmployee(prev =>
-      prev.includes(email)
-        ? prev.filter(e => e !== email)
-        : [...prev, email]
+    setFilterEmployee((prev) =>
+      prev.includes(email) ? prev.filter((e) => e !== email) : [...prev, email]
     );
   };
 
@@ -693,29 +775,45 @@ const AuctionTable = () => {
   };
 
   const isFilterApplied = () => {
-    return filterStatus.length > 0 || filterEmployee.length > 0 || dueDateFilter !== "none";
+    return (
+      filterStatus.length > 0 ||
+      filterEmployee.length > 0 ||
+      dueDateFilter !== "none"
+    );
   };
 
   // Date filtering function for auction tasks
   const filterByAuctionDate = (task) => {
-    if (!dueDateFilter || dueDateFilter === 'none') return true;
-    const auctionDate = task.auctionDate ? new Date(task.auctionDate.split('-').reverse().join('-')) : null;
+    if (!dueDateFilter || dueDateFilter === "none") return true;
+    const auctionDate = task.auctionDate
+      ? new Date(task.auctionDate.split("-").reverse().join("-"))
+      : null;
     if (!auctionDate) return false;
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    if (dueDateFilter === 'today') return auctionDate.toDateString() === today.toDateString();
-    if (dueDateFilter === 'week') {
+    if (dueDateFilter === "today")
+      return auctionDate.toDateString() === today.toDateString();
+    if (dueDateFilter === "week") {
       const weekStart = new Date(today);
       weekStart.setDate(today.getDate() - today.getDay());
       const weekEnd = new Date(weekStart);
       weekEnd.setDate(weekStart.getDate() + 6);
       return auctionDate >= weekStart && auctionDate <= weekEnd;
     }
-    if (dueDateFilter === 'month') return auctionDate.getMonth() === today.getMonth() && auctionDate.getFullYear() === today.getFullYear();
-    if (dueDateFilter === 'year') return auctionDate.getFullYear() === today.getFullYear();
-    if (dueDateFilter === 'custom' && customDateRange?.start && customDateRange?.end) {
+    if (dueDateFilter === "month")
+      return (
+        auctionDate.getMonth() === today.getMonth() &&
+        auctionDate.getFullYear() === today.getFullYear()
+      );
+    if (dueDateFilter === "year")
+      return auctionDate.getFullYear() === today.getFullYear();
+    if (
+      dueDateFilter === "custom" &&
+      customDateRange?.start &&
+      customDateRange?.end
+    ) {
       const start = new Date(customDateRange.start);
       const end = new Date(customDateRange.end);
       return auctionDate >= start && auctionDate <= end;
@@ -725,55 +823,117 @@ const AuctionTable = () => {
 
   // Export to Excel function
   const exportToExcel = () => {
-    // Helper to get month-year from date string
-    const getMonthYear = (dateStr) => {
-      if (!dateStr || dateStr === "-") return "";
-      try {
-        const [day, month, year] = dateStr.split('-');
-        const date = new Date(`${year}-${month}-${day}`);
-        const monthName = date.toLocaleString('default', { month: 'long' });
-        return `${monthName}-${year}`;
-      } catch {
-        return "";
+    setShowMISModal(true);
+  };
+
+  // Handle MIS Report Download
+  const handleMISDownload = async () => {
+    // Validate form
+    const errors = {};
+    if (!misFormData.client) errors.client = "Client is required";
+    if (!misFormData.fromDate) errors.fromDate = "From Date is required";
+    if (!misFormData.toDate) errors.toDate = "To Date is required";
+    if (
+      misFormData.client === "EKL" &&
+      misFormData.selectedDivisions.length === 0
+    )
+      errors.selectedDivisions =
+        "At least one division must be selected for EKL client";
+    if (misFormData.selectedFields.length === 0)
+      errors.selectedFields = "At least one field must be selected";
+
+    if (Object.keys(errors).length > 0) {
+      setMisFormErrors(errors);
+      return;
+    }
+
+    setIsDownloadingMIS(true);
+    setMisFormErrors({});
+
+    try {
+      // Helper to get month-year from date string
+      const getMonthYear = (dateStr) => {
+        if (!dateStr || dateStr === "-") return "";
+        try {
+          const [day, month, year] = dateStr.split("-");
+          const date = new Date(`${year}-${month}-${day}`);
+          const monthName = date.toLocaleString("default", { month: "long" });
+          return `${monthName}-${year}`;
+        } catch {
+          return "";
+        }
+      };
+
+      // Prepare data for API call
+      const reportData = {
+        client: misFormData.client,
+        fromDate: misFormData.fromDate.split('-').reverse().join('-'), // Convert YYYY-MM-DD to DD-MM-YYYY
+        toDate: misFormData.toDate.split('-').reverse().join('-'), // Convert YYYY-MM-DD to DD-MM-YYYY
+        division: misFormData.selectedDivisions,
+        selectedFields: misFormData.selectedFields,
+      };
+
+      // Make API call to download MIS report
+      const response = await fetch(
+        "https://task-manager-backend-xs5s.onrender.com/api/auction/download-mis-report",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+          body: JSON.stringify(reportData),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to download MIS report");
       }
-    };
 
-    // Helper to format auction date and time
-    const formatAuctionDateTime = (date, time) => {
-      const dateStr = date || "";
-      const timeStr = time || "";
-      return `${dateStr} ${timeStr}`.trim();
-    };
+      // Handle file download
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `MIS_Report_${misFormData.client}_${misFormData.fromDate}_to_${misFormData.toDate}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
 
-    // Simple CSV export for now
-    const csvContent = "data:text/csv;charset=utf-8,"
-      + "Client,Division,Event ID,Auction Date,Month-Year,Expenditure Type,Category,Event Description,Prebid,Post bid,Savings,Savings %\n"
-      + filteredTasks.map(task =>
-          `"${task.client || ''}","${task.division || ''}","${task.eventId || ''}","${task.auctionDate || ''}","${getMonthYear(task.auctionDate)}","${task.expenditureType || ''}","${task.category || ''}","${task.eventName || ''}","${task.preBid || ''}","${task.postBid || ''}","${task.savings || ''}","${task.savingsPercent || ''}%"`
-        ).join("\n");
-
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", "auction_tasks.csv");
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+      setShowMISModal(false);
+      setMisFormData({
+        client: "",
+        fromDate: "",
+        toDate: "",
+        selectedDivisions: [],
+        selectedFields: [],
+      });
+      success("MIS Report downloaded successfully");
+    } catch (error) {
+      console.error("Error downloading MIS report:", error);
+      toastError("Failed to download MIS report");
+    } finally {
+      setIsDownloadingMIS(false);
+    }
   };
 
   // Filtered tasks based on search and filters
   const filteredTasks = tasks.filter((task) => {
-    const matchesSearch = searchTerm === "" ||
+    const matchesSearch =
+      searchTerm === "" ||
       task.eventName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       task.eventId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       task.requestor?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       task.client?.toLowerCase().includes(searchTerm.toLowerCase());
 
-    const matchesStatus = filterStatus.length === 0 || filterStatus.includes(task.status);
+    const matchesStatus =
+      filterStatus.length === 0 || filterStatus.includes(task.status);
 
-    const matchesEmployee = filterEmployee.length === 0 ||
+    const matchesEmployee =
+      filterEmployee.length === 0 ||
       (Array.isArray(task.assignedTo) &&
-       task.assignedTo.some(emp => filterEmployee.includes(emp.email)));
+        task.assignedTo.some((emp) => filterEmployee.includes(emp.email)));
 
     const matchesDate = filterByAuctionDate(task);
 
@@ -817,7 +977,10 @@ const AuctionTable = () => {
                 <>
                   <span className="flex flex-wrap gap-1">
                     {filterStatus.slice(0, 5).map((status, idx) => (
-                      <span key={status} className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center text-xs text-blue-800 border border-gray-300">
+                      <span
+                        key={status}
+                        className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center text-xs text-blue-800 border border-gray-300"
+                      >
                         {status[0]}
                       </span>
                     ))}
@@ -874,9 +1037,7 @@ const AuctionTable = () => {
         <div className="relative min-w-[180px] max-w-full sm:min-w-[220px] sm:max-w-[220px]">
           <div
             className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white cursor-pointer flex items-center justify-between text-xs sm:text-sm"
-            onClick={() =>
-              setShowEmployeeDropdown(!showEmployeeDropdown)
-            }
+            onClick={() => setShowEmployeeDropdown(!showEmployeeDropdown)}
           >
             <span className="flex flex-wrap items-center gap-1">
               {filterEmployee.length === 0 ? (
@@ -890,9 +1051,7 @@ const AuctionTable = () => {
                 <>
                   <span className="flex flex-wrap gap-1">
                     {filterEmployee.slice(0, 5).map((email, idx) => {
-                      const emp = employees.find(
-                        (e) => e.email === email
-                      );
+                      const emp = employees.find((e) => e.email === email);
                       return emp?.avatar ? (
                         <img
                           key={email}
@@ -901,7 +1060,10 @@ const AuctionTable = () => {
                           className="w-5 h-5 rounded-full border border-gray-300"
                         />
                       ) : (
-                        <span key={email} className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center text-xs text-gray-600">
+                        <span
+                          key={email}
+                          className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center text-xs text-gray-600"
+                        >
                           {getInitials(emp?.name || "U")}
                         </span>
                       );
@@ -924,9 +1086,7 @@ const AuctionTable = () => {
               <input
                 type="text"
                 value={filterEmployeeSearch}
-                onChange={(e) =>
-                  setFilterEmployeeSearch(e.target.value)
-                }
+                onChange={(e) => setFilterEmployeeSearch(e.target.value)}
                 className="w-full px-3 py-2 border-b border-gray-300 text-xs sm:text-sm"
                 placeholder="Search by name "
                 disabled={loading}
@@ -983,7 +1143,9 @@ const AuctionTable = () => {
         <div className="relative min-w-[180px] max-w-full sm:min-w-[220px] sm:max-w-[220px]">
           <div
             className="px-3 py-2 border border-gray-300 rounded-md bg-white cursor-pointer flex items-center justify-between w-full text-xs sm:text-sm"
-            onClick={() => setShowDueDateFilterDropdown(!showDueDateFilterDropdown)}
+            onClick={() =>
+              setShowDueDateFilterDropdown(!showDueDateFilterDropdown)
+            }
           >
             <span className="flex flex-wrap items-center gap-1">
               {dueDateFilter === "none" ? (
@@ -999,11 +1161,17 @@ const AuctionTable = () => {
                     {dueDateFilter[0]?.toUpperCase()}
                   </span>
                   <span className="ml-2">
-                    {dueDateFilter === "today" ? "Today" :
-                     dueDateFilter === "week" ? "This Week" :
-                     dueDateFilter === "month" ? "This Month" :
-                     dueDateFilter === "year" ? "This Year" :
-                     dueDateFilter === "custom" ? "Custom Date" : dueDateFilter}
+                    {dueDateFilter === "today"
+                      ? "Today"
+                      : dueDateFilter === "week"
+                      ? "This Week"
+                      : dueDateFilter === "month"
+                      ? "This Month"
+                      : dueDateFilter === "year"
+                      ? "This Year"
+                      : dueDateFilter === "custom"
+                      ? "Custom Date"
+                      : dueDateFilter}
                   </span>
                 </>
               )}
@@ -1147,11 +1315,21 @@ const AuctionTable = () => {
             </button>
           )}
           <button
-            onClick={() => updateViewMode(viewMode === "table" ? "cards" : "table")}
+            onClick={() =>
+              updateViewMode(viewMode === "table" ? "cards" : "table")
+            }
             className="p-2 bg-orange-500 text-gray-800 rounded-md hover:bg-slate-900 flex items-center justify-center text-sm sm:text-base w-full sm:w-auto h-10"
-            title={viewMode === "table" ? "Switch to Cards view" : "Switch to Table view"}
+            title={
+              viewMode === "table"
+                ? "Switch to Cards view"
+                : "Switch to Table view"
+            }
           >
-            {viewMode === "table" ?  <IdCard className="text-white size-6" />: <Table className="text-white size-6" /> }
+            {viewMode === "table" ? (
+              <IdCard className="text-white size-6" />
+            ) : (
+              <Table className="text-white size-6" />
+            )}
           </button>
           {viewMode !== "cards" && (
             <button
@@ -1231,7 +1409,9 @@ const AuctionTable = () => {
                       <td colSpan="9" className="px-2 sm:px-4 py-8 text-center">
                         <div className="flex flex-col items-center justify-center">
                           <Loader className="w-8 h-8 animate-spin text-blue-500 mx-auto mb-4" />
-                          <p className="text-gray-600">Loading auction tasks...</p>
+                          <p className="text-gray-600">
+                            Loading auction tasks...
+                          </p>
                         </div>
                       </td>
                     </tr>
@@ -1266,11 +1446,14 @@ const AuctionTable = () => {
                           {task.eventId}
                         </td>
                         <td className="px-2 sm:px-4 py-2 text-start max-w-[140px] font-bold relative group cursor-pointer">
-                          <span className="truncate block">{task.eventName}</span>
+                          <span className="truncate block">
+                            {task.eventName}
+                          </span>
 
                           {/* Tooltip */}
                           <div className="absolute left-1/2 -translate-x-1/2 top-full mt-1 w-max max-w-xs hidden group-hover:block bg-red-900 text-white text-xs px-3 py-1 rounded-md shadow-lg z-20">
-                            <span className="text-yellow-300">Event Name:</span> {task.eventName}
+                            <span className="text-yellow-300">Event Name:</span>{" "}
+                            {task.eventName}
                           </div>
                         </td>
 
@@ -1278,29 +1461,51 @@ const AuctionTable = () => {
                           {task.requestor}
                         </td>
                         <td className="px-2 sm:px-4 py-2 text-center">
-                          {task.auctionDate && task.auctionDate !== "-" ?
-                            new Date(task.dateTime).toLocaleString('en-IN', {
-                              day: '2-digit',
-                              month: '2-digit',
-                              year: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit',
-                              hour12: true
-                            }) :
-                            "-"
-                          }
+                          {task.auctionDate && task.auctionDate !== "-"
+                            ? new Date(task.dateTime).toLocaleString("en-IN", {
+                                day: "2-digit",
+                                month: "2-digit",
+                                year: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                                hour12: true,
+                              })
+                            : "-"}
                         </td>
 
-                        <td className="px-2 sm:px-4 py-2 text-center">
-                          {task.savings ? formatCurrency(task.savings) : "-"}
-                        </td>
+                        {/* <td className="px-2 sm:px-4 py-2 text-center">
+                          {task.savings !== "" ? formatCurrency(task.savings) : ""}
+                        </td> */}
 
                         <td className="px-2 sm:px-4 py-2 text-center">
-                          {task.savingsPercent ? `${task.savingsPercent}%` : "-"}
+                          {task.savings === "" ||
+                          task.savings === null ||
+                          task.savings === undefined
+                            ? "-" // blank → show "-"
+                            : Number(task.savings) === 0
+                            ? "₹0" // zero → show "₹0"
+                            : formatCurrency(task.savings)}
                         </td>
+
+                        {/* <td className="px-2 sm:px-4 py-2 text-center">
+                          {task.savingsPercent !== "" ? `${task.savingsPercent}%` : "-"}
+                        </td> */}
+
+                        <td className="px-2 sm:px-4 py-2 text-center">
+                          {task.savingsPercent === "" ||
+                          task.savingsPercent === null ||
+                          task.savingsPercent === undefined
+                            ? "-" // blank → "-"
+                            : Number(task.savingsPercent) === 0
+                            ? "0%" // zero → "0%"
+                            : `${task.savingsPercent}%`}
+                        </td>
+
                         <td className="px-2 sm:px-4 py-2 text-center">
                           {Array.isArray(task.assignedTo)
-                            ? task.assignedTo.map(emp => emp.name || emp.email || emp).join(', ')
+                            ? task.assignedTo
+                                .map((emp) => emp.name || emp.email || emp)
+                                .join(", ")
                             : task.assignedTo}
                         </td>
                         <td className="px-2 sm:px-4 py-2 text-center">
@@ -1320,12 +1525,12 @@ const AuctionTable = () => {
                         </td>
                         <td className="px-2 sm:px-4 py-2 text-center">
                           <div className="flex justify-center space-x-2">
-                            <button 
+                            <button
                               onClick={(e) => {
                                 e.stopPropagation();
                                 showDeleteConfirmation(task);
                               }}
-                              className= "text-black hover:text-black bg-black/10 p-1 rounded-md hover:bg-red-300"
+                              className="text-black hover:text-black bg-black/10 p-1 rounded-md hover:bg-red-300"
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
@@ -1390,7 +1595,7 @@ const AuctionTable = () => {
                 {isComplete && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Event ID  <span className="text-red-600">*</span>
+                      Event ID <span className="text-red-600">*</span>
                     </label>
                     <input
                       type="text"
@@ -1483,7 +1688,7 @@ const AuctionTable = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Status  <span className="text-red-600">*</span>
+                    Status <span className="text-red-600">*</span>
                   </label>
                   <select
                     name="status"
@@ -1519,7 +1724,10 @@ const AuctionTable = () => {
                         >
                           <option value="">Select Category</option>
                           {categories.map((category) => (
-                            <option key={category._id} value={category.categoryName}>
+                            <option
+                              key={category._id}
+                              value={category.categoryName}
+                            >
                               {category.categoryName}
                             </option>
                           ))}
@@ -1623,14 +1831,13 @@ const AuctionTable = () => {
                         className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-sm"
                       />
                     </div>
-
                   </>
                 )}
 
                 {/* Assign Employees */}
                 <div className="relative col-span-1 sm:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Assign Employees  <span className="text-red-600">*</span>
+                    Assign Employees <span className="text-red-600">*</span>
                   </label>
                   <input
                     type="text"
@@ -1811,8 +2018,12 @@ const AuctionTable = () => {
                 Delete Auction Task
               </h3>
               <h3 className="text-lg font-semibold text-gray-500 mb-4">
-                Are you sure you want to delete the task <br/>  <span className="text-black font-extrabold ">"{taskToDelete.eventName}" </span>? This action cannot be undone.
-              </h3> 
+                Are you sure you want to delete the task <br />{" "}
+                <span className="text-black font-extrabold ">
+                  "{taskToDelete.eventName}"{" "}
+                </span>
+                ? This action cannot be undone.
+              </h3>
               <div className="flex justify-center space-x-4">
                 <button
                   onClick={() => setDeleteModalVisible(false)}
@@ -1946,6 +2157,288 @@ const AuctionTable = () => {
         </button>
       )}
 
+      {/* MIS Report Modal */}
+      {showMISModal && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4"
+          onClick={() => setShowMISModal(false)}
+        >
+          <div
+            className="bg-white/95 backdrop-blur-md rounded-lg shadow-2xl w-full max-w-md p-4 sm:p-6 relative animate-slide-in border border-white/20"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setShowMISModal(false)}
+              className="text-gray-500 hover:text-gray-700 absolute top-2 right-2 z-50"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="space-y-4">
+              <h3 className="text-lg sm:text-xl font-semibold text-gray-900">
+                Download MIS Report
+              </h3>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Client <span className="text-red-700">*</span>
+                </label>
+                <select
+                  value={misFormData.client}
+                  onChange={(e) =>
+                    setMisFormData((prev) => ({
+                      ...prev,
+                      client: e.target.value,
+                      division: "",
+                      selectedFields: [],
+                    }))
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 text-sm"
+                >
+                  <option value="">Select Client</option>
+                  <option value="EKL">EKL</option>
+                  <option value="HT Media">HT Media</option>
+                  <option value="TVTN">TVTN</option>
+
+                  {/* <option value="Other">Other</option> */}
+                </select>
+                {misFormErrors.client && (
+                  <p className="text-red-500 text-xs mt-1">
+                    {misFormErrors.client}
+                  </p>
+                )}
+              </div>
+
+              {misFormData.client === "EKL" && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Division<span className="text-red-700">*</span>
+                  </label>
+                  <div className="border border-gray-300 rounded-md p-3">
+                    <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto">
+                      {divisions.map((division) => (
+                        <label
+                          key={division}
+                          className="flex items-center space-x-2 text-sm"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={misFormData.selectedDivisions.includes(
+                              division
+                            )}
+                            onChange={(e) => {
+                              const divisionName = division;
+                              setMisFormData((prev) => ({
+                                ...prev,
+                                selectedDivisions: e.target.checked
+                                  ? [...prev.selectedDivisions, divisionName]
+                                  : prev.selectedDivisions.filter(
+                                      (d) => d !== divisionName
+                                    ),
+                              }));
+                            }}
+                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          />
+                          <span>{division}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                  {misFormErrors.selectedDivisions && (
+                    <p className="text-red-500 text-xs mt-1">
+                      {misFormErrors.selectedDivisions}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    From Date <span className="text-red-700">*</span>
+                  </label>
+                  <input
+                    type="date"
+                    value={misFormData.fromDate}
+                    onChange={(e) =>
+                      setMisFormData((prev) => ({
+                        ...prev,
+                        fromDate: e.target.value,
+                      }))
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 text-sm"
+                  />
+                  {misFormErrors.fromDate && (
+                    <p className="text-red-500 text-xs mt-1">
+                      {misFormErrors.fromDate}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    To Date <span className="text-red-700">*</span>
+                  </label>
+                  <input
+                    type="date"
+                    value={misFormData.toDate}
+                    onChange={(e) =>
+                      setMisFormData((prev) => ({
+                        ...prev,
+                        toDate: e.target.value,
+                      }))
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 text-sm"
+                  />
+                  {misFormErrors.toDate && (
+                    <p className="text-red-500 text-xs mt-1">
+                      {misFormErrors.toDate}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Select Fields to Include{" "}
+                  <span className="text-red-700">*</span>
+                </label>
+                <div className="border border-gray-300 rounded-md p-3">
+                  {(() => {
+                    const allFields =
+                      misFormData.client === "EKL"
+                        ? [
+                            "Client",
+                            "Division",
+                            "Event ID",
+                            "Auction Date",
+                            "Month-Year",
+                            "Expenditure Type",
+                            "Category",
+                            "Event Name",
+                            "Prebid",
+                            "Post bid",
+                            "Savings",
+                            "Savings %",
+                            "AssignedTo",
+                            "Status",
+                            "Auction Type",
+                            "Requester Name",
+                            "Auction Time",
+                            "Benchmark",
+                            "Earning",
+                            "Earning %",
+                            "Number of Participants",
+                            "Name of L1 Vendor",
+                            "Remarks",
+                          ]
+                        : [
+                            "Client",
+                            "Event ID",
+                            "Auction Date",
+                            "Month-Year",
+                            "Expenditure Type",
+                            "Category",
+                            "Event Description",
+                            "Prebid",
+                            "Post bid",
+                            "Savings",
+                            "Savings %",
+                            "AssignedTo",
+                            "Status",
+                            "Auction Type",
+                            "Requester Name",
+                            "Auction Time",
+                            "Benchmark",
+                            "Earning",
+                            "Earning %",
+                            "Number of Participants",
+                            "Name of L1 Vendor",
+                            "Remarks",
+                          ];
+                    return (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setMisFormData((prev) => ({
+                              ...prev,
+                              selectedFields:
+                                allFields.length === prev.selectedFields.length
+                                  ? []
+                                  : [...allFields],
+                            }))
+                          }
+                          className="text-blue-600 hover:text-blue-800 text-sm mb-2"
+                        >
+                          {allFields.length ===
+                          misFormData.selectedFields.length
+                            ? "Deselect All"
+                            : "Select All"}
+                        </button>
+                        <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto">
+                          {allFields.map((field) => (
+                            <label
+                              key={field}
+                              className="flex items-center space-x-2 text-sm"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={misFormData.selectedFields.includes(
+                                  field
+                                )}
+                                onChange={(e) => {
+                                  const fieldName = field;
+                                  setMisFormData((prev) => ({
+                                    ...prev,
+                                    selectedFields: e.target.checked
+                                      ? [...prev.selectedFields, fieldName]
+                                      : prev.selectedFields.filter(
+                                          (f) => f !== fieldName
+                                        ),
+                                  }));
+                                }}
+                                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                              />
+                              <span>{field}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </>
+                    );
+                  })()}
+                </div>
+                {misFormErrors.selectedFields && (
+                  <p className="text-red-500 text-xs mt-1">
+                    {misFormErrors.selectedFields}
+                  </p>
+                )}
+              </div>
+
+              <div className="flex justify-end space-x-4">
+                <button
+                  onClick={() => setShowMISModal(false)}
+                  className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 text-sm"
+                  disabled={isDownloadingMIS}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleMISDownload}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center space-x-2 text-sm"
+                  disabled={isDownloadingMIS}
+                >
+                  {isDownloadingMIS && (
+                    <Loader className="w-4 h-4 animate-spin" />
+                  )}
+                  <span>Download Report</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <style jsx>{`
         @keyframes slide-in {
           from {
@@ -1966,4 +2459,3 @@ const AuctionTable = () => {
 };
 
 export default AuctionTable;
-

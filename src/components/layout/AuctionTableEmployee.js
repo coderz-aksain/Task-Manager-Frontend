@@ -87,6 +87,8 @@ const AuctionTableEemployee = () => {
     fileUrls: [],
     remark: "",
     expenditureType: "",
+    numberOfParticipants: "",
+    nameOfL1Vendor: "",
     errors: {},
   });
   // Removed employee handling for employee view
@@ -117,6 +119,8 @@ const AuctionTableEemployee = () => {
         fileUrls: selectedTask.fileUrls || [],
         remark: selectedTask.remark || "",
         expenditureType: selectedTask.expenditureType || "",
+        numberOfParticipants: selectedTask.numberOfParticipants || "",
+        nameOfL1Vendor: selectedTask.nameOfL1Vendor || "",
         errors: {},
       });
       setEditId(selectedTask.taskId);
@@ -194,6 +198,8 @@ const AuctionTableEemployee = () => {
       fileUrls: [],
       remark: "",
       expenditureType: "",
+      numberOfParticipants: "",
+      nameOfL1Vendor: "",
       errors: {},
     });
     // Removed employee handling
@@ -271,6 +277,8 @@ const AuctionTableEemployee = () => {
       // Event ID and category are required when Complete
       if (!formData.eventId) errors.eventId = "Required when status is Complete";
       if (!formData.category) errors.category = "Required when status is Complete";
+      if (!formData.numberOfParticipants) errors.numberOfParticipants = "Required when status is Complete";
+      if (!formData.nameOfL1Vendor) errors.nameOfL1Vendor = "Required when status is Complete";
 
       // Auction-type specific validations
       if (formData.auctionType === "Reverse Auction") {
@@ -350,6 +358,8 @@ const AuctionTableEemployee = () => {
           updateData.earning = parseFloat(formData.savings);
           updateData.earningPercentage = parseFloat(formData.savingsPercent);
         }
+        updateData.numberOfParticipants = parseInt(formData.numberOfParticipants);
+        updateData.nameOfL1Vendor = formData.nameOfL1Vendor;
       }
 
       // Convert auctionDate from YYYY-MM-DD to DD-MM-YYYY format
@@ -1457,6 +1467,42 @@ const AuctionTableEemployee = () => {
                         readOnly
                         className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-sm"
                       />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Number of Participants <span className="text-red-600">*</span>
+                      </label>
+                      <input
+                        type="number"
+                        name="numberOfParticipants"
+                        value={formData.numberOfParticipants}
+                        onChange={handleInputChange}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 text-sm"
+                      />
+                      {formData.errors.numberOfParticipants && (
+                        <p className="text-red-500 text-xs mt-1">
+                          {formData.errors.numberOfParticipants}
+                        </p>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Name of L1 Vendor <span className="text-red-600">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        name="nameOfL1Vendor"
+                        value={formData.nameOfL1Vendor}
+                        onChange={handleInputChange}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 text-sm"
+                      />
+                      {formData.errors.nameOfL1Vendor && (
+                        <p className="text-red-500 text-xs mt-1">
+                          {formData.errors.nameOfL1Vendor}
+                        </p>
+                      )}
                     </div>
 
                   </>

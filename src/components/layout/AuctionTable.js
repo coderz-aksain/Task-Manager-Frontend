@@ -136,13 +136,13 @@ const AuctionTable = () => {
         status: selectedTask.status,
         preBid: selectedTask.preBid,
         postBid: selectedTask.postBid || "",
-        savings: selectedTask.savings || "",
-        savingsPercent: selectedTask.savingsPercent || "",
+        savings: selectedTask.savings !== undefined && selectedTask.savings !== null ? selectedTask.savings : "",
+        savingsPercent: selectedTask.savingsPercent !== undefined && selectedTask.savingsPercent !== null ? selectedTask.savingsPercent : "",
         assignedTo: selectedTask.assignedTo || [],
         fileUrls: selectedTask.fileUrls || [],
         remark: selectedTask.remark || "",
         expenditureType: selectedTask.expenditureType || "",
-        numberOfParticipants: selectedTask.numberOfParticipants || "",
+        numberOfParticipants: selectedTask.numberOfParticipants !== undefined && selectedTask.numberOfParticipants !== null ? selectedTask.numberOfParticipants : "",
         nameOfL1Vendor: selectedTask.nameOfL1Vendor || "",
         errors: {},
       });
@@ -1786,7 +1786,7 @@ const AuctionTable = () => {
                     {/* Pre Bid / Benchmark (label depends on auctionType) */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        {isForwardAuction ? "Benchmark *" : "Pre Bid *"}
+                        {isForwardAuction ? "Benchmark *" :  <span>Pre Bid <span className="text-red-600">*</span></span>}
                       </label>
                       <input
                         type="number"

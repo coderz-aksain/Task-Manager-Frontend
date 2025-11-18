@@ -879,10 +879,10 @@ const AuctionTable = () => {
       // Prepare data for API call
       const reportData = {
         client: misFormData.client,
-        fromDate: misFormData.fromDate.split('-').reverse().join('-'), // Convert YYYY-MM-DD to DD-MM-YYYY
-        toDate: misFormData.toDate.split('-').reverse().join('-'), // Convert YYYY-MM-DD to DD-MM-YYYY
+        fromDate: misFormData.fromDate,
+        toDate: misFormData.toDate,
         division: misFormData.selectedDivisions,
-        selectedFields: misFormData.selectedFields,
+        fields: misFormData.selectedFields,
       };
 
       // Make API call to download MIS report
@@ -2353,57 +2353,34 @@ const AuctionTable = () => {
                 </label>
                 <div className="border border-gray-300 rounded-md p-3">
                   {(() => {
-                    const allFields =
-                      misFormData.client === "EKL"
-                        ? [
-                            "Client",
-                            "Division",
-                            "Event ID",
-                            "Auction Date",
-                            "Month-Year",
-                            "Expenditure Type",
-                            "Category",
-                            "Event Name",
-                            "Prebid",
-                            "Post bid",
-                            "Savings",
-                            "Savings %",
-                            "AssignedTo",
-                            "Status",
-                            "Auction Type",
-                            "Requester Name",
-                            "Auction Time",
-                            "Benchmark",
-                            "Earning",
-                            "Earning %",
-                            "Number of Participants",
-                            "Name of L1 Vendor",
-                            "Remarks",
-                          ]
-                        : [
-                            "Client",
-                            "Event ID",
-                            "Auction Date",
-                            "Month-Year",
-                            "Expenditure Type",
-                            "Category",
-                            "Event Description",
-                            "Prebid",
-                            "Post bid",
-                            "Savings",
-                            "Savings %",
-                            "AssignedTo",
-                            "Status",
-                            "Auction Type",
-                            "Requester Name",
-                            "Auction Time",
-                            "Benchmark",
-                            "Earning",
-                            "Earning %",
-                            "Number of Participants",
-                            "Name of L1 Vendor",
-                            "Remarks",
-                          ];
+                    const allFields = [
+                      "Task Type",
+                      "Task ID",
+                      "Event ID",
+                      "Event Name",
+                      "Auction Type",
+                      "Expenditure Type",
+                      "Requester Name",
+                      "Client",
+                      "Division",
+                      "Auction Date",
+                      "Auction Time",
+                      "Status",
+                      "Category",
+                      "Benchmark",
+                      "Prebid",
+                      "Post bid",
+                      "Savings",
+                      "Earning",
+                      "Savings %",
+                      "Earning %",
+                      "Number of Participants",
+                      "Name of L1 Vendor",
+                      "AssignedTo",
+                      "Remarks",
+                      "Created At",
+                      "Updated At",
+                    ];
                     return (
                       <>
                         <button

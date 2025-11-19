@@ -882,7 +882,7 @@ const AuctionTable = () => {
         fromDate: misFormData.fromDate,
         toDate: misFormData.toDate,
         division: misFormData.selectedDivisions,
-        fields: misFormData.selectedFields,
+        selectedFields: misFormData.selectedFields,
       };
 
       // Make API call to download MIS report

@@ -23,6 +23,8 @@ const TaskFilterDrawer = ({
   filterTaskType,
   setFilterTaskType,
   taskTypes,
+  filterAuctionType = [],
+  setFilterAuctionType,
   clearAllFilters,
   isAuctionMode = false,
   ...rest
@@ -114,6 +116,36 @@ const TaskFilterDrawer = ({
             ))}
           </div>
         </div>
+        {isAuctionMode && (
+          <>
+            {/* Auction Type Filter */}
+            <div>
+              <label className="block text-sm font-medium mb-2  text-blue-600">Auction Type</label>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => setFilterAuctionType((prev) => prev.includes("Forward Auction") ? prev.filter((v) => v !== "Forward Auction") : [...prev, "Forward Auction"])}
+                  className={`px-3 py-1 rounded-full border text-xs font-medium ${
+                    filterAuctionType.includes("Forward Auction")
+                      ? "bg-blue-600 text-white border-blue-600"
+                      : "bg-gray-100 text-gray-700 border-gray-300"
+                  }`}
+                >
+                  Forward Auction
+                </button>
+                <button
+                  onClick={() => setFilterAuctionType((prev) => prev.includes("Reverse Auction") ? prev.filter((v) => v !== "Reverse Auction") : [...prev, "Reverse Auction"])}
+                  className={`px-3 py-1 rounded-full border text-xs font-medium ${
+                    filterAuctionType.includes("Reverse Auction")
+                      ? "bg-blue-600 text-white border-blue-600"
+                      : "bg-gray-100 text-gray-700 border-gray-300"
+                  }`}
+                >
+                  Reverse Auction
+                </button>
+              </div>
+            </div>
+          </>
+        )}
         {!isAuctionMode && (
           <>
             {/* Priority Filter */}

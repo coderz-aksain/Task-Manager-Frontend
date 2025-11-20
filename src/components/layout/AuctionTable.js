@@ -54,6 +54,8 @@ const AuctionTable = () => {
   const [filterEmployeeSearch, setFilterEmployeeSearch] = useState("");
   const [showEmployeeDropdown, setShowEmployeeDropdown] = useState(false);
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
+  const [filterAuctionType, setFilterAuctionType] = useState([]);
+  const [showAuctionTypeDropdown, setShowAuctionTypeDropdown] = useState(false);
   const [viewMode, setViewMode] = useState("cards");
 
   // Update viewMode with localStorage persistence
@@ -100,6 +102,7 @@ const AuctionTable = () => {
   const statusDropdownRef = useRef(null);
   const employeeDropdownRef = useRef(null);
   const dueDateDropdownRef = useRef(null);
+  const auctionTypeDropdownRef = useRef(null);
   const [formData, setFormData] = useState({
     taskId: "",
     eventId: "",
@@ -592,32 +595,36 @@ const AuctionTable = () => {
   // Close dropdown on outside click
   useEffect(() => {
     const handleClickOutside = (e) => {
-      setTimeout(() => {
-        if (
-          modalEmployeeDropdownRef.current &&
-          !modalEmployeeDropdownRef.current.contains(e.target)
-        ) {
-          setShowModalEmployeeDropdown(false);
-        }
-        if (
-          dueDateDropdownRef.current &&
-          !dueDateDropdownRef.current.contains(e.target)
-        ) {
-          setShowDueDateFilterDropdown(false);
-        }
-        if (
-          statusDropdownRef.current &&
-          !statusDropdownRef.current.contains(e.target)
-        ) {
-          setShowStatusDropdown(false);
-        }
-        if (
-          employeeDropdownRef.current &&
-          !employeeDropdownRef.current.contains(e.target)
-        ) {
-          setShowEmployeeDropdown(false);
-        }
-      }, 0);
+      if (
+        modalEmployeeDropdownRef.current &&
+        !modalEmployeeDropdownRef.current.contains(e.target)
+      ) {
+        setShowModalEmployeeDropdown(false);
+      }
+      if (
+        dueDateDropdownRef.current &&
+        !dueDateDropdownRef.current.contains(e.target)
+      ) {
+        setShowDueDateFilterDropdown(false);
+      }
+      if (
+        statusDropdownRef.current &&
+        !statusDropdownRef.current.contains(e.target)
+      ) {
+        setShowStatusDropdown(false);
+      }
+      if (
+        employeeDropdownRef.current &&
+        !employeeDropdownRef.current.contains(e.target)
+      ) {
+        setShowEmployeeDropdown(false);
+      }
+      if (
+        auctionTypeDropdownRef.current &&
+        !auctionTypeDropdownRef.current.contains(e.target)
+      ) {
+        setShowAuctionTypeDropdown(false);
+      }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
@@ -682,12 +689,25 @@ const AuctionTable = () => {
       // Transform backend data to frontend format (basic transformation)
       const transformedTasks = tasksData.map((task) => {
         console.log("🔄 Transforming task:", task);
+        // Handle preBid/benchmark based on auction type
+        let preBid = task.prebid;
+        if (task.auctionType === "Forward Auction") {
+          preBid = task.benchmark;
+        }
+        // Handle savings/earning based on auction type
+        let savings = task.savings;
+        let savingsPercent = task.savingsPercentage;
+        if (task.auctionType === "Forward Auction") {
+          savings = task.earning;
+          savingsPercent = task.earningPercentage;
+        }
         return {
           ...task,
           requestor: task.requesterName, // Map requesterName to requestor
-          preBid: task.prebid,
+          preBid: preBid !== undefined && preBid !== null ? preBid : "",
           postBid: task.postbid,
-          savingsPercent: task.savingsPercentage,
+          savings: savings !== undefined && savings !== null ? savings : "",
+          savingsPercent: savingsPercent !== undefined && savingsPercent !== null ? savingsPercent : "",
           dateTime:
             task.auctionDate && task.auctionDate !== "-"
               ? `${task.auctionDate.split("-").reverse().join("-")}T${
@@ -777,20 +797,29 @@ const AuctionTable = () => {
     );
   };
 
+  const toggleAuctionType = (type) => {
+    setFilterAuctionType((prev) =>
+      prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]
+    );
+  };
+
   const clearAllFilters = () => {
     setSearchTerm("");
     setFilterStatus([]);
     setFilterEmployee([]);
     setFilterEmployeeSearch("");
+    setFilterAuctionType([]);
     setDueDateFilter("none");
     setCustomDateRange({ start: "", end: "" });
     setShowDueDateFilterDropdown(false);
+    setShowAuctionTypeDropdown(false);
   };
 
   const isFilterApplied = () => {
     return (
       filterStatus.length > 0 ||
       filterEmployee.length > 0 ||
+      filterAuctionType.length > 0 ||
       dueDateFilter !== "none"
     );
   };
@@ -948,9 +977,12 @@ const AuctionTable = () => {
       (Array.isArray(task.assignedTo) &&
         task.assignedTo.some((emp) => filterEmployee.includes(emp.email)));
 
+    const matchesAuctionType =
+      filterAuctionType.length === 0 || filterAuctionType.includes(task.auctionType);
+
     const matchesDate = filterByAuctionDate(task);
 
-    return matchesSearch && matchesStatus && matchesEmployee && matchesDate;
+    return matchesSearch && matchesStatus && matchesEmployee && matchesAuctionType && matchesDate;
   });
 
   return (
@@ -1282,6 +1314,88 @@ const AuctionTable = () => {
             </div>
           )}
         </div>
+        <div className="relative min-w-[180px] max-w-full sm:min-w-[220px] sm:max-w-[220px]">
+          <div
+            className="px-3 py-2 border border-gray-300 rounded-md bg-white cursor-pointer flex items-center justify-between w-full text-xs sm:text-sm"
+            onClick={() => setShowAuctionTypeDropdown(!showAuctionTypeDropdown)}
+          >
+            <span className="flex flex-wrap items-center gap-1">
+              {filterAuctionType.length === 0 ? (
+                <>
+                  <span className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center text-xs text-gray-600 mr-2">
+                    All
+                  </span>
+                  All Auction Types
+                </>
+              ) : (
+                <>
+                  <span className="flex flex-wrap gap-1">
+                    {filterAuctionType.slice(0, 5).map((type, idx) => (
+                      <span
+                        key={type}
+                        className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center text-xs text-blue-800 border border-gray-300"
+                      >
+                        {type === "Forward Auction" ? "F" : "R"}
+                      </span>
+                    ))}
+                    {filterAuctionType.length > 5 && (
+                      <span className="w-5 h-5 rounded-full bg-gray-300 flex items-center justify-center text-xs text-gray-700 ml-1">
+                        +{filterAuctionType.length - 5}
+                      </span>
+                    )}
+                  </span>
+                  <span className="ml-2">Applied Auction Types</span>
+                </>
+              )}
+            </span>
+          </div>
+          {showAuctionTypeDropdown && (
+            <div
+              ref={auctionTypeDropdownRef}
+              className="absolute z-20 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-64 overflow-y-auto min-w-[180px] max-w-full sm:min-w-[220px] sm:max-w-[220px]"
+            >
+              <label className="flex items-center px-3 py-2 hover:bg-gray-100 cursor-pointer text-xs sm:text-sm">
+                <input
+                  type="checkbox"
+                  checked={filterAuctionType.length === 0}
+                  onChange={() => setFilterAuctionType([])}
+                  className="mr-2"
+                  disabled={loading}
+                />
+                <span className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center text-xs text-gray-600 mr-2">
+                  All
+                </span>
+                <span>All Auction Types</span>
+              </label>
+              <label className="flex items-center px-3 py-2 hover:bg-gray-100 cursor-pointer text-xs sm:text-sm">
+                <input
+                  type="checkbox"
+                  checked={filterAuctionType.includes("Forward Auction")}
+                  onChange={() => toggleAuctionType("Forward Auction")}
+                  className="mr-2"
+                  disabled={loading}
+                />
+                <span className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center text-xs text-blue-800 mr-2 border border-gray-300">
+                  F
+                </span>
+                <span>Forward Auction</span>
+              </label>
+              <label className="flex items-center px-3 py-2 hover:bg-gray-100 cursor-pointer text-xs sm:text-sm">
+                <input
+                  type="checkbox"
+                  checked={filterAuctionType.includes("Reverse Auction")}
+                  onChange={() => toggleAuctionType("Reverse Auction")}
+                  className="mr-2"
+                  disabled={loading}
+                />
+                <span className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center text-xs text-blue-800 mr-2 border border-gray-300">
+                  R
+                </span>
+                <span>Reverse Auction</span>
+              </label>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Action Buttons */}
@@ -1395,11 +1509,12 @@ const AuctionTable = () => {
                   <tr>
                     {[
                       "Event Id",
+                      "Auction Type",
                       "Event Name",
                       "Requestor",
                       "Date & Time",
-                      "Savings",
-                      "Savings %",
+                      "Savings/Earning",
+                      "Savings/Earning %",
                       "Assigned To",
                       "Status",
                       "Actions",
@@ -1408,9 +1523,9 @@ const AuctionTable = () => {
                       .map((h, i) => (
                         <th
                           key={i}
-                          className={`px-2 sm:px-4 py-2 font-semibold text-center ${
+                          className={`px-3 sm:px-6 py-3 font-semibold text-center whitespace-nowrap ${
                             h === "Event Name"
-                              ? "w-[30%]"
+                              ? "w-[25%]"
                               : h === "Date & Time"
                               ? "w-[15%]"
                               : h === "Actions"
@@ -1427,7 +1542,7 @@ const AuctionTable = () => {
                 <tbody>
                   {loading ? (
                     <tr>
-                      <td colSpan="9" className="px-2 sm:px-4 py-8 text-center">
+                      <td colSpan="10" className="px-2 sm:px-4 py-8 text-center">
                         <div className="flex flex-col items-center justify-center">
                           <Loader className="w-8 h-8 animate-spin text-blue-500 mx-auto mb-4" />
                           <p className="text-gray-600">
@@ -1438,7 +1553,7 @@ const AuctionTable = () => {
                     </tr>
                   ) : error ? (
                     <tr>
-                      <td colSpan="9" className="px-2 sm:px-4 py-8 text-center">
+                      <td colSpan="10" className="px-2 sm:px-4 py-8 text-center">
                         <div className="text-center">
                           <p className="text-red-500 mb-4">{error}</p>
                           <button
@@ -1452,7 +1567,7 @@ const AuctionTable = () => {
                     </tr>
                   ) : filteredTasks.length === 0 ? (
                     <tr>
-                      <td colSpan="9" className="px-2 sm:px-4 py-8 text-center">
+                      <td colSpan="10" className="px-2 sm:px-4 py-8 text-center">
                         <p className="text-gray-500">No auction tasks found.</p>
                       </td>
                     </tr>
@@ -1465,6 +1580,9 @@ const AuctionTable = () => {
                       >
                         <td className="px-2 sm:px-4 py-2 truncate text-center">
                           {task.eventId}
+                        </td>
+                        <td className="px-2 sm:px-4 py-2 text-center">
+                          {task.auctionType}
                         </td>
                         <td className="px-2 sm:px-4 py-2 text-start max-w-[250px] font-bold relative group cursor-pointer">
                           <span className="line-clamp-2">
@@ -1869,7 +1987,7 @@ const AuctionTable = () => {
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Name of L1 Vendor <span className="text-red-600">*</span>
+                        {isForwardAuction ? "Name of H1 Vendor" : "Name of L1 Vendor"} <span className="text-red-600">*</span>
                       </label>
                       <input
                         type="text"
@@ -2194,6 +2312,8 @@ const AuctionTable = () => {
           filterTaskType="all"
           setFilterTaskType={() => {}}
           taskTypes={[]}
+          filterAuctionType={filterAuctionType}
+          setFilterAuctionType={setFilterAuctionType}
           clearAllFilters={clearAllFilters}
           isAuctionMode={true}
         />

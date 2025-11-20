@@ -709,10 +709,11 @@ const AuctionTable = () => {
           postBid: task.postbid,
           savings: savings !== undefined && savings !== null ? savings : "",
           savingsPercent: savingsPercent !== undefined && savingsPercent !== null ? savingsPercent : "",
+          auctionTime: task.auctionTime,
           dateTime:
             task.auctionDate && task.auctionDate !== "-"
               ? `${task.auctionDate.split("-").reverse().join("-")}T${
-                  task.auctionTime || "00:00"
+                  (task.auctionTime && task.auctionTime !== "-") ? task.auctionTime : "00:00"
                 }`
               : new Date().toISOString().split("T")[0] + "T00:00",
           remark: task.remarks,
@@ -1608,11 +1609,13 @@ const AuctionTable = () => {
                             ? (() => {
                                 const date = new Date(task.dateTime);
                                 const dateStr = date.toLocaleDateString("en-IN");
-                                const timeStr = date.toLocaleTimeString("en-IN", {
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                  hour12: true,
-                                });
+                                const timeStr = task.auctionTime && task.auctionTime !== "-" && task.auctionTime !== "00:00"
+                                  ? date.toLocaleTimeString("en-IN", {
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                      hour12: true,
+                                    })
+                                  : "--:--";
                                 return `${dateStr} | ${timeStr}`;
                               })()
                             : "-"}

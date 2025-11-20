@@ -624,8 +624,9 @@ const AuctionTableEemployee = () => {
           postBid: task.postbid,
           savings: savings !== undefined && savings !== null ? savings : "",
           savingsPercent: savingsPercent !== undefined && savingsPercent !== null ? savingsPercent : "",
+          auctionTime: task.auctionTime,
           dateTime: (task.auctionDate && task.auctionDate !== "-") ?
-            `${task.auctionDate.split('-').reverse().join('-')}T${task.auctionTime || "00:00"}` :
+            `${task.auctionDate.split('-').reverse().join('-')}T${(task.auctionTime && task.auctionTime !== "-") ? task.auctionTime : "00:00"}` :
             new Date().toISOString().split('T')[0] + "T00:00",
           remark: task.remarks,
           assignedTo: (task.assignedTo || []).map(email => {
@@ -1254,16 +1255,18 @@ const AuctionTableEemployee = () => {
                         <td className="px-2 sm:px-4 py-2 text-center">
                           {task.requestor}
                         </td>
-                        <td className="px-2 sm:px-4 py-2 text-center">
+                       <td className="px-2 sm:px-4 py-2 text-center">
                           {task.auctionDate && task.auctionDate !== "-"
                             ? (() => {
                                 const date = new Date(task.dateTime);
                                 const dateStr = date.toLocaleDateString("en-IN");
-                                const timeStr = date.toLocaleTimeString("en-IN", {
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                  hour12: true,
-                                });
+                                const timeStr = task.auctionTime && task.auctionTime !== "-" && task.auctionTime !== "00:00"
+                                  ? date.toLocaleTimeString("en-IN", {
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                      hour12: true,
+                                    })
+                                  : "--:--";
                                 return `${dateStr} | ${timeStr}`;
                               })()
                             : "-"}

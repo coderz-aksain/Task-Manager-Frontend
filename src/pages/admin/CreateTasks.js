@@ -26,7 +26,6 @@ import AdminSidebar from "../../components/common/AdminSidebar";
 import Header from "../../components/common/Header";
 import { useNavigate } from "react-router-dom";
 import { requestorsData } from "../employee/requestorsData";
-import { createAuctionTask } from "../../services/auctionTaskApi";
 
 // Placeholder categories (replace with actual categories if available)
 const categories = [
@@ -350,20 +349,40 @@ function CreateTasks({ onSubmit, editTask, onCancel }) {
       } else if (values.taskType === "Auction") {
         setSubmitting(true);
         try {
-          // Map frontend fields to backend-required fields for Auction
-          const auctionTaskData = {
+          let formattedAuctionDate = '';
+          if (values.auctionDate) {
+            const [aYear, aMonth, aDay] = values.auctionDate.split('-');
+            formattedAuctionDate = `${aDay.padStart(2, '0')}-${aMonth.padStart(2, '0')}-${aYear}`;
+          }
+          const auctionData = {
             taskType: values.taskType,
             auctionType: values.auctionType,
-            eventName: values.taskName, // Map taskName to eventName
-            requesterName: values.requestorName, // Use requestorName as plain string
+            eventName: values.taskName,
+            requesterName: values.requestorName,
             client: values.client,
             division: values.division,
-            assignEmployees:
-              Array.isArray(values.assignedTo) && values.assignedTo.length > 0
-                ? values.assignedTo.map((emp) => emp.email)
-                : [],
+            assignEmployees: Array.isArray(values.assignedTo) && values.assignedTo.length > 0
+              ? values.assignedTo.map((emp) => emp.email)
+              : [],
+            auctionDate: formattedAuctionDate,
+            auctionTime: values.auctionTime,
+            category: values.category,
+            [values.auctionType === 'Forward Auction' ? 'benchmark' : 'prebid']: values.preBid,
           };
-          const data = await createAuctionTask(auctionTaskData);
+          console.log("🚀 Sending Auction Task Data to Backend:", auctionData);
+          const response = await fetch('https://task-manager-backend-xs5s.onrender.com/api/auction-tasks', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify(auctionData),
+          });
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ message: 'Unknown server error' }));
+            throw new Error(errorData.message || 'Failed to create auction task');
+          }
+          const data = await response.json();
           if (typeof onSubmit === "function") {
             onSubmit(data);
           }
@@ -404,6 +423,7 @@ function CreateTasks({ onSubmit, editTask, onCancel }) {
             formDataToSend.append("file", file);
           }
         });
+        console.log("🚀 Sending General Task Data to Backend:", Object.fromEntries(formDataToSend.entries()));
         try {
           const response = await fetch(
             editTask

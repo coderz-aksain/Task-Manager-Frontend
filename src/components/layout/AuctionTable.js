@@ -89,6 +89,7 @@ const AuctionTable = () => {
   const [showMISModal, setShowMISModal] = useState(false);
   const [misFormData, setMisFormData] = useState({
     client: "",
+    auctionType: "",
     fromDate: "",
     toDate: "",
     selectedDivisions: [],
@@ -873,6 +874,7 @@ const AuctionTable = () => {
     // Validate form
     const errors = {};
     if (!misFormData.client) errors.client = "Client is required";
+    if (!misFormData.auctionType) errors.auctionType = "Auction Type is required";
     if (!misFormData.fromDate) errors.fromDate = "From Date is required";
     if (!misFormData.toDate) errors.toDate = "To Date is required";
     if (
@@ -909,6 +911,7 @@ const AuctionTable = () => {
       // Prepare data for API call
       const reportData = {
         client: misFormData.client,
+        auctionType: misFormData.auctionType,
         fromDate: misFormData.fromDate,
         toDate: misFormData.toDate,
         division: misFormData.selectedDivisions,
@@ -946,6 +949,7 @@ const AuctionTable = () => {
       setShowMISModal(false);
       setMisFormData({
         client: "",
+        auctionType: "",
         fromDate: "",
         toDate: "",
         selectedDivisions: [],
@@ -2362,6 +2366,7 @@ const AuctionTable = () => {
                     setMisFormData((prev) => ({
                       ...prev,
                       client: e.target.value,
+                      auctionType: "",
                       division: "",
                       selectedFields: [],
                     }))
@@ -2378,6 +2383,32 @@ const AuctionTable = () => {
                 {misFormErrors.client && (
                   <p className="text-red-500 text-xs mt-1">
                     {misFormErrors.client}
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Auction Type <span className="text-red-700">*</span>
+                </label>
+                <select
+                  value={misFormData.auctionType}
+                  onChange={(e) =>
+                    setMisFormData((prev) => ({
+                      ...prev,
+                      auctionType: e.target.value,
+                      selectedFields: [],
+                    }))
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 text-sm"
+                >
+                  <option value="">Select Auction Type</option>
+                  <option value="Forward Auction">Forward Auction</option>
+                  <option value="Reverse Auction">Reverse Auction</option>
+                </select>
+                {misFormErrors.auctionType && (
+                  <p className="text-red-500 text-xs mt-1">
+                    {misFormErrors.auctionType}
                   </p>
                 )}
               </div>
@@ -2506,6 +2537,21 @@ const AuctionTable = () => {
                       "Created At",
                       "Updated At",
                     ];
+
+                    // Filter fields based on auction type
+                    let availableFields = allFields;
+                    if (misFormData.auctionType === "Forward Auction") {
+                      availableFields = allFields.filter(
+                        (field) =>
+                          !["Prebid", "Savings", "Savings %"].includes(field)
+                      );
+                    } else if (misFormData.auctionType === "Reverse Auction") {
+                      availableFields = allFields.filter(
+                        (field) =>
+                          !["Benchmark", "Earning", "Earning %"].includes(field)
+                      );
+                    }
+
                     return (
                       <>
                         <button
@@ -2514,20 +2560,20 @@ const AuctionTable = () => {
                             setMisFormData((prev) => ({
                               ...prev,
                               selectedFields:
-                                allFields.length === prev.selectedFields.length
+                                availableFields.length === prev.selectedFields.length
                                   ? []
-                                  : [...allFields],
+                                  : [...availableFields],
                             }))
                           }
                           className="text-blue-600 hover:text-blue-800 text-sm mb-2"
                         >
-                          {allFields.length ===
+                          {availableFields.length ===
                           misFormData.selectedFields.length
                             ? "Deselect All"
                             : "Select All"}
                         </button>
                         <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto">
-                          {allFields.map((field) => (
+                          {availableFields.map((field) => (
                             <label
                               key={field}
                               className="flex items-center space-x-2 text-sm"

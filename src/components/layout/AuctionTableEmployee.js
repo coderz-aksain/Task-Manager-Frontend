@@ -59,6 +59,19 @@ const AuctionTableEemployee = () => {
     setViewMode(newMode);
     localStorage.setItem("auctionViewMode", newMode);
   };
+
+  // Responsive viewMode based on screen size
+  useEffect(() => {
+    const checkScreenSize = () => {
+      const saved = localStorage.getItem("auctionViewMode");
+      if (!saved) {
+        setViewMode(window.innerWidth >= 1024 ? "table" : "cards");
+      }
+    };
+    checkScreenSize();
+    window.addEventListener("resize", checkScreenSize);
+    return () => window.removeEventListener("resize", checkScreenSize);
+  }, []);
   const [showFilterDrawer, setShowFilterDrawer] = useState(false);
 
   // Date filter states
@@ -935,7 +948,7 @@ const AuctionTableEemployee = () => {
       {/* Action Buttons */}
       <div className="mb-6 bg-white rounded-lg shadow-md p-4">
         <div className="flex flex-col sm:flex-row gap-2">
-          <Link to="/admin/createtasks">
+          <Link to="/employee/createtasks">
             <button
               className="p-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center justify-center text-sm sm:text-base w-full sm:w-10 h-10"
               title="Create Task"
@@ -1045,7 +1058,15 @@ const AuctionTableEemployee = () => {
                       .map((h, i) => (
                         <th
                           key={i}
-                          className="px-2 sm:px-4 py-2 font-semibold text-center w-[12.5%]"
+                          className={`px-2 sm:px-4 py-2 font-semibold text-center ${
+                            h === "Event Name"
+                              ? "w-[30%]"
+                              : h === "Date & Time"
+                              ? "w-[15%]"
+                              : h === "Actions"
+                              ? "w-[8%]"
+                              : "w-[10%]"
+                          }`}
                         >
                           {h}
                         </th>
@@ -1094,7 +1115,7 @@ const AuctionTableEemployee = () => {
                           {task.eventId}
                         </td>
                         <td className="px-2 sm:px-4 py-2 text-start max-w-[140px] font-bold relative group cursor-pointer">
-                          <span className="truncate block">{task.eventName}</span>
+                          <span className="line-clamp-2">{task.eventName}</span>
 
                           {/* Tooltip */}
                           <div className="absolute left-1/2 -translate-x-1/2 top-full mt-1 w-max max-w-xs hidden group-hover:block bg-red-900 text-white text-xs px-3 py-1 rounded-md shadow-lg z-20">
@@ -1106,17 +1127,18 @@ const AuctionTableEemployee = () => {
                           {task.requestor}
                         </td>
                         <td className="px-2 sm:px-4 py-2 text-center">
-                          {task.auctionDate && task.auctionDate !== "-" ?
-                            new Date(task.dateTime).toLocaleString('en-IN', {
-                              day: '2-digit',
-                              month: '2-digit',
-                              year: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit',
-                              hour12: true
-                            }) :
-                            "-"
-                          }
+                          {task.auctionDate && task.auctionDate !== "-"
+                            ? (() => {
+                                const date = new Date(task.dateTime);
+                                const dateStr = date.toLocaleDateString("en-IN");
+                                const timeStr = date.toLocaleTimeString("en-IN", {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                  hour12: true,
+                                });
+                                return `${dateStr} | ${timeStr}`;
+                              })()
+                            : "-"}
                         </td>
 
                         {/* <td className="px-2 sm:px-4 py-2 text-center">
@@ -1148,7 +1170,7 @@ const AuctionTableEemployee = () => {
                             : `${task.savingsPercent}%`}
                         </td>
                         
-                        <td className="px-2 sm:px-4 py-2 text-center">
+                        <td className="px-2 sm:px-4 py-2 text-center pl-4">
                           <span
                             className={`inline-block px-2 py-1 rounded-full text-xs ${
                               task.status === "Open"

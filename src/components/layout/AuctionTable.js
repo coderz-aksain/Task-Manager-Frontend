@@ -61,6 +61,19 @@ const AuctionTable = () => {
     setViewMode(newMode);
     localStorage.setItem("auctionViewMode", newMode);
   };
+
+  // Responsive viewMode based on screen size
+  useEffect(() => {
+    const checkScreenSize = () => {
+      const saved = localStorage.getItem("auctionViewMode");
+      if (!saved) {
+        setViewMode(window.innerWidth >= 1024 ? "table" : "cards");
+      }
+    };
+    checkScreenSize();
+    window.addEventListener("resize", checkScreenSize);
+    return () => window.removeEventListener("resize", checkScreenSize);
+  }, []);
   const [showFilterDrawer, setShowFilterDrawer] = useState(false);
 
   // Date filter states
@@ -605,18 +618,32 @@ const AuctionTable = () => {
   // Close dropdown on outside click
   useEffect(() => {
     const handleClickOutside = (e) => {
-      if (
-        modalEmployeeDropdownRef.current &&
-        !modalEmployeeDropdownRef.current.contains(e.target)
-      ) {
-        setShowModalEmployeeDropdown(false);
-      }
-      if (
-        dueDateDropdownRef.current &&
-        !dueDateDropdownRef.current.contains(e.target)
-      ) {
-        setShowDueDateFilterDropdown(false);
-      }
+      setTimeout(() => {
+        if (
+          modalEmployeeDropdownRef.current &&
+          !modalEmployeeDropdownRef.current.contains(e.target)
+        ) {
+          setShowModalEmployeeDropdown(false);
+        }
+        if (
+          dueDateDropdownRef.current &&
+          !dueDateDropdownRef.current.contains(e.target)
+        ) {
+          setShowDueDateFilterDropdown(false);
+        }
+        if (
+          statusDropdownRef.current &&
+          !statusDropdownRef.current.contains(e.target)
+        ) {
+          setShowStatusDropdown(false);
+        }
+        if (
+          employeeDropdownRef.current &&
+          !employeeDropdownRef.current.contains(e.target)
+        ) {
+          setShowEmployeeDropdown(false);
+        }
+      }, 0);
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
@@ -1388,7 +1415,7 @@ const AuctionTable = () => {
 
           {/* Content Layer */}
           <div className="relative z-10">
-            <div className="overflow-x-auto max-h-[65vh] rounded-lg shadow-md bg-white/50 backdrop-blur-lg">
+            <div className="overflow-x-auto max-h-[60vh] rounded-lg shadow-md bg-white/50 backdrop-blur-lg">
               <table className="w-full text-xs sm:text-sm text-left text-gray-800 table-fixed">
                 <thead className="bg-gray-200 backdrop-blur-md text-black sticky top-0 z-10">
                   <tr>
@@ -1407,7 +1434,15 @@ const AuctionTable = () => {
                       .map((h, i) => (
                         <th
                           key={i}
-                          className="px-2 sm:px-4 py-2 font-semibold text-center w-[12.5%]"
+                          className={`px-2 sm:px-4 py-2 font-semibold text-center ${
+                            h === "Event Name"
+                              ? "w-[30%]"
+                              : h === "Date & Time"
+                              ? "w-[15%]"
+                              : h === "Actions"
+                              ? "w-[8%]"
+                              : "w-[10%]"
+                          }`}
                         >
                           {h}
                         </th>
@@ -1457,8 +1492,8 @@ const AuctionTable = () => {
                         <td className="px-2 sm:px-4 py-2 truncate text-center">
                           {task.eventId}
                         </td>
-                        <td className="px-2 sm:px-4 py-2 text-start max-w-[140px] font-bold relative group cursor-pointer">
-                          <span className="truncate block">
+                        <td className="px-2 sm:px-4 py-2 text-start max-w-[250px] font-bold relative group cursor-pointer">
+                          <span className="line-clamp-2">
                             {task.eventName}
                           </span>
 
@@ -1474,14 +1509,16 @@ const AuctionTable = () => {
                         </td>
                         <td className="px-2 sm:px-4 py-2 text-center">
                           {task.auctionDate && task.auctionDate !== "-"
-                            ? new Date(task.dateTime).toLocaleString("en-IN", {
-                                day: "2-digit",
-                                month: "2-digit",
-                                year: "numeric",
-                                hour: "2-digit",
-                                minute: "2-digit",
-                                hour12: true,
-                              })
+                            ? (() => {
+                                const date = new Date(task.dateTime);
+                                const dateStr = date.toLocaleDateString("en-IN");
+                                const timeStr = date.toLocaleTimeString("en-IN", {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                  hour12: true,
+                                });
+                                return `${dateStr} | ${timeStr}`;
+                              })()
                             : "-"}
                         </td>
 
@@ -1520,7 +1557,7 @@ const AuctionTable = () => {
                                 .join(", ")
                             : task.assignedTo}
                         </td>
-                        <td className="px-2 sm:px-4 py-2 text-center">
+                        <td className="px-2 sm:px-4 py-2 text-center pl-4">
                           <span
                             className={`inline-block px-2 py-1 rounded-full text-xs ${
                               task.status === "Open"

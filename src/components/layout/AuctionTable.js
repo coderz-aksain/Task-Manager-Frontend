@@ -306,95 +306,69 @@ const AuctionTable = () => {
 
     const errors = {};
 
-    // Base required fields for all statuses
-    if (!formData.auctionType) errors.auctionType = "Required";
-    if (!formData.eventName) errors.eventName = "Required";
-    if (!formData.requestor) errors.requestor = "Required";
-    if (!formData.client) errors.client = "Required";
-    if (!formData.division) errors.division = "Required";
-    if (!formData.status) errors.status = "Required";
-    if (!formData.expenditureType) errors.expenditureType = "Required";
-
-    // Status-specific validations
+    // Only validate required fields if status is "Complete"
     if (formData.status === "Complete") {
-      // Event ID and category are required when Complete
-      if (!formData.eventId)
-        errors.eventId = "Required when status is Complete";
-      if (!formData.category)
-        errors.category = "Required when status is Complete";
-      if (!formData.numberOfParticipants)
-        errors.numberOfParticipants = "Required when status is Complete";
-      if (!formData.nameOfL1Vendor)
-        errors.nameOfL1Vendor = "Required when status is Complete";
+      const requiredFields = [
+        "auctionType",
+        "eventName",
+        "requestor",
+        "client",
+        "division",
+        "dateTime",
+        "status",
+        "expenditureType",
+        "eventId",
+        "category",
+        "numberOfParticipants",
+        "nameOfL1Vendor",
+      ];
 
-      // Auction-type specific validations
+      requiredFields.forEach((field) => {
+        if (formData[field] === undefined || formData[field] === null || formData[field] === "") {
+          errors[field] = `Required when status is Complete`;
+        }
+      });
+
+      // Auction-type specific required fields
       if (formData.auctionType === "Reverse Auction") {
-        if (
-          formData.preBid === "" ||
-          formData.preBid === null ||
-          typeof formData.preBid === "undefined"
-        )
-          errors.preBid = "Required when Complete";
-        if (
-          formData.postBid === "" ||
-          formData.postBid === null ||
-          typeof formData.postBid === "undefined"
-        )
-          errors.postBid = "Required when Complete";
-        if (
-          formData.savings === "" ||
-          formData.savings === null ||
-          typeof formData.savings === "undefined"
-        )
-          errors.savings = "Required when Complete";
-        if (
-          formData.savingsPercent === "" ||
-          formData.savingsPercent === null ||
-          typeof formData.savingsPercent === "undefined"
-        )
-          errors.savingsPercent = "Required when Complete";
-
-        // Validate non-negative numbers
-        if (formData.preBid < 0) errors.preBid = "Must be non-negative";
-        if (formData.postBid < 0) errors.postBid = "Must be non-negative";
-        if (formData.savings < 0) errors.savings = "Must be non-negative";
-        if (formData.savingsPercent < 0)
-          errors.savingsPercent = "Must be non-negative";
+        ["preBid", "postBid", "savings", "savingsPercent"].forEach((field) => {
+          if (formData[field] === undefined || formData[field] === null || formData[field] === "") {
+            errors[field] = `Required when Complete`;
+          }
+        });
       } else if (formData.auctionType === "Forward Auction") {
-        if (
-          formData.preBid === "" ||
-          formData.preBid === null ||
-          typeof formData.preBid === "undefined"
-        )
+        if (formData.preBid === undefined || formData.preBid === null || formData.preBid === "") {
           errors.preBid = "Benchmark required when Complete";
-        if (
-          formData.postBid === "" ||
-          formData.postBid === null ||
-          typeof formData.postBid === "undefined"
-        )
+        }
+        if (formData.postBid === undefined || formData.postBid === null || formData.postBid === "") {
           errors.postBid = "Required when Complete";
-        if (
-          formData.savings === "" ||
-          formData.savings === null ||
-          typeof formData.savings === "undefined"
-        )
+        }
+        if (formData.savings === undefined || formData.savings === null || formData.savings === "") {
           errors.savings = "Earning required when Complete";
-        if (
-          formData.savingsPercent === "" ||
-          formData.savingsPercent === null ||
-          typeof formData.savingsPercent === "undefined"
-        )
+        }
+        if (formData.savingsPercent === undefined || formData.savingsPercent === null || formData.savingsPercent === "") {
           errors.savingsPercent = "Earning % required when Complete";
-
-        // Validate non-negative numbers
-        if (formData.preBid < 0) errors.preBid = "Must be non-negative";
-        if (formData.postBid < 0) errors.postBid = "Must be non-negative";
-        if (formData.savings < 0) errors.savings = "Must be non-negative";
-        if (formData.savingsPercent < 0)
-          errors.savingsPercent = "Must be non-negative";
+        }
       }
+
+      // Numeric validation
+      const numericFields = [];
+      if (formData.auctionType === "Reverse Auction") {
+        numericFields.push("preBid", "postBid", "savings", "savingsPercent");
+      } else if (formData.auctionType === "Forward Auction") {
+        numericFields.push("preBid", "postBid", "savings", "savingsPercent");
+      }
+      numericFields.push("numberOfParticipants");
+
+      numericFields.forEach((field) => {
+        const value = parseFloat(formData[field]);
+        if (isNaN(value) || value < 0) {
+          errors[field] = `${field} must be a non-negative number`;
+        }
+      });
     }
 
+    // Always require at least one assignee for admin
     if (formData.assignedTo.length === 0)
       errors.assignedTo = "At least one assignee is required";
 
@@ -1671,7 +1645,6 @@ const AuctionTable = () => {
                     name="eventName"
                     value={formData.eventName}
                     onChange={handleInputChange}
-                    required
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 text-sm"
                   />
                   {formData.errors.eventName && (
@@ -1690,7 +1663,6 @@ const AuctionTable = () => {
                     name="auctionType"
                     value={formData.auctionType}
                     onChange={handleInputChange}
-                    required
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 text-sm"
                   >
                     <option value="">Select</option>
@@ -1703,14 +1675,13 @@ const AuctionTable = () => {
                 {["requestor", "client", "division"].map((field) => (
                   <div key={field}>
                     <label className="block text-sm font-medium text-gray-700 mb-2 capitalize">
-                      {field} <span className="text-red-600">*</span>
+                      {field}
                     </label>
                     <input
                       type="text"
                       name={field}
                       value={formData[field]}
                       onChange={handleInputChange}
-                      required
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 text-sm"
                     />
                     {formData.errors[field] && (
@@ -1730,7 +1701,6 @@ const AuctionTable = () => {
                     name="dateTime"
                     value={formData.dateTime}
                     onChange={handleInputChange}
-                    required
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 text-sm"
                   />
                 </div>
@@ -1743,7 +1713,6 @@ const AuctionTable = () => {
                     name="status"
                     value={formData.status}
                     onChange={handleInputChange}
-                    required
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 text-sm"
                   >
                     <option value="">Select</option>
@@ -1805,7 +1774,6 @@ const AuctionTable = () => {
                         name="expenditureType"
                         value={formData.expenditureType}
                         onChange={handleInputChange}
-                        required
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 text-sm"
                       >
                         <option value="">Select</option>

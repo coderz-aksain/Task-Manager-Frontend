@@ -1165,7 +1165,7 @@ const AuctionTableEemployee = () => {
 
           {/* Content Layer */}
           <div className="relative z-10">
-            <div className="overflow-x-auto max-h-[65vh] rounded-lg shadow-md bg-white/50 backdrop-blur-lg">
+            <div className="overflow-x-auto max-h-[40vh] rounded-lg shadow-md bg-white/50 backdrop-blur-lg">
               <table className="w-full text-xs sm:text-sm text-left text-gray-800 table-fixed">
                 <thead className="bg-gray-200 backdrop-blur-md text-black sticky top-0 z-10">
                   <tr>
@@ -1917,4 +1917,3 @@ const AuctionTableEemployee = () => {
 };
 
 export default AuctionTableEemployee;
-

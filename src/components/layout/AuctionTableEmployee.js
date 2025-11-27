@@ -50,6 +50,10 @@ const AuctionTableEemployee = () => {
 
   // Filter and search states
   const [searchTerm, setSearchTerm] = useState("");
+  const [activeTab, setActiveTab] = useState(() => {
+    const saved = localStorage.getItem("auctionActiveTab");
+    return saved || "Open";
+  });
   const [filterStatus, setFilterStatus] = useState(() => {
     const saved = localStorage.getItem("auctionFilterStatus");
     return saved ? JSON.parse(saved) : ["Open"];
@@ -69,6 +73,10 @@ const AuctionTableEemployee = () => {
   };
 
   // Persist filter states to localStorage
+  useEffect(() => {
+    localStorage.setItem("auctionActiveTab", activeTab);
+  }, [activeTab]);
+
   useEffect(() => {
     localStorage.setItem("auctionFilterStatus", JSON.stringify(filterStatus));
   }, [filterStatus]);
@@ -714,6 +722,7 @@ const AuctionTableEemployee = () => {
 
   const clearAllFilters = () => {
     setSearchTerm("");
+    setActiveTab("Open");
     setFilterStatus([]);
     setFilterAuctionType([]);
     setDueDateFilter("none");
@@ -723,7 +732,7 @@ const AuctionTableEemployee = () => {
   };
 
   const isFilterApplied = () => {
-    return filterStatus.length > 0 || filterAuctionType.length > 0 || dueDateFilter !== "none";
+    return searchTerm !== "" || filterAuctionType.length > 0 || dueDateFilter !== "none";
   };
 
   // Date filtering function for auction tasks
@@ -779,13 +788,13 @@ const AuctionTableEemployee = () => {
       task.requestor?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       task.client?.toLowerCase().includes(searchTerm.toLowerCase());
 
-    const matchesStatus = filterStatus.length === 0 || filterStatus.includes(task.status);
+    const matchesTab = activeTab === "All" || task.status === activeTab;
 
     const matchesAuctionType = filterAuctionType.length === 0 || filterAuctionType.includes(task.auctionType);
 
     const matchesDate = filterByAuctionDate(task);
 
-    return matchesSearch && matchesStatus && matchesAuctionType && matchesDate;
+    return matchesSearch && matchesTab && matchesAuctionType && matchesDate;
   });
 
   return (
@@ -875,6 +884,32 @@ const AuctionTableEemployee = () => {
         </div>
       </div>
 
+      {/* Status Tabs */}
+      <div className="mb-4 bg-white rounded-lg shadow-md p-1">
+        <div className="flex space-x-1">
+          {["Open", "Complete", "Hold", "All"].map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                activeTab === tab
+                  ? tab === "Open"
+                    ? "bg-green-600 text-white shadow-sm"
+                    : tab === "Complete"
+                    ? "bg-red-600 text-white shadow-sm"
+                    : tab === "Hold"
+                    ? "bg-slate-600 text-white shadow-sm"
+                    : "bg-yellow-600 text-white shadow-sm"
+                  : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+              }`}
+              disabled={loading}
+            >
+              {tab === "Complete" ? "Closed" : tab} Tasks
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Content based on view mode */}
       {viewMode === "cards" ? (
         <AuctionCardsView
@@ -890,8 +925,8 @@ const AuctionTableEemployee = () => {
           setShowFilterDrawer={setShowFilterDrawer}
           filterEmployee={[]}
           setFilterEmployee={() => {}}
-          filterStatus={filterStatus}
-          setFilterStatus={setFilterStatus}
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
           clearAllFilters={clearAllFilters}
         />
       ) : (
@@ -908,7 +943,7 @@ const AuctionTableEemployee = () => {
 
           {/* Content Layer */}
           <div className="relative z-10">
-            <div className="overflow-x-auto max-h-[40vh] rounded-lg shadow-md bg-white/50 backdrop-blur-lg">
+            <div className="overflow-x-auto max-h-[50vh] rounded-lg shadow-md bg-white/50 backdrop-blur-lg">
               <table className="w-full text-xs sm:text-sm text-left text-gray-800 table-fixed">
                 <thead className="bg-gray-200 backdrop-blur-md text-black sticky top-0 z-10">
                   <tr>
@@ -968,23 +1003,26 @@ const AuctionTableEemployee = () => {
                       </td>
                     </tr>
                   ) : filteredTasks.length === 0 ? (
-                    <tr>
-                      <td colSpan="9" className="px-2 sm:px-4 py-8 text-center">
-                        {filterStatus.includes("Open") ? (
-                          <div className="text-center">
-                            <p className="text-gray-500 mb-4">There is no open task for now.</p>
-                            <button
-                              onClick={() => setFilterStatus([])}
-                              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-                            >
-                              Remove filter to see all tasks
-                            </button>
-                          </div>
-                        ) : (
-                          <p className="text-gray-500">No auction tasks found.</p>
-                        )}
-                      </td>
-                    </tr>
+                   <tr>
+                     <td colSpan="9" className="px-2 sm:px-4 py-8 text-center">
+                       <div className="text-center">
+                         <p className="text-gray-500 mb-4">
+                           {activeTab === "Open" && "There is no open task for now."}
+                           {activeTab === "Complete" && "There are no completed tasks."}
+                           {activeTab === "Hold" && "There are no tasks on hold."}
+                           {activeTab === "All" && "No auction tasks found."}
+                         </p>
+                         {activeTab !== "All" && (
+                           <button
+                             onClick={() => setActiveTab("All")}
+                             className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                           >
+                             View All Tasks
+                           </button>
+                         )}
+                       </div>
+                     </td>
+                   </tr>
                   ) : (
                     filteredTasks.map((task) => (
                       <tr

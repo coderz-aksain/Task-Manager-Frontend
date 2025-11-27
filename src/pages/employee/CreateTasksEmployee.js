@@ -169,7 +169,7 @@ function CreateTasksEmployee({ onSubmit, editTask, onCancel }) {
     } catch (err) {
       console.log('Error fetching requestors:', err);
       setToastMessage(err.message);
-      setTimeout(() => setToastMessage(''), 3000);
+      setTimeout(() => setToastMessage(''), 1000);
     } finally {
       setRequestorLoading(false);
     }
@@ -240,7 +240,7 @@ function CreateTasksEmployee({ onSubmit, editTask, onCancel }) {
   }, []);
 
   const initialValues = {
-    taskType: editTask?.taskType || 'General',
+    taskType: editTask?.taskType || 'Auction',
     taskName: editTask?.taskName || '',
     description: editTask?.description || '',
     priority: editTask?.priority || 'Medium',

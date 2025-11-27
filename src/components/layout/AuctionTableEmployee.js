@@ -50,9 +50,15 @@ const AuctionTableEemployee = () => {
 
   // Filter and search states
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterStatus, setFilterStatus] = useState([]);
+  const [filterStatus, setFilterStatus] = useState(() => {
+    const saved = localStorage.getItem("auctionFilterStatus");
+    return saved ? JSON.parse(saved) : ["Open"];
+  });
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
-  const [filterAuctionType, setFilterAuctionType] = useState([]);
+  const [filterAuctionType, setFilterAuctionType] = useState(() => {
+    const saved = localStorage.getItem("auctionFilterAuctionType");
+    return saved ? JSON.parse(saved) : [];
+  });
   const [showAuctionTypeDropdown, setShowAuctionTypeDropdown] = useState(false);
   const [viewMode, setViewMode] = useState(() => localStorage.getItem("auctionViewMode") || "table");
 
@@ -61,6 +67,15 @@ const AuctionTableEemployee = () => {
     setViewMode(newMode);
     localStorage.setItem("auctionViewMode", newMode);
   };
+
+  // Persist filter states to localStorage
+  useEffect(() => {
+    localStorage.setItem("auctionFilterStatus", JSON.stringify(filterStatus));
+  }, [filterStatus]);
+
+  useEffect(() => {
+    localStorage.setItem("auctionFilterAuctionType", JSON.stringify(filterAuctionType));
+  }, [filterAuctionType]);
 
   // Responsive viewMode based on screen size
   useEffect(() => {
@@ -780,355 +795,83 @@ const AuctionTableEemployee = () => {
         rel="stylesheet"
       />
 
-      {/* Search and Filters */}
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4 mb-4">
-        <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs sm:text-sm"
-            placeholder="Search by event name, ID, requestor, or client..."
-            disabled={loading}
-          />
-        </div>
-        <div className="relative min-w-[180px] max-w-full sm:min-w-[220px] sm:max-w-[220px]">
-          {/* <div
-            className="px-3 py-2 border border-gray-300 rounded-md bg-white cursor-pointer flex items-center justify-between w-full text-xs sm:text-sm"
-            onClick={() => setShowStatusDropdown(!showStatusDropdown)}
-          >
-            <span className="flex flex-wrap items-center gap-1">
-              {filterStatus.length === 0 ? (
-                <>
-                  <span className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center text-xs text-gray-600 mr-2">
-                    All
-                  </span>
-                  All Status
-                </>
-              ) : (
-                <>
-                  <span className="flex flex-wrap gap-1">
-                    {filterStatus.slice(0, 5).map((status, idx) => (
-                      <span key={status} className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center text-xs text-blue-800 border border-gray-300">
-                        {status[0]}
-                      </span>
-                    ))}
-                    {filterStatus.length > 5 && (
-                      <span className="w-5 h-5 rounded-full bg-gray-300 flex items-center justify-center text-xs text-gray-700 ml-1">
-                        +{filterStatus.length - 5}
-                      </span>
-                    )}
-                  </span>
-                  <span className="ml-2">Applied Status</span>
-                </>
-              )}
-            </span>
-          </div> */}
-          {/* {showStatusDropdown && (
-            <div
-              ref={statusDropdownRef}
-              className="absolute z-20 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-64 overflow-y-auto min-w-[180px] max-w-full sm:min-w-[220px] sm:max-w-[220px]"
-            >
-              <label className="flex items-center px-3 py-2 hover:bg-gray-100 cursor-pointer text-xs sm:text-sm">
-                <input
-                  type="checkbox"
-                  checked={filterStatus.length === 0}
-                  onChange={() => setFilterStatus([])}
-                  className="mr-2"
-                  disabled={loading}
-                />
-                <span className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center text-xs text-gray-600 mr-2">
-                  All
-                </span>
-                <span>All Status</span>
-              </label>
-              {statusOptions.map((opt) => (
-                <label
-                  key={opt.value}
-                  className="flex items-center px-3 py-2 hover:bg-gray-100 cursor-pointer text-xs sm:text-sm"
-                >
-                  <input
-                    type="checkbox"
-                    checked={filterStatus.includes(opt.value)}
-                    onChange={() => toggleStatus(opt.value)}
-                    className="mr-2"
-                    disabled={loading}
-                  />
-                  <span className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center text-xs text-blue-800 mr-2 border border-gray-300">
-                    {opt.label[0]}
-                  </span>
-                  {opt.label}
-                </label>
-              ))}
-            </div>
-          )} */}
-        </div>
-        {/* Removed employee filter for employee view */}
-        {/* <div className="relative min-w-[180px] max-w-full sm:min-w-[220px] sm:max-w-[220px]">
-          <div
-            className="px-3 py-2 border border-gray-300 rounded-md bg-white cursor-pointer flex items-center justify-between w-full text-xs sm:text-sm"
-            onClick={() => setShowDueDateFilterDropdown(!showDueDateFilterDropdown)}
-          >
-            <span className="flex flex-wrap items-center gap-1">
-              {dueDateFilter === "none" ? (
-                <>
-                  <span className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center text-xs text-gray-600 mr-2">
-                    All
-                  </span>
-                  All Dates
-                </>
-              ) : (
-                <>
-                  <span className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center text-xs text-blue-800 border border-gray-300">
-                    {dueDateFilter[0]?.toUpperCase()}
-                  </span>
-                  <span className="ml-2">
-                    {dueDateFilter === "today" ? "Today" :
-                     dueDateFilter === "week" ? "This Week" :
-                     dueDateFilter === "month" ? "This Month" :
-                     dueDateFilter === "year" ? "This Year" :
-                     dueDateFilter === "custom" ? "Custom Date" : dueDateFilter}
-                  </span>
-                </>
-              )}
-            </span>
-          </div>
-          {showDueDateFilterDropdown && (
-            <div
-              ref={dueDateDropdownRef}
-              className="absolute z-20 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg min-w-[180px] max-w-full sm:min-w-[220px] sm:max-w-[220px]"
-            >
-              <label className="flex items-center px-3 py-2 hover:bg-gray-100 cursor-pointer text-xs sm:text-sm">
-                <input
-                  type="radio"
-                  name="dueFilter"
-                  checked={dueDateFilter === "none"}
-                  onChange={() => setDueDateFilter("none")}
-                  className="mr-2"
-                  disabled={loading}
-                />
-                <span className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center text-xs text-gray-600 mr-2">
-                  All
-                </span>
-                <span>No Filter</span>
-              </label>
-              <label className="flex items-center px-3 py-2 hover:bg-gray-100 cursor-pointer text-xs sm:text-sm">
-                <input
-                  type="radio"
-                  name="dueFilter"
-                  checked={dueDateFilter === "today"}
-                  onChange={() => setDueDateFilter("today")}
-                  className="mr-2"
-                  disabled={loading}
-                />
-                <span className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center text-xs text-blue-800 mr-2 border border-gray-300">
-                  T
-                </span>
-                <span>Today</span>
-              </label>
-              <label className="flex items-center px-3 py-2 hover:bg-gray-100 cursor-pointer text-xs sm:text-sm">
-                <input
-                  type="radio"
-                  name="dueFilter"
-                  checked={dueDateFilter === "week"}
-                  onChange={() => setDueDateFilter("week")}
-                  className="mr-2"
-                  disabled={loading}
-                />
-                <span className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center text-xs text-blue-800 mr-2 border border-gray-300">
-                  W
-                </span>
-                <span>This Week</span>
-              </label>
-              <label className="flex items-center px-3 py-2 hover:bg-gray-100 cursor-pointer text-xs sm:text-sm">
-                <input
-                  type="radio"
-                  name="dueFilter"
-                  checked={dueDateFilter === "month"}
-                  onChange={() => setDueDateFilter("month")}
-                  className="mr-2"
-                  disabled={loading}
-                />
-                <span className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center text-xs text-blue-800 mr-2 border border-gray-300">
-                  M
-                </span>
-                <span>This Month</span>
-              </label>
-              <label className="flex items-center px-3 py-2 hover:bg-gray-100 cursor-pointer text-xs sm:text-sm">
-                <input
-                  type="radio"
-                  name="dueFilter"
-                  checked={dueDateFilter === "year"}
-                  onChange={() => setDueDateFilter("year")}
-                  className="mr-2"
-                  disabled={loading}
-                />
-                <span className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center text-xs text-blue-800 mr-2 border border-gray-300">
-                  Y
-                </span>
-                <span>This Year</span>
-              </label>
-              <label className="flex items-center px-3 py-2 hover:bg-gray-100 cursor-pointer text-xs sm:text-sm">
-                <input
-                  type="radio"
-                  name="dueFilter"
-                  checked={dueDateFilter === "custom"}
-                  onChange={() => setDueDateFilter("custom")}
-                  className="mr-2"
-                  disabled={loading}
-                />
-                <span className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center text-xs text-blue-800 mr-2 border border-gray-300">
-                  C
-                </span>
-                <span>Custom Date</span>
-              </label>
-            </div>
-          )}
-        </div> */}
-        <div className="relative min-w-[180px] max-w-full sm:min-w-[220px] sm:max-w-[220px]">
-          {/* <div
-            className="px-3 py-2 border border-gray-300 rounded-md bg-white cursor-pointer flex items-center justify-between w-full text-xs sm:text-sm"
-            onClick={() => setShowAuctionTypeDropdown(!showAuctionTypeDropdown)}
-          >
-            <span className="flex flex-wrap items-center gap-1">
-              {filterAuctionType.length === 0 ? (
-                <>
-                  <span className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center text-xs text-gray-600 mr-2">
-                    All
-                  </span>
-                  All Auction Types
-                </>
-              ) : (
-                <>
-                  <span className="flex flex-wrap gap-1">
-                    {filterAuctionType.slice(0, 5).map((type, idx) => (
-                      <span
-                        key={type}
-                        className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center text-xs text-blue-800 border border-gray-300"
-                      >
-                        {type === "Forward Auction" ? "F" : "R"}
-                      </span>
-                    ))}
-                    {filterAuctionType.length > 5 && (
-                      <span className="w-5 h-5 rounded-full bg-gray-300 flex items-center justify-center text-xs text-gray-700 ml-1">
-                        +{filterAuctionType.length - 5}
-                      </span>
-                    )}
-                  </span>
-                  <span className="ml-2">Applied Auction Types</span>
-                </>
-              )}
-            </span>
-          </div> */}
-          {showAuctionTypeDropdown && (
-            <div
-              ref={auctionTypeDropdownRef}
-              className="absolute z-20 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-64 overflow-y-auto min-w-[180px] max-w-full sm:min-w-[220px] sm:max-w-[220px]"
-            >
-              <label className="flex items-center px-3 py-2 hover:bg-gray-100 cursor-pointer text-xs sm:text-sm">
-                <input
-                  type="checkbox"
-                  checked={filterAuctionType.length === 0}
-                  onChange={() => setFilterAuctionType([])}
-                  className="mr-2"
-                  disabled={loading}
-                />
-                <span className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center text-xs text-gray-600 mr-2">
-                  All
-                </span>
-                <span>All Auction Types</span>
-              </label>
-              <label className="flex items-center px-3 py-2 hover:bg-gray-100 cursor-pointer text-xs sm:text-sm">
-                <input
-                  type="checkbox"
-                  checked={filterAuctionType.includes("Forward Auction")}
-                  onChange={() => toggleAuctionType("Forward Auction")}
-                  className="mr-2"
-                  disabled={loading}
-                />
-                <span className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center text-xs text-blue-800 mr-2 border border-gray-300">
-                  F
-                </span>
-                <span>Forward Auction</span>
-              </label>
-              <label className="flex items-center px-3 py-2 hover:bg-gray-100 cursor-pointer text-xs sm:text-sm">
-                <input
-                  type="checkbox"
-                  checked={filterAuctionType.includes("Reverse Auction")}
-                  onChange={() => toggleAuctionType("Reverse Auction")}
-                  className="mr-2"
-                  disabled={loading}
-                />
-                <span className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center text-xs text-blue-800 mr-2 border border-gray-300">
-                  R
-                </span>
-                <span>Reverse Auction</span>
-              </label>
-            </div>
-          )}
-        </div>
-      </div>
+ 
 
-      {/* Action Buttons */}
+      {/* Search and Action Bar */}
       <div className="mb-6 bg-white rounded-lg shadow-md p-4">
-        <div className="flex flex-col sm:flex-row gap-2">
-          <Link to="/employee/createtasks">
+        <div className="flex flex-col lg:flex-row gap-4 lg:items-center">
+          {/* Search Bar */}
+          <div className="flex-1 relative min-w-0">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+              placeholder="Search by event name, ID, requestor, or client..."
+              disabled={loading}
+            />
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex flex-wrap gap-2 lg:gap-3">
+            <Link to="/employee/createtasks">
+              <button
+                className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center justify-center text-sm font-medium transition-colors whitespace-nowrap"
+                title="Create Task"
+              >
+                <Plus className="w-4 h-4 mr-1 lg:mr-2" />
+                <span className="hidden sm:inline">Create Task</span>
+                <span className="sm:hidden">Create</span>
+              </button>
+            </Link>
             <button
-              className="p-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center justify-center text-sm sm:text-base w-full sm:w-10 h-10"
-              title="Create Task"
-            >
-              <Plus className="w-5 h-5" />
-            </button>
-          </Link>
-          <button
-            onClick={exportToExcel}
-            className="p-2 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center justify-center text-sm sm:text-base w-full sm:w-10 h-10"
-            title="Export to Excel"
-            disabled={loading}
-          >
-            <Download className="w-5 h-5" />
-          </button>
-          <button
-            onClick={() => {
-              setIsPageLoading(true);
-              fetchTasks();
-            }}
-            className="p-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 flex items-center justify-center text-sm sm:text-base w-full sm:w-10 h-10 relative group"
-            title="Refresh Tasks"
-            disabled={loading}
-          >
-            <RefreshCw className="w-5 h-5" />
-            <span className="absolute left-1/2 transform -translate-x-1/2 -top-7 bg-black text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity z-50 whitespace-nowrap pointer-events-none">
-              Refresh Tasks
-            </span>
-          </button>
-          {isFilterApplied() && (
-            <button
-              onClick={clearAllFilters}
-              className="p-2 bg-red-600 text-white rounded-md hover:bg-gray-700 flex items-center justify-center text-sm sm:text-base w-full sm:w-auto h-10"
-              title="Clear Filters"
+              onClick={exportToExcel}
+              className="px-3 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center justify-center text-sm font-medium transition-colors whitespace-nowrap"
+              title="Export to Excel"
               disabled={loading}
             >
-              <FunnelX />
+              <Download className="w-4 h-4 mr-1 lg:mr-2" />
+              <span className="hidden sm:inline">Export</span>
             </button>
-          )}
-          {/* <button
-            onClick={() => updateViewMode(viewMode === "table" ? "cards" : "table")}
-            className="p-2 bg-orange-500 text-gray-800 rounded-md hover:bg-slate-900 flex items-center justify-center text-sm sm:text-base w-full sm:w-auto h-10"
-            title={viewMode === "table" ? "Switch to Cards view" : "Switch to Table view"}
-          >
-            {viewMode === "table" ?  <IdCard className="text-white size-6" />: <Table className="text-white size-6" /> }
-          </button> */}
-          {viewMode !== "cards" && (
             <button
-              onClick={() => setShowFilterDrawer(true)}
-              className="p-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 flex items-center justify-center text-sm sm:text-base w-full sm:w-auto h-10"
-              title="Advanced Filters"
+              onClick={() => {
+                setIsPageLoading(true);
+                fetchTasks();
+              }}
+              className="px-3 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 flex items-center justify-center text-sm font-medium transition-colors relative group whitespace-nowrap"
+              title="Refresh Tasks"
+              disabled={loading}
             >
-              <Filter className="w-5 h-5" />
+              <RefreshCw className="w-4 h-4 mr-1 lg:mr-2" />
+              <span className="hidden sm:inline">Refresh</span>
+              <span className="absolute left-1/2 transform -translate-x-1/2 -top-8 bg-black text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity z-50 whitespace-nowrap pointer-events-none">
+                Refresh Tasks
+              </span>
             </button>
-          )}
+            {isFilterApplied() && (
+              <button
+                onClick={clearAllFilters}
+                className="px-3 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 flex items-center justify-center text-sm font-medium transition-colors whitespace-nowrap"
+                title="Clear All Filters"
+                disabled={loading}
+              >
+                <FunnelX className="w-4 h-4 mr-1 lg:mr-2" />
+                <span className="hidden sm:inline">Clear Filters</span>
+                <span className="sm:hidden">Clear</span>
+              </button>
+            )}
+            {viewMode !== "cards" && (
+              <button
+                onClick={() => setShowFilterDrawer(true)}
+                className="px-3 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 flex items-center justify-center text-sm font-medium transition-colors whitespace-nowrap"
+                title="Advanced Filters"
+              >
+                <Filter className="w-4 h-4 mr-1 lg:mr-2" />
+                <span className="hidden sm:inline">Filters</span>
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -1175,8 +918,8 @@ const AuctionTableEemployee = () => {
                       "Event Name",
                       "Requestor",
                       "Date & Time",
-                      "Savings / Earning",
-                      "Savings / Earning%",
+                      "Save / Earn",
+                      "Save / Earn%",
                       "Status",
                       "Actions",
                     ]
@@ -1227,7 +970,19 @@ const AuctionTableEemployee = () => {
                   ) : filteredTasks.length === 0 ? (
                     <tr>
                       <td colSpan="9" className="px-2 sm:px-4 py-8 text-center">
-                        <p className="text-gray-500">No auction tasks found.</p>
+                        {filterStatus.includes("Open") ? (
+                          <div className="text-center">
+                            <p className="text-gray-500 mb-4">There is no open task for now.</p>
+                            <button
+                              onClick={() => setFilterStatus([])}
+                              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                            >
+                              Remove filter to see all tasks
+                            </button>
+                          </div>
+                        ) : (
+                          <p className="text-gray-500">No auction tasks found.</p>
+                        )}
                       </td>
                     </tr>
                   ) : (
@@ -1352,7 +1107,6 @@ const AuctionTableEemployee = () => {
       {modalVisible && selectedTask && (
         <div
           className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4"
-          onClick={closeModal}
         >
           <div
             className="bg-white rounded-lg shadow-xl w-full max-w-7xl p-4 sm:p-6 max-h-[90vh] overflow-y-auto relative animate-slide-in"
@@ -1739,7 +1493,6 @@ const AuctionTableEemployee = () => {
       {deleteModalVisible && taskToDelete && (
         <div
           className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4"
-          onClick={() => setDeleteModalVisible(false)}
         >
           <div
             className="bg-white rounded-lg shadow-xl w-full max-w-md p-4 sm:p-6 relative animate-slide-in"
@@ -1785,7 +1538,6 @@ const AuctionTableEemployee = () => {
       {categoryModalVisible && (
         <div
           className="fixed inset-0 bg-black bg-opacity-30 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4"
-          onClick={() => setCategoryModalVisible(false)}
         >
           <div
             className="bg-white/95 backdrop-blur-md rounded-lg shadow-2xl w-full max-w-md p-4 sm:p-6 relative animate-slide-in border border-white/20"

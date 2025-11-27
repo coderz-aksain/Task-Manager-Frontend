@@ -129,7 +129,7 @@ const TaskPage = () => {
   const [filterTaskType, setFilterTaskType] = useState(() => {
     const queryParams = new URLSearchParams(window.location.search);
     const tab = queryParams.get("tab");
-    return tab && (tab === "all" || taskTypes.includes(tab)) ? tab : "all";
+    return tab && (tab === "all" || taskTypes.includes(tab)) ? tab : "Auctions";
   });
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState(initialForm);
@@ -311,6 +311,21 @@ const TaskPage = () => {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [showStatusDropdown]);
+
+  // Update URL when filterTaskType changes
+  useEffect(() => {
+    const newSearch = new URLSearchParams(location.search);
+    if (filterTaskType === "all") {
+      newSearch.delete("tab");
+    } else {
+      newSearch.set("tab", filterTaskType);
+    }
+    const newSearchString = newSearch.toString();
+    const newUrl = `${location.pathname}${newSearchString ? `?${newSearchString}` : ""}`;
+    if (newUrl !== `${location.pathname}${location.search}`) {
+      navigate(newUrl, { replace: true });
+    }
+  }, [filterTaskType, location, navigate]);
 
   useEffect(() => {
     const fetchEmployees = async () => {

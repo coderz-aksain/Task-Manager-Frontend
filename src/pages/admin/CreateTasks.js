@@ -248,7 +248,7 @@ function CreateTasks({ onSubmit, editTask, onCancel }) {
 
   const formik = useFormik({
     initialValues: {
-      taskType: editTask?.taskType || "General",
+      taskType: editTask?.taskType || "Auction",
       taskName: editTask?.taskName || "",
       description: editTask?.description || "",
       priority: editTask?.priority || "Medium",
@@ -387,7 +387,7 @@ function CreateTasks({ onSubmit, editTask, onCancel }) {
             onSubmit(data);
           }
           showToast("Auction task created successfully!", "success");
-          setTimeout(() => navigate("/admin/tasks"), 3000);
+          setTimeout(() => navigate("/admin/tasks?tab=Auctions"), 3000);
         } catch (err) {
           setErrors({ api: err.message });
           showToast(err.message || "Failed to create auction task", "error");

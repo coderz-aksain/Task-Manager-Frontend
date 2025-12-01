@@ -997,6 +997,7 @@ const AuctionTable = () => {
         rel="stylesheet"
       />
 
+
       {/* Search and Filters */}
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4 mb-4">
         <div className="flex-1 relative">

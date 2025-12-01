@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { Link } from "react-router-dom";
 import {
   Trash2,
@@ -797,6 +797,15 @@ const AuctionTableEemployee = () => {
     return matchesSearch && matchesTab && matchesAuctionType && matchesDate;
   });
 
+  const statusCounts = useMemo(() => {
+    return {
+      Open: tasks.filter(task => task.status === 'Open').length,
+      Closed: tasks.filter(task => task.status === 'Complete').length,
+      Hold: tasks.filter(task => task.status === 'Hold').length,
+      All: tasks.length,
+    };
+  }, [tasks]);
+
   return (
     <div className="h-3">
       <link
@@ -904,7 +913,7 @@ const AuctionTableEemployee = () => {
               }`}
               disabled={loading}
             >
-              {tab === "Complete" ? "Closed" : tab} Tasks
+              {tab === "Complete" ? "Closed" : tab} Tasks ({statusCounts[tab === "Complete" ? "Closed" : tab]})
             </button>
           ))}
         </div>

@@ -919,6 +919,9 @@ const AuctionTable = () => {
         selectedFields: misFormData.selectedFields,
       };
 
+      // Log the data being sent to backend
+      console.log("Data being sent to backend for MIS report download:", reportData);
+
       // Make API call to download MIS report
       const response = await fetch(
         "https://task-manager-backend-xs5s.onrender.com/api/auction/download-mis-report",
@@ -2381,6 +2384,7 @@ const AuctionTable = () => {
                   <option value="EKL">EKL</option>
                   <option value="HT Media">HT Media</option>
                   <option value="TVTN">TVTN</option>
+                  <option value="Sona BLW">Sona BLW</option>
 
                   {/* <option value="Other">Other</option> */}
                 </select>

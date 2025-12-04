@@ -88,6 +88,7 @@ const AuctionTable = () => {
   });
   const [showMISModal, setShowMISModal] = useState(false);
   const [misFormData, setMisFormData] = useState({
+    reportType: "MIS",
     client: "",
     auctionType: [],
     fromDate: "",
@@ -1004,7 +1005,7 @@ const AuctionTable = () => {
     // Validate form
     const errors = {};
     if (!misFormData.client) errors.client = "Client is required";
-    if (misFormData.auctionType.length === 0) errors.auctionType = "Auction Type is required";
+    if (misFormData.reportType === "MIS" && misFormData.auctionType.length === 0) errors.auctionType = "Auction Type is required";
     if (!misFormData.fromDate) errors.fromDate = "From Date is required";
     if (!misFormData.toDate) errors.toDate = "To Date is required";
     if (
@@ -1040,6 +1041,7 @@ const AuctionTable = () => {
 
       // Prepare data for API call
       const reportData = {
+        reportType: misFormData.reportType,
         client: misFormData.client,
         auctionType: misFormData.auctionType,
         fromDate: misFormData.fromDate,
@@ -1051,21 +1053,22 @@ const AuctionTable = () => {
       // Log the data being sent to backend
       console.log("Data being sent to backend for MIS report download:", reportData);
 
-      // Make API call to download MIS report
-      const response = await fetch(
-        "https://task-manager-backend-xs5s.onrender.com/api/auction/download-mis-report",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-          body: JSON.stringify(reportData),
-        }
-      );
+      // Make API call to download report (different endpoint based on report type)
+      const endpoint = misFormData.reportType === "Logistic"
+        ? "https://task-manager-backend-xs5s.onrender.com/api/auction/download-logistics-report"
+        : "https://task-manager-backend-xs5s.onrender.com/api/auction/download-mis-report";
+
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify(reportData),
+      });
 
       if (!response.ok) {
-        throw new Error("Failed to download MIS report");
+        throw new Error(`Failed to download ${misFormData.reportType} report`);
       }
 
       // Handle file download
@@ -1073,7 +1076,7 @@ const AuctionTable = () => {
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `MIS_Report_${misFormData.client}_${misFormData.fromDate}_to_${misFormData.toDate}.xlsx`;
+      link.download = `${misFormData.reportType}_Report_${misFormData.client}_${misFormData.fromDate}_to_${misFormData.toDate}.xlsx`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -1081,6 +1084,7 @@ const AuctionTable = () => {
 
       setShowMISModal(false);
       setMisFormData({
+        reportType: "MIS",
         client: "",
         auctionType: [],
         fromDate: "",
@@ -1088,10 +1092,10 @@ const AuctionTable = () => {
         selectedDivisions: [],
         selectedFields: [],
       });
-      success("MIS Report downloaded successfully");
+      success(`${misFormData.reportType} Report downloaded successfully`);
     } catch (error) {
-      console.error("Error downloading MIS report:", error);
-      toastError("Failed to download MIS report");
+      console.error(`Error downloading ${misFormData.reportType} report:`, error);
+      toastError(`Failed to download ${misFormData.reportType} report`);
     } finally {
       setIsDownloadingMIS(false);
     }
@@ -2690,8 +2694,58 @@ const AuctionTable = () => {
 
             <div className="space-y-4">
               <h3 className="text-lg sm:text-xl font-semibold text-gray-900">
-                Download MIS Report
+                Download Report
               </h3>
+
+              {/* Report Type Toggle */}
+              <div className="flex items-center space-x-4">
+                {/* <span className="text-sm font-medium text-gray-700">Report Type:</span> */}
+                <div className="relative">
+                  <div className="flex bg-gray-200 rounded-full p-1 w-80 relative">
+                    <div
+                      className={`absolute top-1 bottom-1 rounded-full bg-blue-600 transition-all duration-300 ${
+                        misFormData.reportType === "MIS" ? "left-1 w-36" : "left-44 w-36"
+                      }`}
+                    ></div>
+                    <button
+                      type="button"
+                      onClick={() => setMisFormData((prev) => ({
+                        ...prev,
+                        reportType: "MIS",
+                        client: "",
+                        auctionType: [],
+                        selectedDivisions: [],
+                        selectedFields: [],
+                      }))}
+                      className={`relative z-10 px-4 py-2 text-sm font-medium rounded-full transition-colors flex-1 ${
+                        misFormData.reportType === "MIS"
+                          ? "text-white"
+                          : "text-gray-700"
+                      }`}
+                    >
+                       MIS
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setMisFormData((prev) => ({
+                        ...prev,
+                        reportType: "Logistic",
+                        client: "",
+                        auctionType: [],
+                        selectedDivisions: [],
+                        selectedFields: [],
+                      }))}
+                      className={`relative z-10 px-4 py-2 text-sm font-medium rounded-full transition-colors flex-1 ${
+                        misFormData.reportType === "Logistic"
+                          ? "text-white"
+                          : "text-gray-700"
+                      }`}
+                    >
+                       Logistic
+                    </button>
+                  </div>
+                </div>
+              </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -2726,56 +2780,58 @@ const AuctionTable = () => {
                 )}
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Auction Type <span className="text-red-700">*</span>
-                </label>
-                <div className="border border-gray-300 rounded-md p-3">
-                  <div className="grid grid-cols-1 gap-2">
-                    <label className="flex items-center space-x-2 text-sm">
-                      <input
-                        type="checkbox"
-                        checked={misFormData.auctionType.includes("Forward Auction")}
-                        onChange={(e) => {
-                          const type = "Forward Auction";
-                          setMisFormData((prev) => ({
-                            ...prev,
-                            auctionType: e.target.checked
-                              ? [...prev.auctionType, type]
-                              : prev.auctionType.filter((t) => t !== type),
-                            selectedFields: [],
-                          }));
-                        }}
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                      />
-                      <span>Forward Auction</span>
-                    </label>
-                    <label className="flex items-center space-x-2 text-sm">
-                      <input
-                        type="checkbox"
-                        checked={misFormData.auctionType.includes("Reverse Auction")}
-                        onChange={(e) => {
-                          const type = "Reverse Auction";
-                          setMisFormData((prev) => ({
-                            ...prev,
-                            auctionType: e.target.checked
-                              ? [...prev.auctionType, type]
-                              : prev.auctionType.filter((t) => t !== type),
-                            selectedFields: [],
-                          }));
-                        }}
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                      />
-                      <span>Reverse Auction</span>
-                    </label>
+              {misFormData.reportType === "MIS" && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Auction Type <span className="text-red-700">*</span>
+                  </label>
+                  <div className="border border-gray-300 rounded-md p-3">
+                    <div className="grid grid-cols-1 gap-2">
+                      <label className="flex items-center space-x-2 text-sm">
+                        <input
+                          type="checkbox"
+                          checked={misFormData.auctionType.includes("Forward Auction")}
+                          onChange={(e) => {
+                            const type = "Forward Auction";
+                            setMisFormData((prev) => ({
+                              ...prev,
+                              auctionType: e.target.checked
+                                ? [...prev.auctionType, type]
+                                : prev.auctionType.filter((t) => t !== type),
+                              selectedFields: [],
+                            }));
+                          }}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span>Forward Auction</span>
+                      </label>
+                      <label className="flex items-center space-x-2 text-sm">
+                        <input
+                          type="checkbox"
+                          checked={misFormData.auctionType.includes("Reverse Auction")}
+                          onChange={(e) => {
+                            const type = "Reverse Auction";
+                            setMisFormData((prev) => ({
+                              ...prev,
+                              auctionType: e.target.checked
+                                ? [...prev.auctionType, type]
+                                : prev.auctionType.filter((t) => t !== type),
+                              selectedFields: [],
+                            }));
+                          }}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span>Reverse Auction</span>
+                      </label>
+                    </div>
                   </div>
+                  {misFormErrors.auctionType && (
+                    <p className="text-red-500 text-xs mt-1">
+                      {misFormErrors.auctionType}
+                    </p>
+                  )}
                 </div>
-                {misFormErrors.auctionType && (
-                  <p className="text-red-500 text-xs mt-1">
-                    {misFormErrors.auctionType}
-                  </p>
-                )}
-              </div>
+              )}
 
               {misFormData.client === "EKL" && (
                 <div>
@@ -2902,23 +2958,44 @@ const AuctionTable = () => {
                       "Updated At",
                     ];
 
-                    // Filter fields based on auction type
+                    // Filter fields based on report type and auction type
                     let availableFields = allFields;
-                    const selectedTypes = misFormData.auctionType;
-                    if (selectedTypes.length === 1) {
-                      if (selectedTypes.includes("Forward Auction")) {
-                        availableFields = allFields.filter(
-                          (field) =>
-                            !["Prebid", "Savings", "Savings %"].includes(field)
-                        );
-                      } else if (selectedTypes.includes("Reverse Auction")) {
-                        availableFields = allFields.filter(
-                          (field) =>
-                            !["Benchmark", "Earning", "Earning %"].includes(field)
-                        );
+                    if (misFormData.reportType === "Logistic") {
+                      availableFields = [
+                        "Event ID",
+                        "Event Name",
+                        "Auction Date",
+                        "From",
+                        "To",
+                        "Vehicle Type",
+                        "No. of Participants",
+                        "Pre Bid",
+                        "Post Bid",
+                        "L1 Vendor",
+                        "L2 Vendor",
+                        "L2 Rate",
+                        "L3 Vendor",
+                        "L3 Rate",
+                        "Saving",
+                        "Saving %",
+                      ];
+                    } else {
+                      const selectedTypes = misFormData.auctionType;
+                      if (selectedTypes.length === 1) {
+                        if (selectedTypes.includes("Forward Auction")) {
+                          availableFields = allFields.filter(
+                            (field) =>
+                              !["Prebid", "Savings", "Savings %"].includes(field)
+                          );
+                        } else if (selectedTypes.includes("Reverse Auction")) {
+                          availableFields = allFields.filter(
+                            (field) =>
+                              !["Benchmark", "Earning", "Earning %"].includes(field)
+                          );
+                        }
                       }
+                      // If both are selected or none, show all fields
                     }
-                    // If both are selected or none, show all fields
 
                     return (
                       <>
@@ -2995,9 +3072,9 @@ const AuctionTable = () => {
                   {isDownloadingMIS && (
                     <Loader className="w-4 h-4 animate-spin" />
                   )}
-                  <span>Download Excel Report</span>
+                  <span>Download {misFormData.reportType} Report</span>
                 </button>
-                <button
+                {/* <button
                   onClick={handleMISDownload}
                   className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center space-x-2 text-sm"
                   disabled={isDownloadingMIS}
@@ -3006,7 +3083,7 @@ const AuctionTable = () => {
                     <Loader className="w-4 h-4 animate-spin" />
                   )}
                   <span>Download Pdf Report</span>
-                </button>
+                </button> */}
               </div>
             </div>
           </div>

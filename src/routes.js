@@ -162,7 +162,7 @@ import CreateTasksEmployee from "./pages/employee/CreateTasksEmployee";
 import ResetPassword from "./pages/common/ResetPassword"; // Import the ResetPassword component
 import LoadingSpinner from "./components/ui/LoadingSpinner";
 import CreateRemainder from "./pages/admin/CreateRemainder";
-
+import DashboardDemo from "./pages/DashboardDemo"
 // Protected Route Component
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const { state } = useAppContext();
@@ -257,6 +257,14 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute allowedRoles={["admin"]}>
             <AdmintaskPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/dashboard"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <DashboardDemo />
           </ProtectedRoute>
         }
       />

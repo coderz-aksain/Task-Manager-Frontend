@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import Sidebar from './Sidebar';
-import Header from './Header';
+import AdminSidebar from '../common/AdminSidebar';
+import Header from '../common/Header';
 import { Menu, X } from 'lucide-react';
 
 const DashboardLayout = ({ children, title = "Dashboard" }) => {
@@ -21,7 +21,7 @@ const DashboardLayout = ({ children, title = "Dashboard" }) => {
       )}
 
       {/* Sidebar */}
-      <Sidebar isOpen={sidebarOpen} onClose={toggleSidebar} />
+      <AdminSidebar isOpen={sidebarOpen} onClose={toggleSidebar} />
 
       {/* Main content */}
       <div className="lg:pl-64">

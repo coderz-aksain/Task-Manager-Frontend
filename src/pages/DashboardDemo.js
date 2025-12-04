@@ -69,7 +69,7 @@ const DashboardDemo = () => {
       name: 'Jane Smith',
       email: 'jane@example.com',
       role: 'User',
-      status: 'Active',
+      status: 'Active', 
       lastLogin: '1 day ago',
     },
     {

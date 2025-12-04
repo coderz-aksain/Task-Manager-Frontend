@@ -247,6 +247,18 @@ class ApiService {
     const query = categoryType ? `?categoryType=${encodeURIComponent(categoryType)}` : '';
     return this.request(`/get-categories${query}`);
   }
+
+  // Vehicle type methods
+  async createVehicleType(vehicleData) {
+    return this.request('/create-vehicle-type', {
+      method: 'POST',
+      body: JSON.stringify(vehicleData),
+    });
+  }
+
+  async getVehicleTypes() {
+    return this.request('/get-vehicle-types');
+  }
 }
 
 export default new ApiService();

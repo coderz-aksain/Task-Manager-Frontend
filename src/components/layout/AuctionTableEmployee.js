@@ -29,7 +29,7 @@ import api from "../../services/api";
 import { useToast } from "../../hooks/useToast";
 import AuctionCardsView from "./AuctionCardsView";
 import TaskFilterDrawer from "./TaskFilterDrawer";
-const AuctionTableEemployee = () => {
+const AuctionTableEmployee = () => {
   const { success, error: toastError } = useToast();
   const token = localStorage.getItem('token') || '';
   const [tasks, setTasks] = useState([]);
@@ -128,6 +128,13 @@ const AuctionTableEemployee = () => {
     expenditureType: "",
     numberOfParticipants: "",
     nameOfL1Vendor: "",
+    fromLocation: "",
+    toLocation: "",
+    vehicleType: "",
+    l2Vendor: "",
+    l2Rate: "",
+    l3Vendor: "",
+    l3Rate: "",
     errors: {},
   });
   // Removed employee handling for employee view
@@ -136,6 +143,16 @@ const AuctionTableEemployee = () => {
     categoryType: "",
   });
   const [categoryFormErrors, setCategoryFormErrors] = useState({});
+
+  // Vehicle type states
+  const [vehicleTypes, setVehicleTypes] = useState([]);
+  const [vehicleTypesLoading, setVehicleTypesLoading] = useState(false);
+  const [showVehicleModal, setShowVehicleModal] = useState(false);
+  const [vehicleFormData, setVehicleFormData] = useState({
+    name: "",
+  });
+  const [vehicleFormErrors, setVehicleFormErrors] = useState({});
+  const [isCreatingVehicle, setIsCreatingVehicle] = useState(false);
 
   // Initialize formData when modal opens
   useEffect(() => {
@@ -160,6 +177,13 @@ const AuctionTableEemployee = () => {
         expenditureType: selectedTask.expenditureType || "",
         numberOfParticipants: selectedTask.numberOfParticipants !== undefined && selectedTask.numberOfParticipants !== null ? selectedTask.numberOfParticipants : "",
         nameOfL1Vendor: selectedTask.nameOfL1Vendor || "",
+        fromLocation: selectedTask.fromLocation || "",
+        toLocation: selectedTask.toLocation || "",
+        vehicleType: selectedTask.vehicleType || "",
+        l2Vendor: selectedTask.l2Vendor || "",
+        l2Rate: selectedTask.l2Rate || "",
+        l3Vendor: selectedTask.l3Vendor || "",
+        l3Rate: selectedTask.l3Rate || "",
         errors: {},
       });
       setEditId(selectedTask.taskId);
@@ -167,6 +191,11 @@ const AuctionTableEemployee = () => {
       // Load categories for the selected auction type
       if (selectedTask.auctionType) {
         fetchCategories(selectedTask.auctionType);
+      }
+
+      // Load vehicle types if category is Logistics
+      if (selectedTask.category === "Logistics") {
+        fetchVehicleTypes();
       }
     }
   }, [modalVisible, selectedTask]);
@@ -239,6 +268,13 @@ const AuctionTableEemployee = () => {
       expenditureType: "",
       numberOfParticipants: "",
       nameOfL1Vendor: "",
+      fromLocation: "",
+      toLocation: "",
+      vehicleType: "",
+      l2Vendor: "",
+      l2Rate: "",
+      l3Vendor: "",
+      l3Rate: "",
       errors: {},
     });
     // Removed employee handling
@@ -288,6 +324,11 @@ const AuctionTableEemployee = () => {
       // Fetch categories when auction type changes
       if (name === "auctionType") {
         fetchCategories(value);
+      }
+
+      // Fetch vehicle types when category changes to Logistics
+      if (name === "category" && value === "Logistics") {
+        fetchVehicleTypes();
       }
 
       return updated;
@@ -344,6 +385,19 @@ const AuctionTableEemployee = () => {
         }
         if (formData.savingsPercent === undefined || formData.savingsPercent === null || formData.savingsPercent === "") {
           errors.savingsPercent = "Earning % required when Complete";
+        }
+      }
+
+      // Logistics specific validations
+      if (formData.category === "Logistics") {
+        if (!formData.fromLocation || !formData.fromLocation.trim()) {
+          errors.fromLocation = "From Location is required when category is Logistics";
+        }
+        if (!formData.toLocation || !formData.toLocation.trim()) {
+          errors.toLocation = "To Location is required when category is Logistics";
+        }
+        if (!formData.vehicleType || !formData.vehicleType.trim()) {
+          errors.vehicleType = "Vehicle Type is required when category is Logistics";
         }
       }
 
@@ -409,6 +463,15 @@ const AuctionTableEemployee = () => {
         }
         updateData.numberOfParticipants = parseInt(formData.numberOfParticipants);
         updateData.nameOfL1Vendor = formData.nameOfL1Vendor;
+
+        // Add Logistics fields (always included if provided)
+        updateData.fromLocation = formData.fromLocation || "";
+        updateData.toLocation = formData.toLocation || "";
+        updateData.vehicleType = formData.vehicleType || "";
+        updateData.l2Vendor = formData.l2Vendor || "";
+        updateData.l2Rate = parseFloat(formData.l2Rate) || 0;
+        updateData.l3Vendor = formData.l3Vendor || "";
+        updateData.l3Rate = parseFloat(formData.l3Rate) || 0;
       }
 
       // Convert auctionDate from YYYY-MM-DD to DD-MM-YYYY format
@@ -474,6 +537,22 @@ const AuctionTableEemployee = () => {
     }
   };
 
+  // Vehicle type functions
+  const fetchVehicleTypes = async () => {
+    console.log("🚗 Fetching vehicle types...");
+    try {
+      setVehicleTypesLoading(true);
+      const response = await api.getVehicleTypes();
+      console.log("🚗 Vehicle types response:", response);
+      setVehicleTypes(response.vehicleTypes || []);
+    } catch (error) {
+      console.error("❌ Error fetching vehicle types:", error);
+      setVehicleTypes([]);
+    } finally {
+      setVehicleTypesLoading(false);
+    }
+  };
+
   const handleCreateCategory = async (e) => {
     e.preventDefault();
     console.log('📝 Creating new category...');
@@ -513,10 +592,60 @@ const AuctionTableEemployee = () => {
     }
   };
 
+  const handleCreateVehicleType = async (e) => {
+    e.preventDefault();
+    console.log("🚗 Creating new vehicle type...");
+
+    const errors = {};
+    if (!vehicleFormData.name.trim()) {
+      errors.name = "Vehicle name is required";
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setVehicleFormErrors(errors);
+      return;
+    }
+
+    try {
+      setIsCreatingVehicle(true);
+      const response = await api.createVehicleType(vehicleFormData);
+      console.log("✅ Vehicle type created:", response);
+
+      // Add the new vehicle type to the list
+      setVehicleTypes((prev) => [...prev, response.vehicleType]);
+
+      // Auto-select the new vehicle type
+      setFormData((prev) => ({
+        ...prev,
+        vehicleType: response.vehicleType.name,
+      }));
+
+      // Close modal and reset form
+      setShowVehicleModal(false);
+      setVehicleFormData({ name: "" });
+      setVehicleFormErrors({});
+    } catch (error) {
+      console.error("❌ Error creating vehicle type:", error);
+      if (error.message?.includes("already exists")) {
+        setVehicleFormErrors({ name: "Vehicle name already exists" });
+      } else {
+        alert("Failed to create vehicle type");
+      }
+    } finally {
+      setIsCreatingVehicle(false);
+    }
+  };
+
   const handleCategoryFormChange = (e) => {
     const { name, value } = e.target;
     setCategoryFormData(prev => ({ ...prev, [name]: value }));
     setCategoryFormErrors(prev => ({ ...prev, [name]: "" }));
+  };
+
+  const handleVehicleFormChange = (e) => {
+    const { name, value } = e.target;
+    setVehicleFormData((prev) => ({ ...prev, [name]: value }));
+    setVehicleFormErrors((prev) => ({ ...prev, [name]: "" }));
   };
 
   const openCategoryModal = () => {
@@ -1456,6 +1585,135 @@ const AuctionTableEemployee = () => {
                   </>
                 )}
 
+                {/* Logistics specific fields */}
+                {formData.category === "Logistics" && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        From Location <span className="text-red-600">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        name="fromLocation"
+                        value={formData.fromLocation}
+                        onChange={handleInputChange}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 text-sm"
+                      />
+                      {formData.errors.fromLocation && (
+                        <p className="text-red-500 text-xs mt-1">
+                          {formData.errors.fromLocation}
+                        </p>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        To Location <span className="text-red-600">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        name="toLocation"
+                        value={formData.toLocation}
+                        onChange={handleInputChange}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 text-sm"
+                      />
+                      {formData.errors.toLocation && (
+                        <p className="text-red-500 text-xs mt-1">
+                          {formData.errors.toLocation}
+                        </p>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Vehicle Type <span className="text-red-600">*</span>
+                      </label>
+                      <div className="flex gap-2">
+                        <select
+                          name="vehicleType"
+                          value={formData.vehicleType}
+                          onChange={handleInputChange}
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 text-sm"
+                        >
+                          <option value="">Select Vehicle Type</option>
+                          {vehicleTypes.map((vehicle) => (
+                            <option
+                              key={vehicle._id}
+                              value={vehicle.name}
+                            >
+                              {vehicle.name}
+                            </option>
+                          ))}
+                        </select>
+                        <button
+                          type="button"
+                          onClick={() => setShowVehicleModal(true)}
+                          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm whitespace-nowrap"
+                        >
+                          Add Vehicle
+                        </button>
+                      </div>
+                      {formData.errors.vehicleType && (
+                        <p className="text-red-500 text-xs mt-1">
+                          {formData.errors.vehicleType}
+                        </p>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        L2 Vendor
+                      </label>
+                      <input
+                        type="text"
+                        name="l2Vendor"
+                        value={formData.l2Vendor}
+                        onChange={handleInputChange}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 text-sm"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        L2 Rate
+                      </label>
+                      <input
+                        type="number"
+                        name="l2Rate"
+                        value={formData.l2Rate}
+                        onChange={handleInputChange}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 text-sm"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        L3 Vendor
+                      </label>
+                      <input
+                        type="text"
+                        name="l3Vendor"
+                        value={formData.l3Vendor}
+                        onChange={handleInputChange}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 text-sm"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        L3 Rate
+                      </label>
+                      <input
+                        type="number"
+                        name="l3Rate"
+                        value={formData.l3Rate}
+                        onChange={handleInputChange}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 text-sm"
+                      />
+                    </div>
+                  </>
+                )}
+
                 {/* No Assign Employees for employee view */}
 
                 {/* File Attachments */}
@@ -1696,6 +1954,71 @@ const AuctionTableEemployee = () => {
         </button>
       )}
 
+      {/* Vehicle Modal */}
+      {showVehicleModal && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-30 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4"
+          onClick={() => setShowVehicleModal(false)}
+        >
+          <div
+            className="bg-white/95 backdrop-blur-md rounded-lg shadow-2xl w-full max-w-md p-4 sm:p-6 relative animate-slide-in border border-white/20"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setShowVehicleModal(false)}
+              className="text-gray-500 hover:text-gray-700 absolute top-2 right-2 z-50"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <form onSubmit={handleCreateVehicleType} className="space-y-4">
+              <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-4">
+                Add New Vehicle Type
+              </h3>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Vehicle Name *
+                </label>
+                <input
+                  type="text"
+                  name="name"
+                  value={vehicleFormData.name}
+                  onChange={handleVehicleFormChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 text-sm"
+                  placeholder="Enter vehicle name"
+                  required
+                />
+                {vehicleFormErrors.name && (
+                  <p className="text-red-500 text-xs mt-1">
+                    {vehicleFormErrors.name}
+                  </p>
+                )}
+              </div>
+
+              <div className="flex justify-end space-x-4">
+                <button
+                  type="button"
+                  onClick={() => setShowVehicleModal(false)}
+                  className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 text-sm"
+                  disabled={isCreatingVehicle}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center space-x-2 text-sm"
+                  disabled={isCreatingVehicle}
+                >
+                  {isCreatingVehicle && <Loader className="w-4 h-4 animate-spin" />}
+                  <span>Create Vehicle</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       <style jsx>{`
         @keyframes slide-in {
           from {
@@ -1715,4 +2038,4 @@ const AuctionTableEemployee = () => {
   );
 };
 
-export default AuctionTableEemployee;
+export default AuctionTableEmployee;

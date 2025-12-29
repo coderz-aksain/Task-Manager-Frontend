@@ -218,8 +218,12 @@ class ApiService {
   }
 
   // Auction Task methods
-  async getAuctionTasks() {
-    return this.request('/get/auction-tasks');
+  async getAuctionTasks(page = 1, limit = 30) {
+    const queryParams = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString(),
+    });
+    return this.request(`/get/auction-tasks?${queryParams}`);
   }
 
   async updateAuctionTask(taskId, taskData) {
